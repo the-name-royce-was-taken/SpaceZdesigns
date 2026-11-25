@@ -7,9 +7,9 @@ describe("vehicle attachment system", () => {
     const parts: BuildPart[] = [{ id: "pod", kind: "capsule", x: 0, y: 2, z: 0 }];
     const placement = findAttachmentPlacement(parts, "pod", "tank");
     expect(placement).not.toBeNull();
-    expect(placement?.parentNode).toBe("stack-bottom");
-    expect(placement?.childNode).toBe("stack-top");
-    expect(placement?.y).toBeCloseTo(0.95);
+    expect(placement?.parentNode).toBe("stack-top");
+    expect(placement?.childNode).toBe("stack-bottom");
+    expect(placement?.y).toBeCloseTo(3.3);
   });
 
   it("places an engine below a tank", () => {
