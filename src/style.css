@@ -197,3 +197,67 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 
 .vab-tools{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;padding:9px;border:1px solid var(--line);border-top:0;background:#0a1b2b}.vab-tool-group{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.vab-tool-group button,.vab-tool-group select{min-height:30px;padding:0 9px;border:1px solid rgba(126,162,200,.25);background:#10253a;color:#b8cadb;font:9px var(--mono);letter-spacing:.06em}.vab-tool-group button.active{border-color:var(--cyan);color:var(--cyan);background:rgba(54,111,135,.25)}.vab-tool-group label{display:flex;align-items:center;gap:6px;color:#8295ac;font:8px var(--mono)}.vab-viewport{height:500px}.vab-axis{position:absolute;right:12px;bottom:12px;color:#7395aa;font:9px var(--mono);pointer-events:none}.vab-lower{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:16px;margin-top:16px}.vab-section-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;color:#c6d8e8;font:10px var(--mono);letter-spacing:.1em}.vab-section-title small{color:var(--muted);font-size:8px}.vab-lower .builder-palette{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}.vab-stack-row{grid-template-columns:25px minmax(0,1fr) auto 25px;cursor:pointer}.vab-stack-row.selected{border:1px solid rgba(126,215,233,.55);background:rgba(36,83,105,.42)}.vab-stack-row small{white-space:nowrap}.vab-inspector{display:flex;flex-direction:column;gap:6px;padding:12px;margin-top:10px;border:1px solid var(--line);background:rgba(3,12,21,.65)}.vab-inspector b{color:var(--cyan);font:10px var(--mono)}.vab-inspector small{color:var(--muted);font:9px var(--mono);line-height:1.6}
 @media(max-width:760px){.vab-lower{grid-template-columns:1fr}.vab-viewport{height:380px}.vab-tools{align-items:flex-start}.vab-tool-group{width:100%}}
+
+/* World-first space-center navigation and immersive game views */
+.world-session-screen{min-height:calc(100vh - 150px);padding:clamp(28px,6vh,72px) clamp(20px,7vw,110px);background:radial-gradient(ellipse at 72% 30%,rgba(37,83,119,.3),transparent 55%)}
+.world-session-top{display:flex;align-items:center;justify-content:space-between;gap:18px;max-width:1180px;margin:0 auto 9vh}
+.world-session-hero{max-width:1180px;margin:0 auto}
+.world-session-hero h2{font:700 clamp(54px,9vw,104px)/.9 var(--display);letter-spacing:.025em;margin:16px 0;color:#f1f6fb;text-transform:uppercase}
+.world-session-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:38px}
+.world-action-card{min-height:205px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:12px;padding:24px;border:1px solid rgba(135,171,211,.26);background:linear-gradient(145deg,rgba(17,42,64,.9),rgba(5,15,27,.92));color:#e8f0fb;text-align:left;transition:border-color .18s,transform .18s,background .18s}
+.world-action-card:hover{transform:translateY(-3px);border-color:var(--cyan);background:linear-gradient(145deg,rgba(25,65,91,.95),rgba(5,15,27,.96))}
+.world-action-card.primary-world-action{border-color:rgba(126,215,233,.62);box-shadow:inset 0 0 40px rgba(58,144,171,.12)}
+.world-action-icon{font:48px var(--display);color:var(--cyan)}
+.world-action-card strong{font:700 27px var(--display);letter-spacing:.1em}
+.world-action-card small{color:#94a9bf;font:10px var(--mono);letter-spacing:.04em;line-height:1.6}
+.world-session-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
+.world-card{cursor:pointer}
+.world-toolbar span:last-child::after{content:" / RIGHT-CLICK A WORLD TO RENAME";color:var(--cyan)}
+.immersive-game .topbar,.immersive-game .bottom-nav,.immersive-game .footer{display:none!important}
+.immersive-game #scene-backdrop{display:none}
+.immersive-game #app{min-height:100vh;height:100vh}
+.immersive-game .main-content{width:100%;max-width:none;flex:1;min-height:0;padding:0}
+.immersive-game .content-screen{padding:0;min-height:100vh}
+.immersive-game .content-screen .section-heading{display:none}
+.immersive-game #hangar-content,.immersive-game #flight-content{min-height:100vh;height:100vh;display:flex;flex-direction:column}
+.immersive-toolbar{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 clamp(14px,3vw,42px);border-bottom:1px solid var(--line);background:rgba(4,12,22,.96)}
+.immersive-toolbar .text-button{padding:8px 0}
+.vab-full-panel{flex:1;min-height:0;display:flex;flex-direction:column;border:0;padding:clamp(12px,2vw,24px);background:rgba(5,15,27,.94)}
+.vab-full-panel .game-panel-head{margin-bottom:12px}
+.vab-design-row{display:grid;grid-template-columns:minmax(180px,.6fr) minmax(0,1.4fr);align-items:end;gap:16px;margin-bottom:12px}
+.vab-design-row .game-label{margin:0}
+.vab-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
+.vab-metrics>div{padding:8px 10px}
+.vab-metrics b{font-size:16px}
+.vab-viewport{height:clamp(390px,53vh,760px)}
+.vab-lower{grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:18px}
+.vab-lower>section{min-width:0}
+.vab-lower .builder-palette{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vab-save-row{align-items:center;margin-top:12px}
+.vab-save-row .game-hint{margin:0}
+.flight-full-grid{grid-template-columns:minmax(0,1fr);gap:0;flex:1;min-height:0}
+.flight-full-grid>.game-panel{border:0;background:rgba(5,15,27,.94);padding:clamp(12px,2vw,24px)}
+.flight-3d-viewport{height:clamp(360px,57vh,780px)}
+.flight-full-grid .telemetry-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.flight-full-grid .mission-brief{margin-top:12px}
+.immersive-game .toast-region{bottom:18px}
+@media(max-width:850px){
+ .world-session-actions{grid-template-columns:1fr}
+ .world-action-card{min-height:145px}
+ .world-session-top{margin-bottom:5vh}
+ .vab-design-row{grid-template-columns:1fr}
+ .vab-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .vab-lower{grid-template-columns:1fr}
+ .flight-full-grid .telemetry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .vab-viewport{height:420px}
+}
+@media(max-width:620px){
+ .world-session-screen{padding:22px 16px}
+ .world-session-footer{align-items:flex-start;flex-direction:column}
+ .immersive-toolbar{height:48px;min-height:48px;padding:0 12px}
+ .immersive-toolbar .panel-kicker{display:none}
+ .vab-full-panel{padding:10px}
+ .vab-viewport{height:360px}
+ .vab-lower .builder-palette{grid-template-columns:1fr}
+ .flight-3d-viewport{height:48vh;min-height:280px}
+}
