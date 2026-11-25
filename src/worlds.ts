@@ -236,7 +236,7 @@ export function importWorld(archive: Uint8Array): WorldRecord {
   }
 
   const paths = Object.keys(entries);
-  if (paths.length !== ALLOWED_FILES.size || paths.some((path) => !ALLOWED_FILES.has(path))) {
+  if (entryCount !== ALLOWED_FILES.size || paths.length !== ALLOWED_FILES.size || paths.some((path) => !ALLOWED_FILES.has(path))) {
     throw new Error("The archive contains unexpected or missing files. Import was cancelled.");
   }
 
@@ -249,7 +249,12 @@ export function importWorld(archive: Uint8Array): WorldRecord {
     throw new Error("The world archive contains invalid JSON.");
   }
 
-  if (manifest.format !== "spacez-world" || manifest.formatVersion !== 1) {
+  if (!manifest || typeof manifest !== "object"
+    || manifest.format !== "spacez-world" || manifest.formatVersion !== 1
+    || typeof manifest.worldId !== "string"
+    || typeof manifest.worldName !== "string"
+    || typeof manifest.gameVersion !== "string"
+    || !Number.isFinite(Date.parse(manifest.exportedAt))) {
     throw new Error("This .spaze format version is not supported by this game build.");
   }
   if (!Array.isArray(manifest.files) || manifest.files.length !== 1 || manifest.files[0] !== "world/world.json") {
