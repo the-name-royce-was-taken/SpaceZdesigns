@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
 import { mountVehicleBuilder, partCatalog, type BuildPart } from "./vehicle-builder-3d";
 import { FlightSimulator } from "./flight-physics";
+const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar atmosphere, and the launch site."],["Luna","MOON",1737,1.62,"#b8b9c2",384400,"A nearby airless world with low gravity and ancient craters."],["Mars","TERRESTRIAL",3389,3.71,"#c87855",225000000,"A cold desert world with a thin atmosphere."],["Phobos","MARTIAN MOON",11,.0057,"#9a806d",9376,"A small, irregular moon orbiting close to Mars."],["Jupiter","GAS GIANT",69911,24.79,"#d5ae83",778000000,"A giant world with immense storms."],["Europa","ICY MOON",1561,1.31,"#d9d4c2",628000000,"An ice-covered moon and a compelling science destination."],["Saturn","GAS GIANT",58232,10.44,"#d8bd86",1427000000,"A ringed giant surrounded by an extraordinary moon system."],["Titan","ICY MOON",2575,1.35,"#c58d53",1430000000,"A hazy moon with lakes of liquid hydrocarbons."]] as const;
 type Craft={name:string;parts:BuildPart[]};
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>void;toast:(m:string,k?:"success"|"error")=>void}
 let host:Host,craft:Craft={name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]},target="Earth";
