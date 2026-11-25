@@ -25,8 +25,6 @@ export interface AssemblyIssue {
 const node = (id: string, attachmentClass: AttachmentClass, position: readonly [number, number, number], direction: readonly [number, number, number]): AttachmentNode =>
   ({ id, attachmentClass, position, direction });
 
-const STACK_TOP = node("stack-top", "stack", [0, 0.5, 0], [0, 1, 0]);
-const STACK_BOTTOM = node("stack-bottom", "stack", [0, -0.5, 0], [0, -1, 0]);
 const SURFACE_ROOT = node("surface-root", "surface", [0, 0, 0], [-1, 0, 0]);
 
 export function attachmentNodes(kind: PartKind): AttachmentNode[] {
