@@ -28,12 +28,48 @@ function hangar(){
 }
 function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
 function makeRocket():THREE.Group{
- const g=new THREE.Group(),mat=(color:number)=>new THREE.MeshStandardMaterial({color,flatShading:true,roughness:.78});
- craft.parts.forEach((p,i)=>{const y=(craft.parts.length-1-i)*1.05;
-  if(p.kind==="capsule"){const body=new THREE.Mesh(new THREE.CylinderGeometry(.38,.43,.65,7),mat(0xdce8ef));body.position.y=y+.35;g.add(body);const nose=new THREE.Mesh(new THREE.ConeGeometry(.38,.55,7),mat(0xb9cbd8));nose.position.y=y+.95;g.add(nose);}
-  else if(p.kind==="engine"){const bell=new THREE.Mesh(new THREE.CylinderGeometry(.16,.4,.55,8,1,true),mat(0xd78d4d));bell.position.y=y+.12;g.add(bell);}
-  else {const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.95,8),mat(p.kind==="tank"?0xb8c8d5:p.kind==="separator"?0xe5c56d:p.kind==="solar"?0x3f83a8:0x719cb2));mesh.position.y=y+.48;g.add(mesh);}
- });return g;
+ const g=new THREE.Group();
+ const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
+ const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh};
+ craft.parts.forEach((p,i)=>{
+  const y=p.y??(craft.parts.length-1-i)*1.05;
+  if(p.kind==="capsule"){
+   add(new THREE.CylinderGeometry(.43,.49,.62,32,3,false),mat(0xe1e9ef,.4),p.x??0,y-.08,p.z??0);
+   add(new THREE.ConeGeometry(.43,.52,32,3,false),mat(0xc7d4de,.36),p.x??0,y+.49,p.z??0);
+   add(new THREE.TorusGeometry(.445,.035,10,32),mat(0x455c6c,.7),p.x??0,y+.19,p.z??0);
+   add(new THREE.SphereGeometry(.13,24,16),mat(0x45b6d5,.62),p.x??0,y+.02,(p.z??0)+.425);
+  }else if(p.kind==="tank"){
+   add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
+   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y+.48,p.z??0);
+   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y-.48,p.z??0);
+   for(const band of [-.32,.32])add(new THREE.TorusGeometry(.445,.018,8,40),mat(0x536b7d,.72),p.x??0,y+band,p.z??0);
+  }else if(p.kind==="engine"){
+   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(0xd28a4f,.72),p.x??0,y-.02,p.z??0);
+   add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),mat(0x8b9ba5,.8),p.x??0,y+.38,p.z??0);
+   add(new THREE.TorusGeometry(.425,.035,10,40),mat(0x8b9ba5,.8),p.x??0,y-.35,p.z??0);
+  }else if(p.kind==="separator"){
+   add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
+   add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);
+  }else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){
+   const size=p.kind==="wing"?[1.7,.12,1.1]:p.kind==="fin"?[.9,.7,.18]:[1,.1,.42];
+   const surface=add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
+   surface.rotation.y=p.ry??0;
+  }else if(p.kind==="solar"){
+   add(new THREE.BoxGeometry(.14,.08,.18),mat(0x8799a7,.6),p.x??0,y,p.z??0);
+   for(const side of [-1,1])add(new THREE.BoxGeometry(.82,.035,.65),mat(0x2678a5,.62),(p.x??0)+side*.48,y,p.z??0);
+  }else if(p.kind==="dock"){
+   add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
+   add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);
+  }else if(p.kind==="wheel"){
+   const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
+   leg.rotation.z=-.22;
+   const wheel=add(new THREE.CylinderGeometry(.2,.2,.12,24),mat(0x273542,.12),(p.x??0)+.3,y-.28,p.z??0);
+   wheel.rotation.z=Math.PI/2;
+  }else{
+   add(new THREE.BoxGeometry(.5,.3,.5),mat(p.kind==="battery"?0x879b78:0x9caeba,.45),p.x??0,y,p.z??0);
+  }
+ });
+ return g;
 }
 function launchpad(){
  disposeFlightScene();const root=$("#flight-content"),m=metrics();sim=null;
