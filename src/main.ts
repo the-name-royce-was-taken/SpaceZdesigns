@@ -166,6 +166,10 @@ async function handleAction(action: string, id?: string): Promise<void> {
       if (activeWorld) { showScreen("flight"); renderGameScreen("flight"); }
       else { showScreen("worlds"); await refreshWorlds(); toast("Select a world before continuing.", "error"); }
       break;
+    case "return-world":
+      showScreen("world");
+      renderGameScreen("world");
+      break;
     case "leave-world":
       showScreen("home");
       renderGameScreen("home");
