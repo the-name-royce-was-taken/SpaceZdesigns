@@ -87,7 +87,7 @@ export function findAttachmentPlacement(
   const candidates = parentNodes.flatMap(parentNode => childNodes
     .filter(childNode => parentNode.attachmentClass === childNode.attachmentClass)
     .map(childNode => ({ parentNode, childNode, priority: parentNode.attachmentClass === "stack" ? 0 : 1 })))
-    .sort((a, b) => a.priority - b.priority || a.parentNode.id.localeCompare(b.parentNode.id));
+    .sort((a, b) => a.priority - b.priority || (a.parentNode.id === "stack-top" ? 0 : a.parentNode.id === "stack-bottom" ? 1 : 2) - (b.parentNode.id === "stack-top" ? 0 : b.parentNode.id === "stack-bottom" ? 1 : 2) || a.parentNode.id.localeCompare(b.parentNode.id));
 
   for (const candidate of candidates) {
     const parentDirection = rotateY(candidate.parentNode.direction, parent.ry ?? 0);
