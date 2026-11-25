@@ -15,7 +15,7 @@
           <span class="brand-mark">SZ</span>
           <span class="brand-copy"><strong>SPACEZ</strong><small>DESIGNS / FLIGHT OPERATIONS</small></span>
         </a>
-        <div class="topbar-status"><span class="status-dot"></span> SYSTEMS NOMINAL <span class="status-divider">/</span> BUILD 0.1.0</div>
+        <div class="topbar-status"><span class="status-dot"></span> SYSTEMS NOMINAL <span class="status-divider">/</span> BUILD 0.2.0</div>
         <button class="icon-button" data-action="settings" aria-label="Settings" title="Settings">⚙</button>
       </header>
       <main id="main-content" class="main-content">
@@ -55,16 +55,13 @@
           <input id="world-file-input" type="file" accept=".spaze,.zip,application/zip" hidden />
         </section>
         <section class="screen content-screen" id="hangar-screen">
-          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> VEHICLE SYSTEMS</p><h2>ASSEMBLY <em>HANGAR</em></h2><p class="section-subtitle">The construction workbench is the next development milestone.</p></div></div>
-          <div class="placeholder-panel"><div class="placeholder-icon">⌁</div><h3>HANGAR SYSTEM OFFLINE</h3><p>Part catalogues, modular attachment nodes, symmetry tools, staging, and vehicle analysis will be added in the construction milestone.</p><span class="module-tag">PLANNED MODULE / VAB-01</span></div>
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> VEHICLE SYSTEMS</p><h2>ASSEMBLY <em>HANGAR</em></h2><p class="section-subtitle">Build, configure, save, and launch modular spacecraft.</p></div></div><div id="hangar-content"></div>
         </section>
         <section class="screen content-screen" id="flight-screen">
-          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> MISSION CONTROL</p><h2>FLIGHT <em>OPERATIONS</em></h2><p class="section-subtitle">Flight simulation will connect to the selected world.</p></div></div>
-          <div class="placeholder-panel"><div class="placeholder-icon">⌖</div><h3>FLIGHT SYSTEMS STANDBY</h3><p>Propulsion, staging, orbital mechanics, atmospheric flight, navigation assists, and mission telemetry are planned for the flight milestone.</p><span class="module-tag">PLANNED MODULE / FCS-01</span></div>
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> MISSION CONTROL</p><h2>FLIGHT <em>OPERATIONS</em></h2><p class="section-subtitle">Launch from the space center and monitor powered ascent.</p></div></div><div id="flight-content"></div>
         </section>
         <section class="screen content-screen" id="tracking-screen">
-          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CELESTIAL NAVIGATION</p><h2>TRACKING <em>STATION</em></h2><p class="section-subtitle">A complete, explorable solar system is the release target.</p></div></div>
-          <div class="placeholder-panel"><div class="placeholder-icon">◎</div><h3>UNIVERSE DATABASE PENDING</h3><p>Planetary data, moons, orbital hierarchies, map navigation, and spacecraft tracking will be implemented after the simulation foundation.</p><span class="module-tag">PLANNED MODULE / UNV-01</span></div>
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CELESTIAL NAVIGATION</p><h2>TRACKING <em>STATION</em></h2><p class="section-subtitle">Select a world and set your navigation target.</p></div></div><div id="tracking-content"></div>
         </section>
         <section class="screen content-screen" id="settings-screen">
           <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> SYSTEM CONFIGURATION</p><h2>GAME <em>SETTINGS</em></h2><p class="section-subtitle">Local preferences for this browser.</p></div></div>
@@ -91,7 +88,7 @@
       <dialog id="confirm-dialog" class="modal">
         <form method="dialog"><div class="modal-topline"><span>CONFIRM ACTION</span><button class="modal-close" value="cancel" aria-label="Close">×</button></div><h2 id="confirm-title">ARE YOU SURE?</h2><p id="confirm-message" class="section-subtitle"></p><div class="modal-actions"><button class="secondary-button compact" value="cancel">CANCEL</button><button class="danger-button compact" id="confirm-accept" value="default">CONFIRM</button></div></form>
       </dialog>
-      <footer class="footer"><span>SPACEZDESIGNS © 2026</span><span>ALL SYSTEMS / LOCAL-FIRST</span><span>EARLY DEVELOPMENT BUILD</span></footer>
+      <footer class="footer"><span>SPACEZDESIGNS © 2026</span><span>ALL SYSTEMS / LOCAL-FIRST</span><span>PLAYABLE PROTOTYPE / 0.2.0</span></footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
