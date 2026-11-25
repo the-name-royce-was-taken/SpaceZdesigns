@@ -143,12 +143,12 @@ async function askConfirmation(title: string, message: string, confirmLabel: str
 
 async function handleAction(action: string, id?: string): Promise<void> {
   switch (action) {
-    case "home": showScreen("home"); break;
-    case "worlds": showScreen("worlds"); await refreshWorlds(); break;
+    case "home": showScreen("home"); renderGameScreen("home"); break;
+    case "worlds": showScreen("worlds"); renderGameScreen("worlds"); await refreshWorlds(); break;
     case "hangar": showScreen("hangar"); renderGameScreen("hangar"); break;
     case "flight": showScreen("flight"); renderGameScreen("flight"); break;
     case "tracking": showScreen("tracking"); renderGameScreen("tracking"); break;
-    case "settings": showScreen("settings"); break;
+    case "settings": showScreen("settings"); renderGameScreen("settings"); break;
     case "new-world": {
       const dialog = $("#new-world-dialog") as HTMLDialogElement;
       ($("#world-name") as HTMLInputElement).value = "";
