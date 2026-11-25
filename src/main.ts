@@ -23,6 +23,7 @@ const $ = <T extends HTMLElement>(selector: string): T => {
 const toastRegion = $("#toast-region");
 let activeWorld: WorldRecord | null = null;
 let toastTimer = 0;
+let activeRenderer: THREE.WebGLRenderer | null = null;
 
 function toast(message: string, kind: "success" | "error" = "success"): void {
   toastRegion.textContent = message;
@@ -110,7 +111,8 @@ async function activateWorld(id: string): Promise<void> {
 
 function downloadArchive(world: WorldRecord): void {
   const bytes = exportWorld(world);
-  const blob = new Blob([bytes], { type: "application/zip" });
+  const archiveBuffer = bytes.slice().buffer as ArrayBuffer;
+  const blob = new Blob([archiveBuffer], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -128,16 +130,11 @@ async function askConfirmation(title: string, message: string, confirmLabel: str
   $("#confirm-message").textContent = message;
   $("#confirm-accept").textContent = confirmLabel;
   return new Promise((resolve) => {
-    const form = dialog.querySelector("form");
-    const accept = $("#confirm-accept");
     const onClose = () => {
       dialog.removeEventListener("close", onClose);
       resolve(dialog.returnValue === "default");
     };
     dialog.addEventListener("close", onClose);
-    accept.addEventListener("click", () => {
-      if (form) form.dataset.confirmed = "true";
-    }, { once: true });
     dialog.showModal();
   });
 }
@@ -152,7 +149,6 @@ async function handleAction(action: string, id?: string): Promise<void> {
     case "settings": showScreen("settings"); break;
     case "new-world": {
       const dialog = $("#new-world-dialog") as HTMLDialogElement;
-      $("#world-name").setAttribute("value", "");
       ($("#world-name") as HTMLInputElement).value = "";
       dialog.showModal();
       break;
@@ -226,11 +222,6 @@ $("#new-world-form").addEventListener("submit", (event) => {
   }).catch((error: unknown) => toast(error instanceof Error ? error.message : "Could not create world.", "error"));
 });
 
-$("#confirm-dialog").addEventListener("close", (event) => {
-  const dialog = event.currentTarget as HTMLDialogElement;
-  dialog.querySelector("form")?.removeAttribute("data-confirmed");
-});
-
 $("#world-file-input").addEventListener("change", (event) => {
   const input = event.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
@@ -277,7 +268,13 @@ function initializeScene(): void {
   const host = $("#scene-backdrop");
   try {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    activeRenderer = renderer;
+    const getPixelRatio = () => {
+      const value = quality.value;
+      const factor = value === "high" ? 1.6 : value === "low" ? 0.85 : 1.2;
+      return Math.min((window.devicePixelRatio || 1) * factor, 1.75);
+    };
+    renderer.setPixelRatio(getPixelRatio());
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     host.append(renderer.domElement);
@@ -286,8 +283,7 @@ function initializeScene(): void {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(0, 5, 27);
-    const ambient = new THREE.AmbientLight(0x9bb9df, 1.1);
-    scene.add(ambient);
+    scene.add(new THREE.AmbientLight(0x9bb9df, 1.1));
     const sunLight = new THREE.PointLight(0x8ebcff, 130, 180);
     sunLight.position.set(7, 4, 0);
     scene.add(sunLight);
@@ -303,16 +299,10 @@ function initializeScene(): void {
     const stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xa8c8ff, size: 0.12, transparent: true, opacity: 0.8 }));
     scene.add(stars);
 
-    const sun = new THREE.Mesh(
-      new THREE.SphereGeometry(4.8, 48, 32),
-      new THREE.MeshBasicMaterial({ color: 0xf5b75f })
-    );
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(4.8, 48, 32), new THREE.MeshBasicMaterial({ color: 0xf5b75f }));
     sun.position.set(9, 1.5, -16);
     scene.add(sun);
-    const halo = new THREE.Mesh(
-      new THREE.SphereGeometry(6.2, 32, 24),
-      new THREE.MeshBasicMaterial({ color: 0xe99c45, transparent: true, opacity: 0.09, side: THREE.BackSide })
-    );
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(6.2, 32, 24), new THREE.MeshBasicMaterial({ color: 0xe99c45, transparent: true, opacity: 0.09, side: THREE.BackSide }));
     halo.position.copy(sun.position);
     scene.add(halo);
 
@@ -332,12 +322,8 @@ function initializeScene(): void {
         const angle = (step / 100) * Math.PI * 2;
         points.push(new THREE.Vector3(Math.cos(angle) * spec.distance, 0, Math.sin(angle) * spec.distance));
       }
-      const orbit = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), orbitMaterials);
-      planetGroup.add(orbit);
-      const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(spec.radius, 32, 24),
-        new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.92, metalness: 0.02 })
-      );
+      planetGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), orbitMaterials));
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(spec.radius, 32, 24), new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.92, metalness: 0.02 }));
       mesh.position.set(Math.cos(index * 1.4) * spec.distance, 0, Math.sin(index * 1.4) * spec.distance);
       mesh.userData.orbitSpeed = spec.speed;
       mesh.userData.orbitRadius = spec.distance;
@@ -347,6 +333,7 @@ function initializeScene(): void {
 
     const clock = new THREE.Clock();
     const reduceMotion = $("#reduce-motion") as HTMLInputElement;
+    let animationFrame = 0;
     const render = () => {
       const delta = Math.min(clock.getDelta(), 0.05);
       if (!reduceMotion.checked) {
@@ -364,19 +351,20 @@ function initializeScene(): void {
       renderer.render(scene, camera);
       animationFrame = window.requestAnimationFrame(render);
     };
-    let animationFrame = 0;
     render();
 
     const resize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(getPixelRatio());
     };
     window.addEventListener("resize", resize);
     window.addEventListener("beforeunload", () => {
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("resize", resize);
       renderer.dispose();
+      activeRenderer = null;
       starGeometry.dispose();
     }, { once: true });
   } catch (error) {
@@ -395,6 +383,7 @@ try {
 }
 quality.addEventListener("change", () => {
   try { localStorage.setItem("spacez.graphicsQuality", quality.value); } catch { /* optional */ }
+  if (activeRenderer) activeRenderer.setPixelRatio(Math.min((window.devicePixelRatio || 1) * (quality.value === "high" ? 1.6 : quality.value === "low" ? 0.85 : 1.2), 1.75));
   toast("Graphics preference saved.");
 });
 ($("#reduce-motion") as HTMLInputElement).addEventListener("change", (event) => {
