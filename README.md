@@ -4,17 +4,17 @@ A browser-based stylized spaceflight and spacecraft-construction simulator. The 
 
 ## Current implementation
 
-The `feature/game-foundation` branch contains the first application foundation:
+The `feature/game-foundation` branch now contains an early playable vertical slice:
 
 - Space-flight-simulator-inspired main menu and responsive navigation.
 - Three.js animated space backdrop with a CSS fallback when WebGL is unavailable.
 - Local world manager: create, load, rename, delete, and select independent sandbox or career worlds.
 - IndexedDB persistence, with a browser-storage persistence request where supported.
 - `.spaze` ZIP export/import with a manifest, schema checks, file allow-list, archive-size limits, and decompressed-size limits.
-- Vitest tests for world archive round trips and invalid archives.
+- Vehicle Assembly Building prototype: modular vertical part stack, component inventory, live vehicle silhouette, part removal, vehicle metrics, and local craft saving.\n- Launch complex prototype: launchpad view, throttle, ignition, staging, fuel use, gravity, powered ascent, basic telemetry, and a near-space science reward.\n- Solar-system atlas prototype: orbital overview and selectable planetary destinations with basic body data.\n- Vitest tests for world archive round trips and invalid archives.
 - GitHub Actions CI and GitHub Pages deployment workflows.
 
-The vehicle editor, propulsion and orbital simulation, full planetary database, and career progression systems are later milestones. The current Flight, Hangar, and Tracking screens are honest placeholders, not finished game features.
+This is a playable prototype, not a complete space simulator. The vehicle editor currently uses a simple vertical stack rather than a full attachment-node editor; flight is a simplified vertical ascent model rather than realistic 3D orbital mechanics; staging, re-entry, landing, spacecraft map tracking, planetary surfaces, interplanetary transfers, missions, research trees, and career progression still need implementation. The atlas currently includes eight destinations, not the full solar system.
 
 ## Development requirements
 
@@ -46,4 +46,4 @@ Browser storage is device- and browser-profile-specific. Export backups regularl
 
 ## Development status
 
-Early foundation / prototype. See the source modules and CI workflow for the current implementation.
+Playable prototype / 0.2.0. See the source modules and CI workflow for the current implementation.
