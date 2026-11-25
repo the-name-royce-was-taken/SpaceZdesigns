@@ -66,25 +66,32 @@ function defaultState(): WorldState {
 function validateWorld(value: unknown): value is WorldRecord {
   if (!value || typeof value !== "object") return false;
   const world = value as Partial<WorldRecord>;
+  const state = world.state;
   return typeof world.id === "string"
+    && world.id.length > 0
     && typeof world.name === "string"
     && world.name.trim().length > 0
     && world.name.length <= 40
+    && !/[\u0000-\u001f]/.test(world.name)
     && (world.mode === "sandbox" || world.mode === "career")
     && typeof world.createdAt === "string"
     && Number.isFinite(Date.parse(world.createdAt))
     && typeof world.updatedAt === "string"
     && Number.isFinite(Date.parse(world.updatedAt))
+    && typeof world.gameVersion === "string"
     && world.schemaVersion === 1
-    && !!world.state
-    && typeof world.state === "object"
-    && typeof world.state.currentBody === "string"
-    && Number.isFinite(world.state.credits)
-    && Number.isFinite(world.state.science)
-    && Number.isFinite(world.state.reputation)
-    && Array.isArray(world.state.craft)
-    && Array.isArray(world.state.missions)
-    && Array.isArray(world.state.research);
+    && !!state
+    && typeof state === "object"
+    && state.currentScene === "space-center"
+    && typeof state.currentBody === "string"
+    && Number.isFinite(state.credits)
+    && Number.isFinite(state.science)
+    && Number.isFinite(state.reputation)
+    && Number.isFinite(state.playTimeSeconds)
+    && Array.isArray(state.craft)
+    && Array.isArray(state.missions)
+    && Array.isArray(state.research)
+    && state.research.every((item) => typeof item === "string");
 }
 
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -204,27 +211,33 @@ export function importWorld(archive: Uint8Array): WorldRecord {
     throw new Error("The .spaze file is empty or exceeds the 25 MB import limit.");
   }
 
+  let expandedBytes = 0;
+  let entryCount = 0;
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(archive);
-  } catch {
+    entries = unzipSync(archive, {
+      filter: (file) => {
+        entryCount += 1;
+        if (entryCount > 64) throw new Error("The archive contains too many entries.");
+        if (!ALLOWED_FILES.has(file.name)) return false;
+        if (!Number.isFinite(file.originalSize) || file.originalSize > MAX_UNCOMPRESSED_BYTES) {
+          throw new Error("The expanded world data exceeds the 80 MB safety limit.");
+        }
+        expandedBytes += file.originalSize;
+        if (expandedBytes > MAX_UNCOMPRESSED_BYTES) {
+          throw new Error("The expanded world data exceeds the 80 MB safety limit.");
+        }
+        return true;
+      }
+    });
+  } catch (error) {
+    if (error instanceof Error && /safety limit|too many entries/.test(error.message)) throw error;
     throw new Error("This file is not a valid ZIP-based .spaze world.");
   }
 
   const paths = Object.keys(entries);
   if (paths.length !== ALLOWED_FILES.size || paths.some((path) => !ALLOWED_FILES.has(path))) {
     throw new Error("The archive contains unexpected or missing files. Import was cancelled.");
-  }
-
-  let expandedBytes = 0;
-  for (const [path, data] of Object.entries(entries)) {
-    if (path.startsWith("/") || path.includes("..") || path.includes("\\")) {
-      throw new Error("The archive contains an unsafe file path.");
-    }
-    expandedBytes += data.byteLength;
-    if (expandedBytes > MAX_UNCOMPRESSED_BYTES) {
-      throw new Error("The expanded world data exceeds the 80 MB safety limit.");
-    }
   }
 
   let manifest: WorldManifest;
@@ -239,23 +252,21 @@ export function importWorld(archive: Uint8Array): WorldRecord {
   if (manifest.format !== "spacez-world" || manifest.formatVersion !== 1) {
     throw new Error("This .spaze format version is not supported by this game build.");
   }
-  if (!Array.isArray(manifest.files) || !manifest.files.includes("world/world.json")) {
-    throw new Error("The archive manifest is incomplete.");
+  if (!Array.isArray(manifest.files) || manifest.files.length !== 1 || manifest.files[0] !== "world/world.json") {
+    throw new Error("The archive manifest is incomplete or contains unexpected files.");
   }
   if (!validateWorld(world)) {
     throw new Error("The world data is incomplete or incompatible with this game build.");
   }
-  if (world.name !== manifest.worldName || world.mode !== manifest.mode) {
+  if (manifest.worldId !== world.id || world.name !== manifest.worldName || world.mode !== manifest.mode) {
     throw new Error("The archive manifest does not match its world data.");
   }
 
-  const imported: WorldRecord = {
+  return {
     ...world,
     id: makeId(),
-    name: world.name.slice(0, 40),
     updatedAt: new Date().toISOString()
   };
-  return imported;
 }
 
 export function getActiveWorldId(): string | null {
