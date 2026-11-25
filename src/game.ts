@@ -29,7 +29,7 @@ function makeRocket():THREE.Group{
  const g=new THREE.Group(),mat=(color:number)=>new THREE.MeshStandardMaterial({color,flatShading:true,roughness:.78});
  craft.parts.forEach((p,i)=>{const y=(craft.parts.length-1-i)*1.05;
   if(p.kind==="capsule"){const body=new THREE.Mesh(new THREE.CylinderGeometry(.38,.43,.65,7),mat(0xdce8ef));body.position.y=y+.35;g.add(body);const nose=new THREE.Mesh(new THREE.ConeGeometry(.38,.55,7),mat(0xb9cbd8));nose.position.y=y+.95;g.add(nose);}
-  else if(p.kind==="engine"){const bell=new THREE.Mesh(new THREE.CylinderGeometry(.16,.4,.55,8,true),mat(0xd78d4d));bell.position.y=y+.12;g.add(bell);}
+  else if(p.kind==="engine"){const bell=new THREE.Mesh(new THREE.CylinderGeometry(.16,.4,.55,8,1,true),mat(0xd78d4d));bell.position.y=y+.12;g.add(bell);}
   else {const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.95,8),mat(p.kind==="tank"?0xb8c8d5:p.kind==="separator"?0xe5c56d:p.kind==="solar"?0x3f83a8:0x719cb2));mesh.position.y=y+.48;g.add(mesh);}
  });return g;
 }
