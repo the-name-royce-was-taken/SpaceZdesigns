@@ -156,7 +156,7 @@ async function handleAction(action: string, id?: string): Promise<void> {
       break;
     }
     case "continue":
-      if (activeWorld) showScreen("flight");
+      if (activeWorld) { showScreen("flight"); renderGameScreen("flight"); }
       else { showScreen("worlds"); await refreshWorlds(); toast("Create or load a world before continuing.", "error"); }
       break;
     case "import-world":
