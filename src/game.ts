@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
 import { mountVehicleBuilder, partCatalog, type BuildPart } from "./vehicle-builder-3d";
-import { FlightSimulator } from "./flight-physics";
+import { FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar atmosphere, and the launch site."],["Luna","MOON",1737,1.62,"#b8b9c2",384400,"A nearby airless world with low gravity and ancient craters."],["Mars","TERRESTRIAL",3389,3.71,"#c87855",225000000,"A cold desert world with a thin atmosphere."],["Phobos","MARTIAN MOON",11,.0057,"#9a806d",9376,"A small, irregular moon orbiting close to Mars."],["Jupiter","GAS GIANT",69911,24.79,"#d5ae83",778000000,"A giant world with immense storms."],["Europa","ICY MOON",1561,1.31,"#d9d4c2",628000000,"An ice-covered moon and a compelling science destination."],["Saturn","GAS GIANT",58232,10.44,"#d8bd86",1427000000,"A ringed giant surrounded by an extraordinary moon system."],["Titan","ICY MOON",2575,1.35,"#c58d53",1430000000,"A hazy moon with lakes of liquid hydrocarbons."]] as const;
 type Craft={name:string;parts:BuildPart[]};
+type SavedFlight={kind:"spacez-flight-save";craftName:string;state:FlightState;vehicle:VehiclePhysics;throttle:number;pitch:number;savedAt:string};
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>void;toast:(m:string,k?:"success"|"error")=>void}
 let host:Host,craft:Craft={name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]},target="Earth";
 let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0;
@@ -13,6 +14,8 @@ const world=()=>host.getWorld();
 const specs=()=>craft.parts.map(p=>partCatalog.find(s=>s.kind===p.kind)!).filter(Boolean);
 function metrics(){const a=specs();return{mass:a.reduce((n,p)=>n+p.mass,0),fuel:a.reduce((n,p)=>n+p.fuel,0),thrust:a.reduce((n,p)=>n+p.thrust,0),cost:a.reduce((n,p)=>n+p.mass*950+ p.fuel*8+p.thrust*40,0)}}
 function save(){const w=world();if(!w)return;const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);list.push(structuredClone(craft));w.state.craft=list;w.updatedAt=new Date().toISOString();host.setWorld(w)}
+function persistFlight(throttle:number,pitch:number){const w=world();if(!w||!sim)return;const saves=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));saves.push({kind:"spacez-flight-save",craftName:craft.name,state:structuredClone(sim.state),vehicle:structuredClone(sim.vehicle),throttle,pitch,savedAt:new Date().toISOString()} satisfies SavedFlight);w.state.missions=saves;w.updatedAt=new Date().toISOString();host.setWorld(w)}
+function clearFlightSave(){const w=world();if(!w)return;w.state.missions=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));w.updatedAt=new Date().toISOString();host.setWorld(w)}
 function load(){const a=(world()?.state.craft??[]) as Craft[];craft=a.length?structuredClone(a[0]):{name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]};}
 function nav(v:string){document.querySelector<HTMLElement>(`#world-screen [data-action="${v}"]`)?.click()}
 export function renderGameScreen(name:string){if(name!=="hangar"){builder?.dispose();builder=null}if(name!=="flight")disposeFlightScene();if(name==="home"||name==="worlds"||name==="settings")return;if(!world()){host.toast("Create or load a world first.","error");return}if(name==="hangar"){load();hangar()}if(name==="flight"){load();launchpad()}if(name==="tracking")tracking()}
@@ -86,7 +89,10 @@ function launchpad(){
  const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:m.thrust,ispSeconds:285,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";};range.oninput=updateLabels;pitch.oninput=updateLabels;
- $("#ignite",root).onclick=()=>{if(!craft.parts.some(p=>p.kind==="capsule")||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod and engine before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();host.toast("Ignition. Fixed-step flight simulation started.");}};
+ const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
+ if(savedFlight){sim=new FlightSimulator(savedFlight.vehicle);Object.assign(sim.state,structuredClone(savedFlight.state));range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Restored the most recently saved flight state from this world.";}
+ let lastPersist=performance.now();
+ $("#ignite",root).onclick=()=>{if(!craft.parts.some(p=>p.kind==="capsule")||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod and engine before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();persistFlight(Number(range.value)/100,Number(pitch.value));host.toast("Ignition. Fixed-step flight simulation started.");}};
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;range.value="0";pitch.value="0";updateLabels();group.position.set(0,0,0);group.rotation.set(0,0,0);$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
  let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;
@@ -95,7 +101,8 @@ function launchpad(){
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),speed=Math.hypot(s.vx,s.vy),q=.5*rho*speed*speed;
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#flight-status",root).textContent=s.crashed?"VEHICLE LOST":s.landed?"LANDED":"IN FLIGHT";$("#flight-note",root).textContent=s.crashed?"Impact detected. Recover and redesign the vehicle.":s.landed?"Vehicle landed. Recover to reset the launchpad.":q>30000?"MAX-Q REGION: monitor dynamic pressure and throttle.":"Gravity turn and aerodynamic forces are active.";
-   if(s.crashed||s.landed){range.value="0";updateLabels();if(s.crashed)host.toast("Vehicle impacted the surface.","error");else if(s.elapsed>1)host.toast("Vehicle returned to the surface.");sim=null;}
+   if(s.crashed||s.landed){range.value="0";updateLabels();clearFlightSave();if(s.crashed)host.toast("Vehicle impacted the surface.","error");else if(s.elapsed>1)host.toast("Vehicle returned to the surface.");sim=null;}
+   if(sim&&now-lastPersist>2500){persistFlight(Number(range.value)/100,Number(pitch.value));lastPersist=now;}
   }
   renderer.render(scene,camera);flightFrame=requestAnimationFrame(animate);
  };flightFrame=requestAnimationFrame(animate);
