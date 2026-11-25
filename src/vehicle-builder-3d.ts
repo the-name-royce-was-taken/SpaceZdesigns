@@ -12,8 +12,6 @@ export interface BuildPart {
   parentId?: string;
   parentNode?: string;
   childNode?: string;
-  parentNode?: string;
-  childNode?: string;
 }
 interface PartSpec {kind:PartKind;name:string;category:string;mass:number;fuel:number;thrust:number;color:number;size:THREE.Vector3}
 const parts:PartSpec[]=[
