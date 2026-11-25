@@ -3,7 +3,7 @@ import { canAttach, findAttachmentPlacement, validateAssembly } from "../src/veh
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("vehicle attachment system", () => {
-  it("places a tank on a capsule's lower stack node", () => {
+  it("places a tank on a capsule's upper stack node", () => {
     const parts: BuildPart[] = [{ id: "pod", kind: "capsule", x: 0, y: 2, z: 0 }];
     const placement = findAttachmentPlacement(parts, "pod", "tank");
     expect(placement).not.toBeNull();
@@ -24,6 +24,17 @@ describe("vehicle attachment system", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
     expect(canAttach(parts, "tank", "wing")).toBe(true);
     expect(findAttachmentPlacement(parts, "tank", "wing")?.parentNode).toBe("surface-east");
+  });
+
+  it("supports four-way radial surface symmetry without overlapping nodes", () => {
+    const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
+    const placements = [0, Math.PI / 2, Math.PI, Math.PI * 1.5]
+      .map(angle => findAttachmentPlacement(parts, "tank", "wing", angle));
+    expect(placements.every(Boolean)).toBe(true);
+    expect(new Set(placements.map(p => p?.parentNode)).size).toBe(4);
+    expect(placements.map(p => [Number(p?.x?.toFixed(2)), Number(p?.z?.toFixed(2))])).toEqual([
+      [0.46, 0], [0, -0.46], [-0.46, 0], [0, 0.46]
+    ]);
   });
 
   it("rejects an engine attached to an engine", () => {
