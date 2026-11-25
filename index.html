@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07101d" />
+    <meta name="description" content="SpaceZdesigns — build spacecraft, fly missions, and explore a stylized solar system." />
+    <title>SpaceZdesigns | Flight Operations</title>
+  </head>
+  <body>
+    <div id="scene-backdrop" aria-hidden="true"></div>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="#" data-action="home" aria-label="SpaceZdesigns home">
+          <span class="brand-mark">SZ</span>
+          <span class="brand-copy"><strong>SPACEZ</strong><small>DESIGNS / FLIGHT OPERATIONS</small></span>
+        </a>
+        <div class="topbar-status"><span class="status-dot"></span> SYSTEMS NOMINAL <span class="status-divider">/</span> BUILD 0.1.0</div>
+        <button class="icon-button" data-action="settings" aria-label="Settings" title="Settings">⚙</button>
+      </header>
+      <main id="main-content" class="main-content">
+        <section class="home-screen screen active" id="home-screen">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> SPACE PROGRAM SIMULATION</p>
+            <h1>THE NEXT<br /><em>FRONTIER</em><span class="title-period">.</span></h1>
+            <p class="hero-description">Design your vehicle. Master the flight. Explore an entire solar system.</p>
+            <div class="hero-actions">
+              <button class="primary-button" data-action="continue">CONTINUE FLIGHT <span>↗</span></button>
+              <button class="secondary-button" data-action="worlds">WORLD SELECT</button>
+            </div>
+            <div class="hero-meta"><span>01 / BUILD</span><i></i><span>02 / LAUNCH</span><i></i><span>03 / EXPLORE</span></div>
+          </div>
+          <aside class="home-side-panel">
+            <div class="panel-kicker">ACTIVE WORLD</div>
+            <div id="active-world-card" class="active-world-card"><span class="muted">NO WORLD SELECTED</span><strong>Create or import a world to begin.</strong></div>
+            <button class="text-button" data-action="worlds">OPEN WORLD MANAGER <span>→</span></button>
+            <div class="side-divider"></div>
+            <div class="panel-kicker">FLIGHT SYSTEMS</div>
+            <div class="system-row"><span>LOCAL STORAGE</span><b id="storage-status">CHECKING</b></div>
+            <div class="system-row"><span>3D RENDERER</span><b id="renderer-status">INITIALIZING</b></div>
+            <div class="system-row"><span>WORLD FORMAT</span><b>SPAZE / 1</b></div>
+          </aside>
+          <div class="home-bottom-note"><span>SPACEZDESIGNS</span><span>INDEPENDENT SPACE PROGRAM</span><span>EST. 2026</span></div>
+        </section>
+        <section class="screen content-screen" id="worlds-screen">
+          <div class="section-heading">
+            <div><p class="eyebrow"><span class="eyebrow-line"></span> MISSION ARCHIVE</p><h2>WORLD <em>MANAGER</em></h2><p class="section-subtitle">Independent campaigns, stored locally on this device.</p></div>
+            <div class="heading-actions">
+              <button class="secondary-button compact" data-action="import-world">IMPORT .SPAZE</button>
+              <button class="primary-button compact" data-action="new-world">＋ NEW WORLD</button>
+            </div>
+          </div>
+          <div class="world-toolbar"><span id="world-count">0 WORLDS</span><span>LOCAL DATABASE / INDEXEDDB</span></div>
+          <div id="world-list" class="world-list"></div>
+          <input id="world-file-input" type="file" accept=".spaze,.zip,application/zip" hidden />
+        </section>
+        <section class="screen content-screen" id="hangar-screen">
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> VEHICLE SYSTEMS</p><h2>ASSEMBLY <em>HANGAR</em></h2><p class="section-subtitle">The construction workbench is the next development milestone.</p></div></div>
+          <div class="placeholder-panel"><div class="placeholder-icon">⌁</div><h3>HANGAR SYSTEM OFFLINE</h3><p>Part catalogues, modular attachment nodes, symmetry tools, staging, and vehicle analysis will be added in the construction milestone.</p><span class="module-tag">PLANNED MODULE / VAB-01</span></div>
+        </section>
+        <section class="screen content-screen" id="flight-screen">
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> MISSION CONTROL</p><h2>FLIGHT <em>OPERATIONS</em></h2><p class="section-subtitle">Flight simulation will connect to the selected world.</p></div></div>
+          <div class="placeholder-panel"><div class="placeholder-icon">⌖</div><h3>FLIGHT SYSTEMS STANDBY</h3><p>Propulsion, staging, orbital mechanics, atmospheric flight, navigation assists, and mission telemetry are planned for the flight milestone.</p><span class="module-tag">PLANNED MODULE / FCS-01</span></div>
+        </section>
+        <section class="screen content-screen" id="tracking-screen">
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CELESTIAL NAVIGATION</p><h2>TRACKING <em>STATION</em></h2><p class="section-subtitle">A complete, explorable solar system is the release target.</p></div></div>
+          <div class="placeholder-panel"><div class="placeholder-icon">◎</div><h3>UNIVERSE DATABASE PENDING</h3><p>Planetary data, moons, orbital hierarchies, map navigation, and spacecraft tracking will be implemented after the simulation foundation.</p><span class="module-tag">PLANNED MODULE / UNV-01</span></div>
+        </section>
+        <section class="screen content-screen" id="settings-screen">
+          <div class="section-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> SYSTEM CONFIGURATION</p><h2>GAME <em>SETTINGS</em></h2><p class="section-subtitle">Local preferences for this browser.</p></div></div>
+          <div class="settings-panel"><label class="setting-row"><span><strong>Graphics quality</strong><small>Controls the menu scene rendering scale.</small></span><select id="graphics-quality"><option value="high">High</option><option value="balanced" selected>Balanced</option><option value="low">Low</option></select></label><label class="setting-row"><span><strong>Reduce motion</strong><small>Disable animated background movement.</small></span><input id="reduce-motion" type="checkbox" /></label><div class="setting-row"><span><strong>Local world storage</strong><small>Worlds remain in this browser profile. Export backups regularly.</small></span><button class="secondary-button compact" data-action="worlds">MANAGE WORLDS</button></div></div>
+        </section>
+      </main>
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button class="nav-item selected" data-view="home"><span>⌂</span> COMMAND</button>
+        <button class="nav-item" data-view="worlds"><span>▤</span> WORLDS</button>
+        <button class="nav-item" data-view="hangar"><span>⌁</span> HANGAR</button>
+        <button class="nav-item" data-view="flight"><span>⌖</span> FLIGHT</button>
+        <button class="nav-item" data-view="tracking"><span>◎</span> TRACKING</button>
+      </nav>
+      <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
+      <dialog id="new-world-dialog" class="modal">
+        <form method="dialog" id="new-world-form">
+          <div class="modal-topline"><span>NEW CAMPAIGN</span><button class="modal-close" value="cancel" aria-label="Close">×</button></div>
+          <h2>INITIALIZE <em>WORLD</em></h2>
+          <label class="field-label" for="world-name">WORLD NAME</label><input id="world-name" name="worldName" maxlength="40" required placeholder="e.g. First Light" />
+          <label class="field-label" for="world-mode">GAME MODE</label><select id="world-mode" name="worldMode"><option value="sandbox">SANDBOX / UNRESTRICTED</option><option value="career">CAREER / RESEARCH & CONTRACTS</option></select>
+          <div class="modal-actions"><button class="secondary-button compact" value="cancel">CANCEL</button><button class="primary-button compact" id="create-world-submit" value="default">CREATE WORLD</button></div>
+        </form>
+      </dialog>
+      <dialog id="confirm-dialog" class="modal">
+        <form method="dialog"><div class="modal-topline"><span>CONFIRM ACTION</span><button class="modal-close" value="cancel" aria-label="Close">×</button></div><h2 id="confirm-title">ARE YOU SURE?</h2><p id="confirm-message" class="section-subtitle"></p><div class="modal-actions"><button class="secondary-button compact" value="cancel">CANCEL</button><button class="danger-button compact" id="confirm-accept" value="default">CONFIRM</button></div></form>
+      </dialog>
+      <footer class="footer"><span>SPACEZDESIGNS © 2026</span><span>ALL SYSTEMS / LOCAL-FIRST</span><span>EARLY DEVELOPMENT BUILD</span></footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
