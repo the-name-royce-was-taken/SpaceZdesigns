@@ -108,7 +108,7 @@ function openDatabase(): Promise<IDBDatabase> {
     return Promise.reject(new Error("This browser does not support IndexedDB. Use a current desktop browser."));
   }
   if (!databasePromise) {
-    databasePromise = new Promise((resolve, reject) => {
+    databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
       request.onupgradeneeded = () => {
         const db = request.result;
@@ -124,7 +124,7 @@ function openDatabase(): Promise<IDBDatabase> {
       throw error;
     });
   }
-  return databasePromise;
+  return databasePromise!;
 }
 
 export async function listWorlds(): Promise<WorldRecord[]> {
