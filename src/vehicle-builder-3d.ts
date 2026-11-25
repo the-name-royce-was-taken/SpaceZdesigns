@@ -26,7 +26,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const craftGroup=new THREE.Group();scene.add(craftGroup);let craft=[...initial];
  function meshFor(p:BuildPart,i:number){
   const mat=new THREE.MeshStandardMaterial({color:parts.find(v=>v.kind===p.kind)!.color,roughness:.68,metalness:.18,flatShading:true});
-  const group=new THREE.Group();const y=i*1.15;
+  const group=new THREE.Group();const y=(craft.length-1-i)*1.15;
   if(p.kind==="capsule"){const body=new THREE.Mesh(new THREE.CylinderGeometry(.48,.56,.8,8),mat);body.position.y=y+.45;group.add(body);const nose=new THREE.Mesh(new THREE.ConeGeometry(.48,.65,8),mat);nose.position.y=y+1.17;group.add(nose);const window=new THREE.Mesh(new THREE.CircleGeometry(.16,8),new THREE.MeshStandardMaterial({color:0x49b8d0,metalness:.5}));window.position.set(0,y+.48,.49);group.add(window);}
   else if(p.kind==="engine"){const bell=new THREE.Mesh(new THREE.CylinderGeometry(.22,.48,.65,8,true),mat);bell.position.y=y+.25;group.add(bell);const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(.19,.22,.28,8),new THREE.MeshStandardMaterial({color:0x586a78,metalness:.7}));nozzle.position.y=y-.2;group.add(nozzle);}
   else {const body=new THREE.Mesh(new THREE.CylinderGeometry(p.kind==="tank"?.47:.52,p.kind==="tank"?.47:.52,p.kind==="tank"?1.1:.3,8),mat);body.position.y=y+.55;group.add(body);
