@@ -47,7 +47,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const transform=new TransformControls(camera,renderer.domElement);transform.setMode("translate");transform.setSpace("world");
  const helper=transform.getHelper();scene.add(helper);
  let craft=clone(initial),selected:THREE.Group|null=null,selectedId:string|null=null,tool="select",snapStep=.5,alive=true;
- const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
  const history:BuildPart[][]=[clone(craft)];let historyIndex=0,dragged=false;
  const status=host.querySelector<HTMLElement>("#vab-status")!;
  const uid=()=>`part-${Math.random().toString(36).slice(2,10)}`;
@@ -91,6 +91,6 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
  const render=()=>{if(!alive)return;orbit.update();renderer.render(scene,camera);requestAnimationFrame(render);};
- craft=craft.map(p=>({...p,id:p.id??uid()}));redraw();render();
+ craft=craft.map((p,i)=>({...p,id:p.id??uid(),x:p.x??0,y:p.y??(craft.length-1-i)*1.15,z:p.z??0}));redraw();render();
  return {dispose(){alive=false;observer.disconnect();transform.detach();orbit.dispose();renderer.dispose();}};
 }
