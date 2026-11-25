@@ -28,7 +28,7 @@ export class FlightSimulator {
     const gravity=EARTH_MU/(r*r),rho=SEA_LEVEL_DENSITY*Math.exp(-Math.max(0,s.altitude)/SCALE_HEIGHT);
     const speed=Math.hypot(s.vx,s.vy),q=.5*rho*speed*speed;
     s.maxQ=Math.max(s.maxQ,q);
-    const flightAngle=speed>1?Math.atan2(s.vy,s.vx):Math.PI/2;
+    const flightAngle=speed>1?Math.atan2(s.vx,s.vy):Math.PI/2;
     let aoa=Math.atan2(Math.sin(s.angle-flightAngle),Math.cos(s.angle-flightAngle));
     aoa=Math.max(-.7,Math.min(.7,aoa));
     const drag=q*v.referenceArea*v.dragCoefficient;
