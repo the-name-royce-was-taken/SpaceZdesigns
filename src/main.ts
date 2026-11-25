@@ -40,6 +40,10 @@ function showScreen(name: string): void {
   document.querySelectorAll<HTMLElement>(".nav-item").forEach((button) => {
     button.classList.toggle("selected", button.dataset.view === name);
   });
+  document.body.classList.toggle("immersive-game", name === "hangar" || name === "flight");
+  document.body.classList.toggle("world-session", name === "world");
+  const title = document.querySelector<HTMLElement>("#selected-world-name");
+  if (title && activeWorld) title.textContent = activeWorld.name;
 }
 
 function formatDate(value: string): string {
@@ -65,7 +69,7 @@ async function refreshWorlds(): Promise<void> {
       list.innerHTML = worlds.map((world) => {
         const selected = activeWorld?.id === world.id;
         const modeLabel = world.mode === "career" ? "CAREER PROGRAM" : "SANDBOX";
-        return `<article class="world-card ${selected ? "is-active" : ""}">
+        return `<article class="world-card ${selected ? "is-active" : ""}" data-world-id="${world.id}" tabindex="0" aria-label="World ${safeText(world.name)}. Right-click to rename.">
           <div class="world-card-orbit"><span></span><i></i></div>
           <div class="world-card-main">
             <div class="world-card-top"><span class="world-mode">${modeLabel}</span>${selected ? '<span class="active-tag">ACTIVE</span>' : ""}</div>
@@ -74,9 +78,8 @@ async function refreshWorlds(): Promise<void> {
             <div class="world-stats"><span>LOCATION <b>${safeText(world.state.currentBody)}</b></span><span>SCIENCE <b>${world.state.science.toLocaleString()}</b></span><span>CREDITS <b>${world.state.credits.toLocaleString()}</b></span></div>
           </div>
           <div class="world-card-actions">
-            <button class="primary-button compact" data-action="load-world" data-id="${world.id}">LOAD WORLD</button>
+            <button class="primary-button compact" data-action="load-world" data-id="${world.id}">SELECT WORLD</button>
             <button class="mini-button" data-action="export-world" data-id="${world.id}" title="Export world">⇩</button>
-            <button class="mini-button" data-action="rename-world" data-id="${world.id}" title="Rename world">✎</button>
             <button class="mini-button danger-text" data-action="delete-world" data-id="${world.id}" title="Delete world">×</button>
           </div>
         </article>`;
@@ -107,8 +110,8 @@ async function activateWorld(id: string): Promise<void> {
   setActiveWorldId(selected.id);
   updateActiveWorldCard();
   await refreshWorlds();
-  showScreen("home");
-  toast(`Loaded world: ${selected.name}`);
+  showScreen("world");
+  toast(`Selected world: ${selected.name}`);
 }
 
 function downloadArchive(world: WorldRecord): void {
@@ -155,14 +158,23 @@ async function handleAction(action: string, id?: string): Promise<void> {
       dialog.showModal();
       break;
     }
+    case "build":
+      if (activeWorld) { showScreen("hangar"); renderGameScreen("hangar"); }
+      else { showScreen("worlds"); await refreshWorlds(); toast("Select a world before building.", "error"); }
+      break;
     case "continue":
       if (activeWorld) { showScreen("flight"); renderGameScreen("flight"); }
-      else { showScreen("worlds"); await refreshWorlds(); toast("Create or load a world before continuing.", "error"); }
+      else { showScreen("worlds"); await refreshWorlds(); toast("Select a world before continuing.", "error"); }
+      break;
+    case "leave-world":
+      showScreen("home");
+      renderGameScreen("home");
       break;
     case "import-world":
       ($("#world-file-input") as HTMLInputElement).click();
       break;
     case "load-world":
+    case "select-world":
       if (id) await activateWorld(id);
       break;
     case "export-world": {
@@ -200,6 +212,25 @@ async function handleAction(action: string, id?: string): Promise<void> {
   }
 }
 
+document.addEventListener("contextmenu", (event) => {
+  const card = (event.target as HTMLElement).closest<HTMLElement>("[data-world-id]");
+  if (!card) return;
+  event.preventDefault();
+  const id = card.dataset.worldId;
+  if (!id) return;
+  void listWorlds().then(async (worlds) => {
+    const selected = worlds.find((item) => item.id === id);
+    if (!selected) return;
+    const name = window.prompt("Rename world:", selected.name);
+    if (name === null || name.trim() === selected.name) return;
+    const updated = await renameWorld(id, name);
+    if (activeWorld?.id === id) activeWorld = updated;
+    await refreshWorlds();
+    if (activeWorld?.id === id) updateActiveWorldCard();
+    toast("World renamed.");
+  }).catch((error: unknown) => toast(error instanceof Error ? error.message : "Could not rename world.", "error"));
+});
+
 document.addEventListener("click", (event) => {
   const target = (event.target as HTMLElement).closest<HTMLElement>("[data-action], [data-view]");
   if (!target) return;
@@ -219,7 +250,7 @@ $("#new-world-form").addEventListener("submit", (event) => {
     setActiveWorldId(world.id);
     dialog.close();
     await refreshWorlds();
-    showScreen("home");
+    showScreen("world");
     toast(`World created: ${world.name}`);
   }).catch((error: unknown) => toast(error instanceof Error ? error.message : "Could not create world.", "error"));
 });
@@ -240,7 +271,10 @@ $("#world-file-input").addEventListener("change", (event) => {
     if (nameTaken) imported.name = `${imported.name} (Imported)`.slice(0, 40);
     await saveWorld(imported);
     await refreshWorlds();
-    showScreen("worlds");
+    activeWorld = imported;
+    setActiveWorldId(imported.id);
+    updateActiveWorldCard();
+    showScreen("world");
     toast(`Imported world: ${imported.name}`);
   }).catch((error: unknown) => toast(error instanceof Error ? error.message : "World import failed.", "error"))
     .finally(() => { input.value = ""; });
