@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
-import { mountVehicleBuilder, partCatalog, type BuildPart, type PartKind } from "./vehicle-builder-3d";
+import { mountVehicleBuilder, partCatalog, type BuildPart } from "./vehicle-builder-3d";
 import { FlightSimulator } from "./flight-physics";
 type Craft={name:string;parts:BuildPart[]};
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>void;toast:(m:string,k?:"success"|"error")=>void}
 let host:Host,craft:Craft={name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]},target="Earth";
-let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,flightScene:THREE.Scene|null=null,flightCamera:THREE.PerspectiveCamera|null=null,rocket:THREE.Group|null=null,terrain:THREE.Mesh|null=null,lastFrame=0;
+let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0;
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
@@ -23,7 +23,7 @@ function hangar(){
  $("#save-design",root).onclick=()=>{save();host.toast("3D vehicle design saved to this world.")};
  $("#to-pad",root).onclick=()=>{save();nav("flight")};
 }
-function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;rocket=null;terrain=null;flightScene=null;flightCamera=null;}
+function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
 function makeRocket():THREE.Group{
  const g=new THREE.Group(),mat=(color:number)=>new THREE.MeshStandardMaterial({color,flatShading:true,roughness:.78});
  craft.parts.forEach((p,i)=>{const y=(craft.parts.length-1-i)*1.05;
@@ -36,13 +36,13 @@ function launchpad(){
  disposeFlightScene();const root=$("#flight-content"),m=metrics();sim=null;
  root.innerHTML=`<div class="game-grid"><section class="game-panel"><div class="game-panel-head"><div><span class="panel-kicker">SPACEPORT / PAD 01</span><h3>3D LAUNCH COMPLEX</h3></div><span class="live-tag" id="flight-status">PAD READY</span></div><div class="flight-3d-viewport"><canvas id="flight-3d-canvas"></canvas><div class="pad-overlay"><span>MISSION ELAPSED<b id="mission-time">T+ 00:00</b></span><span>FLIGHT MODE<b id="flight-mode">STABILITY ASSIST</b></span></div></div><div class="launch-controls"><label>THROTTLE <b id="throttle-value">0%</b><input id="throttle" type="range" min="0" max="100" value="0"></label><label>PITCH <b id="pitch-value">0°</b><input id="pitch" type="range" min="-30" max="30" value="0"></label><label class="assist-toggle"><input id="stability-assist" type="checkbox" checked> STABILITY ASSIST</label><button class="primary-button compact" id="ignite">IGNITE / LAUNCH</button><button class="secondary-button compact" id="recover">RECOVER / RESET</button></div></section><section class="game-panel"><div class="game-panel-head"><div><span class="panel-kicker">FLIGHT DYNAMICS / 120 HZ SOLVER</span><h3>${esc(craft.name)}</h3></div></div><div class="telemetry-grid"><div><small>ALTITUDE</small><b id="altitude">0.00 km</b></div><div><small>VERTICAL SPEED</small><b id="velocity">0.0 m/s</b></div><div><small>HORIZONTAL SPEED</small><b id="horizontal-speed">0.0 m/s</b></div><div><small>PROPELLANT</small><b id="fuel"> ${m.fuel.toFixed(0)} u</b></div><div><small>DYNAMIC PRESSURE</small><b id="dynamic-pressure">0.0 kPa</b></div><div><small>MAX-Q</small><b id="max-q">0.0 kPa</b></div><div><small>ANGLE</small><b id="angle">0.0°</b></div><div><small>T/W RATIO</small><b>${m.mass>0?(m.thrust/(m.mass*9.81)).toFixed(2):"0.00"}</b></div></div><div class="mission-brief"><span class="panel-kicker">FLIGHT DIRECTOR NOTE</span><p id="flight-note">Atmospheric model active: inverse-square gravity, exponential air density, dynamic pressure, drag, lift, mass flow, and fixed-step integration.</p></div><div class="flight-shortcuts"><button class="secondary-button compact" id="edit-vehicle">EDIT VEHICLE</button><button class="secondary-button compact" id="open-map">OPEN TRACKING</button></div></section></div>`;
  const canvas=$("#flight-3d-canvas",root) as HTMLCanvasElement,renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"low-power"});flightRenderer=renderer;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
- const scene=new THREE.Scene();scene.background=new THREE.Color(0x8db8cf);scene.fog=new THREE.Fog(0x8db8cf,40,180);flightScene=scene;
- const camera=new THREE.PerspectiveCamera(42,canvas.clientWidth/canvas.clientHeight,.1,500);camera.position.set(10,9,18);flightCamera=camera;
+ const scene=new THREE.Scene();scene.background=new THREE.Color(0x8db8cf);scene.fog=new THREE.Fog(0x8db8cf,40,180);
+ const camera=new THREE.PerspectiveCamera(42,canvas.clientWidth/canvas.clientHeight,.1,500);camera.position.set(10,9,18);
  scene.add(new THREE.HemisphereLight(0xd9efff,0x6a715d,2));const sun=new THREE.DirectionalLight(0xffefcf,2.8);sun.position.set(-8,18,10);scene.add(sun);
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600,32,32),new THREE.MeshStandardMaterial({color:0x78956b,roughness:1,flatShading:true}));ground.rotation.x=-Math.PI/2;ground.position.y=-.3;scene.add(ground);terrain=ground;
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600,32,32),new THREE.MeshStandardMaterial({color:0x78956b,roughness:1,flatShading:true}));ground.rotation.x=-Math.PI/2;ground.position.y=-.3;scene.add(ground);
  const pad=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,.25,8),new THREE.MeshStandardMaterial({color:0x737f86,flatShading:true}));pad.position.y=-.05;scene.add(pad);
  for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(.18,5,.18),new THREE.MeshStandardMaterial({color:0xa6b5bd}));tower.position.set(Math.cos(i*Math.PI/2)*2.8,2.4,Math.sin(i*Math.PI/2)*2.8);scene.add(tower);}
- const group=makeRocket();rocket=group;scene.add(group);
+ const group=makeRocket();scene.add(group);
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(canvas);
  const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:m.thrust,ispSeconds:285,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
