@@ -13,6 +13,7 @@ import {
   type WorldRecord
 } from "./worlds";
 import "./style.css";
+import { mountGame, renderGameScreen } from "./game";
 
 const $ = <T extends HTMLElement>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -144,9 +145,9 @@ async function handleAction(action: string, id?: string): Promise<void> {
   switch (action) {
     case "home": showScreen("home"); break;
     case "worlds": showScreen("worlds"); await refreshWorlds(); break;
-    case "hangar": showScreen("hangar"); break;
-    case "flight": showScreen("flight"); break;
-    case "tracking": showScreen("tracking"); break;
+    case "hangar": showScreen("hangar"); renderGameScreen("hangar"); break;
+    case "flight": showScreen("flight"); renderGameScreen("flight"); break;
+    case "tracking": showScreen("tracking"); renderGameScreen("tracking"); break;
     case "settings": showScreen("settings"); break;
     case "new-world": {
       const dialog = $("#new-world-dialog") as HTMLDialogElement;
@@ -262,6 +263,7 @@ async function initialize(): Promise<void> {
     $("#storage-status").textContent = "UNAVAILABLE";
     toast("Local world storage could not be initialized. Check browser settings.", "error");
   }
+  mountGame({ getWorld: () => activeWorld, setWorld: (world) => { activeWorld = world; setActiveWorldId(world.id); updateActiveWorldCard(); void refreshWorlds(); }, toast });
   initializeScene();
 }
 
