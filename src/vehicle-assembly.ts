@@ -30,8 +30,8 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     const yBottom=kind==="capsule"?-.405:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:-hy;
     // Curved side grids sit on the circular/conical silhouette, never on the
     // empty corners of a rectangular bounding box.
-    for(let a=0;a<8;a++)for(let row=0;row<9;row++){
-      const angle=2*Math.PI*a/8,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
+    for(let a=0;a<9;a++)for(let row=0;row<9;row++){
+      const angle=2*Math.PI*a/9,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
       let radius=bottom+(top-bottom)*(v+1)/2;
       if(kind==="capsule"&&y>.23)radius=Math.max(.015,.43*(1-(y-.23)/.52));
       if(kind==="engine")radius=.43+(.19-.43)*(y-yBottom)/(yTop-yBottom);
@@ -72,10 +72,16 @@ export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:stri
  const pn=attachmentNodes(parent.kind,parent),cn=attachmentNodes(childKind,childPart);
  let best:AttachmentPlacement|null=null,bestScore=Infinity;
  for(const p of pn){if(reservedParentNodes.includes(p.id))continue;const pd=rotateY(p.direction,parent.ry??0),po=rotateY(p.position,parent.ry??0);
-  for(const c of cn){if(p.attachmentClass!==c.attachmentClass)continue;const cd=rotateY(c.direction,rotationY);if(!opposite(pd,cd))continue;const co=rotateY(c.position,rotationY);
+  for(const c of cn){if(p.attachmentClass!==c.attachmentClass)continue;
+   let resolvedRotation=rotationY,cd=rotateY(c.direction,resolvedRotation);
+   if(!opposite(pd,cd)&&p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6){
+    resolvedRotation=Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0]);
+    cd=rotateY(c.direction,resolvedRotation);
+   }
+   if(!opposite(pd,cd))continue;const co=rotateY(c.position,resolvedRotation);
    const x=(parent.x??0)+po[0]-co[0],y=(parent.y??0)+po[1]-co[1],z=(parent.z??0)+po[2]-co[2];
    const score=(p.attachmentClass==="stack"?-100000:0)+(Math.abs(x-(parent.x??0))+Math.abs(z-(parent.z??0)))*.001;
-   if(score<bestScore){bestScore=score;best={x,y,z,parentId,parentNode:p.id,childNode:c.id,rotationY};}
+   if(score<bestScore){bestScore=score;best={x,y,z,parentId,parentNode:p.id,childNode:c.id,rotationY:resolvedRotation};}
   }
  }
  return best;
