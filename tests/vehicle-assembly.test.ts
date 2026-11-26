@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAttach, findAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
+import { canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("vehicle attachment system", () => {
@@ -35,6 +35,29 @@ describe("vehicle attachment system", () => {
     expect(placements.map(p => [Number(p?.x?.toFixed(2)), Number(p?.z?.toFixed(2))])).toEqual([
       [0.46, 0], [0, -0.46], [-0.46, 0], [0, 0.46]
     ]);
+  });
+
+
+  it("automatically finds the next free attachment node", () => {
+    const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
+    const first = findAvailableAttachmentPlacement(parts, "wing", "tank");
+    expect(first).not.toBeNull();
+    parts.push({ id: "wing-a", kind: "wing", parentId: first!.parentId, parentNode: first!.parentNode, childNode: first!.childNode, x: first!.x, y: first!.y, z: first!.z });
+    const second = findAvailableAttachmentPlacement(parts, "wing", "tank");
+    expect(second).not.toBeNull();
+    expect(second?.parentNode).not.toBe(first?.parentNode);
+    expect(second?.rotationY).not.toBe(first?.rotationY);
+  });
+
+  it("places a stack part above the highest available stack node", () => {
+    const parts: BuildPart[] = [
+      { id: "pod", kind: "capsule", x: 0, y: 2, z: 0 },
+      { id: "tank-a", kind: "tank", x: 0, y: 2.8, z: 0, parentId: "pod", parentNode: "stack-top", childNode: "stack-bottom" }
+    ];
+    const placement = findAvailableAttachmentPlacement(parts, "tank", "tank-a");
+    expect(placement?.parentId).toBe("tank-a");
+    expect(placement?.parentNode).toBe("stack-top");
+    expect(placement?.y).toBeCloseTo(3.9);
   });
 
   it("rejects an engine attached to an engine", () => {
