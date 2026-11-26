@@ -25,7 +25,7 @@
             <h1>THE NEXT<br /><em>FRONTIER</em><span class="title-period">.</span></h1>
             <p class="hero-description">Design your vehicle. Master the flight. Explore an entire solar system.</p>
             <div class="hero-actions">
-              <button class="primary-button" data-action="continue">CONTINUE FLIGHT <span>↗</span></button>
+              <button class="primary-button" data-action="worlds">SELECT WORLD <span>↗</span></button>
               <button class="secondary-button" data-action="worlds">WORLD SELECT</button>
             </div>
             <div class="hero-meta"><span>01 / BUILD</span><i></i><span>02 / LAUNCH</span><i></i><span>03 / EXPLORE</span></div>
@@ -41,6 +41,17 @@
             <div class="system-row"><span>WORLD FORMAT</span><b>SPAZE / 1</b></div>
           </aside>
           <div class="home-bottom-note"><span>SPACEZDESIGNS</span><span>INDEPENDENT SPACE PROGRAM</span><span>EST. 2026</span></div>
+        </section>
+        <section class="world-session-screen screen" id="world-screen">
+          <div class="world-session-top"><button class="text-button" data-action="leave-world">← BACK TO HOME</button><span class="panel-kicker">ACTIVE WORLD / SPACE CENTER</span></div>
+          <div class="world-session-hero"><p class="eyebrow"><span class="eyebrow-line"></span> WORLD SELECTED</p><h2 id="selected-world-name">WORLD</h2><p class="section-subtitle">Choose what you want to do in this campaign.</p>
+            <div class="world-session-actions">
+              <button class="world-action-card primary-world-action" data-action="build"><span class="world-action-icon">⌁</span><strong>BUILD</strong><small>Open the vehicle assembly building</small></button>
+              <button class="world-action-card" data-action="continue"><span class="world-action-icon">↗</span><strong>CONTINUE GAME</strong><small>Return to your saved vehicle and flight</small></button>
+              <button class="world-action-card" data-action="tracking"><span class="world-action-icon">◎</span><strong>TRACKING STATION</strong><small>View destinations and navigation</small></button>
+            </div>
+            <div class="world-session-footer"><button class="secondary-button compact" data-action="export-active-world">EXPORT WORLD .SPAZE</button><button class="text-button" data-action="leave-world">EXIT TO HOME MENU</button></div>
+          </div>
         </section>
         <section class="screen content-screen" id="worlds-screen">
           <div class="section-heading">
@@ -69,11 +80,9 @@
         </section>
       </main>
       <nav class="bottom-nav" aria-label="Main navigation">
-        <button class="nav-item selected" data-view="home"><span>⌂</span> COMMAND</button>
+        <button class="nav-item selected" data-view="home"><span>⌂</span> HOME</button>
         <button class="nav-item" data-view="worlds"><span>▤</span> WORLDS</button>
-        <button class="nav-item" data-view="hangar"><span>⌁</span> HANGAR</button>
-        <button class="nav-item" data-view="flight"><span>⌖</span> FLIGHT</button>
-        <button class="nav-item" data-view="tracking"><span>◎</span> TRACKING</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> SETTINGS</button>
       </nav>
       <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
       <dialog id="new-world-dialog" class="modal">

@@ -56,19 +56,45 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const uid=()=>`part-${Math.random().toString(36).slice(2,10)}`;
  const spec=(kind:PartKind)=>parts.find(p=>p.kind===kind)!;
  function makeMesh(p:BuildPart){
-  const s=spec(p.kind),mat=new THREE.MeshStandardMaterial({color:s.color,roughness:.68,metalness:.16,flatShading:true});
+  const s=spec(p.kind),mat=new THREE.MeshStandardMaterial({color:s.color,roughness:.48,metalness:.24,flatShading:false,side:THREE.DoubleSide});
   const g=new THREE.Group();g.userData.partId=p.id;
   const add=(geo:THREE.BufferGeometry,m=mat,pos:THREE.Vector3=new THREE.Vector3())=>{const mesh=new THREE.Mesh(geo,m);mesh.position.copy(pos);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;};
-  if(p.kind==="capsule"){add(new THREE.CylinderGeometry(.43,.5,.62,8),mat,new THREE.Vector3(0,-.08,0));add(new THREE.ConeGeometry(.43,.52,8),mat,new THREE.Vector3(0,.49,0));add(new THREE.SphereGeometry(.13,8,6),new THREE.MeshStandardMaterial({color:0x49b8d0,metalness:.45}),new THREE.Vector3(0,.05,.43));}
-  else if(p.kind==="tank"){add(new THREE.CylinderGeometry(.44,.44,1.05,10));add(new THREE.TorusGeometry(.44,.035,5,10),new THREE.MeshStandardMaterial({color:0x64798b,metalness:.45}),new THREE.Vector3(0,.48,0));}
-  else if(p.kind==="engine"){add(new THREE.CylinderGeometry(.2,.45,.65,9,1,true));add(new THREE.CylinderGeometry(.16,.2,.22,9),new THREE.MeshStandardMaterial({color:0x566b7b,metalness:.7}),new THREE.Vector3(0,-.4,0));}
-  else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.18,10));add(new THREE.TorusGeometry(.5,.035,5,12),new THREE.MeshStandardMaterial({color:0xffd77c}),new THREE.Vector3(0,.08,0));}
+  if(p.kind==="capsule"){
+   const shell=new THREE.MeshStandardMaterial({color:0xe2e9ed,roughness:.34,metalness:.42});
+   const dark=new THREE.MeshStandardMaterial({color:0x435b6c,roughness:.28,metalness:.55});
+   const glass=new THREE.MeshStandardMaterial({color:0x4bb6d4,roughness:.18,metalness:.58});
+   add(new THREE.CylinderGeometry(.43,.49,.62,32,3,false),shell,new THREE.Vector3(0,-.08,0));
+   add(new THREE.ConeGeometry(.43,.52,32,3,false),new THREE.MeshStandardMaterial({color:0xcbd7df,roughness:.3,metalness:.38}),new THREE.Vector3(0,.49,0));
+   add(new THREE.TorusGeometry(.445,.035,10,32),dark,new THREE.Vector3(0,.19,0));
+   add(new THREE.SphereGeometry(.135,24,16),glass,new THREE.Vector3(0,.02,.425));
+   add(new THREE.TorusGeometry(.14,.025,8,24),dark,new THREE.Vector3(0,.02,.425));
+   add(new THREE.CylinderGeometry(.49,.49,.08,32),dark,new THREE.Vector3(0,-.405,0));
+  }
+  else if(p.kind==="tank"){
+   const alloy=new THREE.MeshStandardMaterial({color:0xc5d0d8,roughness:.4,metalness:.38});
+   const seam=new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.36,metalness:.68});
+   add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),alloy);
+   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),alloy,new THREE.Vector3(0,.48,0));
+   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),alloy,new THREE.Vector3(0,-.48,0));
+   for(const y of [-.32,.32])add(new THREE.TorusGeometry(.442,.018,8,40),seam,new THREE.Vector3(0,y,0));
+   add(new THREE.CylinderGeometry(.445,.445,.055,40),seam,new THREE.Vector3(0,.49,0));
+  }
+  else if(p.kind==="engine"){
+   const hot=new THREE.MeshStandardMaterial({color:0x8c9ba4,roughness:.32,metalness:.78});
+   const bell=new THREE.MeshStandardMaterial({color:0xd28a4f,roughness:.34,metalness:.68,side:THREE.DoubleSide});
+   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),bell,new THREE.Vector3(0,-.02,0));
+   add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),hot,new THREE.Vector3(0,.38,0));
+   add(new THREE.CylinderGeometry(.16,.16,.08,32),new THREE.MeshStandardMaterial({color:0x263744,metalness:.5}),new THREE.Vector3(0,-.39,0));
+   add(new THREE.TorusGeometry(.425,.035,10,40),hot,new THREE.Vector3(0,-.35,0));
+   add(new THREE.TorusGeometry(.205,.022,8,32),hot,new THREE.Vector3(0,.31,0));
+  }
+  else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
   else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){const geo=new THREE.BoxGeometry(s.size.x,s.size.y,s.size.z);add(geo);if(p.kind==="fin"){const fin=add(new THREE.BoxGeometry(.12,.72,.55));fin.position.set(.42,-.18,0);fin.rotation.z=-.22;}if(p.kind==="wing"){const tip=add(new THREE.BoxGeometry(.22,.12,.22));tip.position.x=.84;}}
   else if(p.kind==="solar"){add(new THREE.BoxGeometry(.14,.08,.18));for(const side of [-1,1]){const panel=add(new THREE.BoxGeometry(.82,.035,.65),new THREE.MeshStandardMaterial({color:0x2678a5,metalness:.55,roughness:.35}));panel.position.set(side*.48,0,0);}}
   else if(p.kind==="wheel"){const leg=add(new THREE.CylinderGeometry(.055,.07,.72,6));leg.position.y=.12;leg.rotation.z=-.22;const wheel=add(new THREE.CylinderGeometry(.2,.2,.12,10),new THREE.MeshStandardMaterial({color:0x273542,roughness:.9}));wheel.position.set(.18,-.28,0);wheel.rotation.z=Math.PI/2;}
-  else if(p.kind==="dock"){add(new THREE.CylinderGeometry(.22,.28,.22,10));add(new THREE.TorusGeometry(.22,.045,6,12),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.65}),new THREE.Vector3(0,.13,0));}
-  else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58));}
-  else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.3,.22,.3));for(let i=0;i<4;i++){const nozzle=add(new THREE.CylinderGeometry(.045,.09,.18,6),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.6}));nozzle.rotation.z=Math.PI/2;nozzle.position.set(i%2?-.19:.19,0,i<2?-.12:.12);}}
+  else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
+  else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
+  else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,20,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.rotation.z=Math.PI/2;nozzle.position.set(i%2?-.22:.22,0,i<2?-.14:.14);}}
   else if(p.kind==="strut"){add(new THREE.BoxGeometry(.1,1,.1));}
   g.position.set(p.x??0,p.y??(craft.length*.6),p.z??0);g.rotation.set(p.rx??0,p.ry??0,p.rz??0);
   return g;
