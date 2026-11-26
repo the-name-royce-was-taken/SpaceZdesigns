@@ -26,12 +26,12 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     return out;
   }
   const faces=[
-    {id:"east",p:(u:number,v:number):[number,number,number)=>[hx,u*hy,v*hz],d:[1,0,0] as const},
-    {id:"west",p:(u:number,v:number):[number,number,number)=>[-hx,u*hy,v*hz],d:[-1,0,0] as const},
-    {id:"north",p:(u:number,v:number):[number,number,number)=>[u*hx,v*hy,hz],d:[0,0,1] as const},
-    {id:"south",p:(u:number,v:number):[number,number,number)=>[u*hx,v*hy,-hz],d:[0,0,-1] as const},
-    {id:"top",p:(u:number,v:number):[number,number,number)=>[u*hx,hy,v*hz],d:[0,1,0] as const},
-    {id:"bottom",p:(u:number,v:number):[number,number,number)=>[u*hx,-hy,v*hz],d:[0,-1,0] as const}
+    {id:"east",p:(u:number,v:number)=>[number,number,number][hx,u*hy,v*hz],d:[1,0,0] as const},
+    {id:"west",p:(u:number,v:number)=>[number,number,number][-hx,u*hy,v*hz],d:[-1,0,0] as const},
+    {id:"north",p:(u:number,v:number)=>[number,number,number][u*hx,v*hy,hz],d:[0,0,1] as const},
+    {id:"south",p:(u:number,v:number)=>[number,number,number][u*hx,v*hy,-hz],d:[0,0,-1] as const},
+    {id:"top",p:(u:number,v:number)=>[number,number,number][u*hx,hy,v*hz],d:[0,1,0] as const},
+    {id:"bottom",p:(u:number,v:number)=>[number,number,number][u*hx,-hy,v*hz],d:[0,-1,0] as const}
   ];
   for(const face of faces)for(let row=0;row<9;row++)for(let col=0;col<9;col++)out.push(node(`surface-${face.id}-r${row}-c${col}`,"surface",face.p(values[col]!,values[row]!),face.d));
   return out;
