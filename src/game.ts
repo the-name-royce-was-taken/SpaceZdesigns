@@ -6,7 +6,8 @@ const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar
 type Craft={name:string;parts:BuildPart[]};
 type SavedFlight={kind:"spacez-flight-save";craftName:string;state:FlightState;vehicle:VehiclePhysics;throttle:number;pitch:number;savedAt:string};
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>void;toast:(m:string,k?:"success"|"error")=>void}
-let host:Host,craft:Craft={name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]},target="Earth";
+const starterParts=():BuildPart[]=>[{kind:"capsule",x:0,y:1.885,z:0},{kind:"tank",x:0,y:.96,z:0,topRadius:.44,bottomRadius:.44,height:.96},{kind:"engine",x:0,y:0,z:0}];
+let host:Host,craft:Craft={name:"Pioneer I",parts:starterParts()},target="Earth";
 let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
@@ -16,7 +17,7 @@ function metrics(){const a=specs();return{mass:a.reduce((n,p)=>n+p.mass,0),fuel:
 function save(){const w=world();if(!w)return;const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);list.push(structuredClone(craft));w.state.craft=list;w.updatedAt=new Date().toISOString();host.setWorld(w)}
 function persistFlight(throttle:number,pitch:number){const w=world();if(!w||!sim)return;const saves=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));saves.push({kind:"spacez-flight-save",craftName:craft.name,state:structuredClone(sim.state),vehicle:structuredClone(sim.vehicle),throttle,pitch,savedAt:new Date().toISOString()} satisfies SavedFlight);w.state.missions=saves;w.updatedAt=new Date().toISOString();host.setWorld(w)}
 function clearFlightSave(){const w=world();if(!w)return;w.state.missions=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));w.updatedAt=new Date().toISOString();host.setWorld(w)}
-function load(){const a=(world()?.state.craft??[]) as Craft[];craft=a.length?structuredClone(a[0]):{name:"Pioneer I",parts:[{kind:"capsule"},{kind:"tank"},{kind:"engine"}]};}
+function load(){const a=(world()?.state.craft??[]) as Craft[];craft=a.length?structuredClone(a[0]):{name:"Pioneer I",parts:starterParts()};if(craft.parts.every(p=>p.y===undefined)){if(craft.parts.length===3&&craft.parts[0]?.kind==="capsule"&&craft.parts[1]?.kind==="tank"&&craft.parts[2]?.kind==="engine"){craft.parts[0]!.y=1.885;craft.parts[1]!.y=.96;craft.parts[2]!.y=0;}else craft.parts.forEach((p,i)=>p.y=(craft.parts.length-1-i)*.96);}}
 function nav(v:string){document.querySelector<HTMLElement>(`#world-screen [data-action="${v}"]`)?.click()}
 export function renderGameScreen(name:string){if(name!=="hangar"){builder?.dispose();builder=null}if(name!=="flight"){if(sim&&!sim.state.landed&&!sim.state.crashed)persistFlight(currentThrottle,currentPitch);disposeFlightScene();}if(name==="home"||name==="worlds"||name==="settings")return;if(!world()){host.toast("Create or load a world first.","error");return}if(name==="hangar"){load();hangar()}if(name==="flight"){load();launchpad()}if(name==="tracking")tracking()}
 function hangar(){
@@ -38,16 +39,21 @@ function makeRocket():THREE.Group{
  const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh};
  craft.parts.forEach((p,i)=>{
-  const y=p.y??(craft.parts.length-1-i)*1.05;
+  const y=p.y??(craft.parts.length===3&&craft.parts[0]?.kind==="capsule"&&craft.parts[1]?.kind==="tank"&&craft.parts[2]?.kind==="engine"?([1.885,.96,0][i]??0):(craft.parts.length-1-i)*.96);
   if(p.kind==="capsule"){
    add(new THREE.CylinderGeometry(.43,.49,.62,32,3,false),mat(0xe1e9ef,.4),p.x??0,y-.08,p.z??0);
    add(new THREE.ConeGeometry(.43,.52,32,3,false),mat(0xc7d4de,.36),p.x??0,y+.49,p.z??0);
    add(new THREE.SphereGeometry(.13,24,16),mat(0x45b6d5,.62),p.x??0,y+.02,(p.z??0)+.425);
   }else if(p.kind==="tank"){
-   add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
-   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y+.48,p.z??0);
-   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y-.48,p.z??0);
-   for(const band of [-.32,.32]){const ring=add(new THREE.TorusGeometry(.445,.018,8,40),mat(0x536b7d,.72),p.x??0,y+band,p.z??0);ring.rotation.x=Math.PI/2;}
+   const top=p.topRadius??.44,bottom=p.bottomRadius??.44,height=p.height??.96;
+   add(new THREE.CylinderGeometry(top,bottom,height,40,8,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
+  }else if(p.kind==="nose-cone"||p.kind==="fairing"){
+   const base=p.bottomRadius??.44,height=p.height??(p.kind==="fairing"?1.15:.8);
+   add(p.kind==="nose-cone"?new THREE.ConeGeometry(base,height,40,10):new THREE.CylinderGeometry(.035,base,height,40,10),mat(p.kind==="fairing"?0x9bb6c9:0xd4dfe7,.35),p.x??0,y,p.z??0);
+  }else if(p.kind==="airbrake"){
+   add(new THREE.BoxGeometry(.7,.08,.5),mat(0xb78b68,.55),p.x??0,y,p.z??0);
+  }else if(p.kind==="strake"){
+   add(new THREE.BoxGeometry(.12,.8,.42),mat(0x7898ad,.45),p.x??0,y,p.z??0);
   }else if(p.kind==="side-decoupler"){
    add(new THREE.BoxGeometry(.72,.24,.3),mat(0xe0bd70,.55),p.x??0,y,p.z??0);
    add(new THREE.BoxGeometry(.12,.34,.38),mat(0x5d7483,.65),(p.x??0)+.28,y,p.z??0);
@@ -105,7 +111,8 @@ function launchpad(){
  const engineManifest=craft.parts.filter(p=>p.kind==="engine").map(p=>{const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;return{stage:p.engineStage??0,thrustKN:variant.thrustKN,ispSeconds:variant.ispSeconds};});
  const selectedEngine=craft.parts.find(p=>p.kind==="engine");
  const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
- const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6,engines:engineManifest};
+ const aeroCounts={cones:craft.parts.filter(p=>p.kind==="nose-cone").length,fairings:craft.parts.filter(p=>p.kind==="fairing").length,wings:craft.parts.filter(p=>p.kind==="wing").length,fins:craft.parts.filter(p=>p.kind==="fin").length,controls:craft.parts.filter(p=>p.kind==="control").length,airbrakes:craft.parts.filter(p=>p.kind==="airbrake").length,strakes:craft.parts.filter(p=>p.kind==="strake").length};
+ const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,engines:engineManifest};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);

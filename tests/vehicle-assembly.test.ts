@@ -108,6 +108,23 @@ describe("vehicle attachment system", () => {
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
+  it("moves tank stack connectors when its editable height changes", () => {
+    const short=attachmentNodes("tank",{kind:"tank",height:.6});
+    const tall=attachmentNodes("tank",{kind:"tank",height:1.8});
+    expect(short.find(n=>n.id==="stack-top")?.position[1]).toBeCloseTo(.3);
+    expect(tall.find(n=>n.id==="stack-bottom")?.position[1]).toBeCloseTo(-.9);
+  });
+
+  it("attaches an adjustable nose cone flush to the tank top", () => {
+    const parts:BuildPart[]=[{id:"tank",kind:"tank",x:0,y:1,height:1.4,topRadius:.6,bottomRadius:.4}];
+    const placement=findAttachmentPlacement(parts,"tank","nose-cone");
+    expect(placement?.parentNode).toBe("stack-top");
+    expect(placement?.childNode).toBe("stack-bottom");
+    expect(placement?.y).toBeCloseTo(2.1);
+    const nodes=attachmentNodes("nose-cone",{kind:"nose-cone",height:1.2,bottomRadius:.55});
+    expect(nodes.find(n=>n.id==="stack-bottom")?.position[1]).toBeCloseTo(-.6);
+  });
+
   it("allows engine-to-engine surface attachment", () => {
     const parts: BuildPart[] = [{ id: "engine", kind: "engine" }];
     expect(canAttach(parts, "engine", "engine")).toBe(true);
