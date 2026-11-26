@@ -75,6 +75,9 @@ function makeRocket():THREE.Group{
    add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,p.x??0,y+.44,p.z??0);
    add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,p.x??0,y+.30,p.z??0);
    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,p.x??0,y+.045,p.z??0);
+   // Bridge the throat and chamber transitions so no open seams show through.
+   add(new THREE.CylinderGeometry(.12,.12,.16,12),steel,p.x??0,y-.08,p.z??0);
+   add(new THREE.CylinderGeometry(.16,.145,.12,12),chamber,p.x??0,y+.16,p.z??0);
    const nozzleProfile=[
     new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
     new THREE.Vector2(.27,-.49),new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),
