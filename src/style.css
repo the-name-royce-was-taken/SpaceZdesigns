@@ -275,3 +275,5 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 #vehicle-3d-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:pan-y}
 #vehicle-3d-canvas:focus-visible{outline:1px solid var(--cyan);outline-offset:-3px}
 #next-stage:disabled{opacity:.45;cursor:not-allowed}
+
+.vab-snap-status{display:inline-flex;align-items:center;min-height:30px;padding:0 9px;border:1px solid rgba(126,215,233,.25);color:#8fd7e5;background:rgba(19,54,70,.35);font:8px var(--mono);letter-spacing:.08em}.vab-stage-summary{white-space:normal}
