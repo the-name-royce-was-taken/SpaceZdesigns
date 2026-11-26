@@ -171,8 +171,8 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const bell=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.32,metalness:.72,side:THREE.DoubleSide});
    const dark=new THREE.MeshStandardMaterial({color:0x263744,roughness:.45,metalness:.68});
    // Mounting flange and compact combustion chamber sit above the nozzle.
-   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.34,0));
-   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.205,0));
+   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.44,0));
+   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.30,0));
    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
    // Thin-walled, bell-shaped converging/diverging nozzle; no solid plug below it.
    const nozzleProfile=[
