@@ -17,14 +17,35 @@ const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],
 const values=Array.from({length:9},(_,i)=>-1+2*i/8);
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   const [sx,sy,sz]=dims[kind],hx=sx/2,hy=sy/2,hz=sz/2,out:AttachmentNode[]=[];
-  if(kind==="tank"){
-    const top=Math.max(.08,Math.min(.9,part?.topRadius??.44)),bottom=Math.max(.08,Math.min(.9,part?.bottomRadius??.44));
-    // Nine angular columns by nine height rows follow the actual tapered cylindrical wall.
-    for(let a=0;a<9;a++)for(let y=0;y<9;y++){const angle=2*Math.PI*a/9,fy=values[y]!,radius=bottom+(top-bottom)*(fy+1)/2;out.push(node(`surface-wall-a${a}-y${y}`,"surface",[Math.cos(angle)*radius,fy*hy,Math.sin(angle)*radius],[Math.cos(angle),0,Math.sin(angle)]));}
-    // 9×9 points on each circular end cap, clipped to the actual disk.
-    for(const [face,yy,dir] of [["top",hy,[0,1,0]],["bottom",-hy,[0,-1,0]]] as const)for(let x=0;x<9;x++)for(let z=0;z<9;z++){const fx=values[x]!,fz=values[z]!,length=Math.hypot(fx,fz),scale=length>1?1/length:1;const radius=face==="top"?top:bottom;out.push(node(`surface-${face}-x${x}-z${z}`,"surface",[fx*scale*radius,yy,fz*scale*radius],dir));}
+  const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
+    for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
+  };
+  const disk=(face:"top"|"bottom",radius:number,y:number,dy:number)=>{
+    addGrid(face,(u,v)=>{const l=Math.hypot(u,v),s=l>1?1/l:1;return [u*s*radius,y,v*s*radius];},()=>[0,dy,0],(u,v)=>Math.hypot(u,v)<=1+1e-8);
+  };
+  if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="capsule"){
+    const top=kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:.43;
+    const bottom=kind==="tank"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:.49;
+    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:hy;
+    const yBottom=kind==="capsule"?-.405:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:-hy;
+    // Curved side grids sit on the circular/conical silhouette, never on the
+    // empty corners of a rectangular bounding box.
+    for(let a=0;a<8;a++)for(let row=0;row<9;row++){
+      const angle=2*Math.PI*a/8,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
+      let radius=bottom+(top-bottom)*(v+1)/2;
+      if(kind==="capsule"&&y>.23)radius=Math.max(.015,.43*(1-(y-.23)/.52));
+      if(kind==="engine")radius=.43+(.19-.43)*(y-yBottom)/(yTop-yBottom);
+      out.push(node(`surface-wall-a${a}-y${row}`,"surface",[Math.cos(angle)*radius,y,Math.sin(angle)*radius],[Math.cos(angle),0,Math.sin(angle)]));
+    }
+    if(kind==="tank"){disk("top",top,hy,1);disk("bottom",bottom,-hy,-1);}
+    else if(kind==="capsule")disk("bottom",.49,-.405,-1);
+    else if(kind==="separator"){disk("top",.5,hy,1);disk("bottom",.5,-hy,-1);}
+    else if(kind==="dock"){disk("top",.22,.13,1);disk("bottom",.28,-.11,-1);}
+    else if(kind==="wheel"){disk("top",.2,.425,1);disk("bottom",.2,-.425,-1);}
+    else if(kind==="engine")disk("top",.19,.31,1);
     return out;
   }
+  // Box-like parts use a 9×9 grid on each real outer face.
   const faces=[
     {id:"east",p:(u:number,v:number):[number,number,number]=>[hx,u*hy,v*hz],d:[1,0,0] as const},
     {id:"west",p:(u:number,v:number):[number,number,number]=>[-hx,u*hy,v*hz],d:[-1,0,0] as const},
@@ -33,17 +54,16 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     {id:"top",p:(u:number,v:number):[number,number,number]=>[u*hx,hy,v*hz],d:[0,1,0] as const},
     {id:"bottom",p:(u:number,v:number):[number,number,number]=>[u*hx,-hy,v*hz],d:[0,-1,0] as const}
   ];
-  for(const face of faces)for(let row=0;row<9;row++)for(let col=0;col<9;col++)out.push(node(`surface-${face.id}-r${row}-c${col}`,"surface",face.p(values[col]!,values[row]!),face.d));
+  for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
   return out;
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="fuel-line")return [];
-  const hy=dims[kind][1]/2;
   const stack:AttachmentNode[]=[];
   if(kind==="capsule")stack.push(node("stack-top","stack",[0,.75,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
-  if(kind==="tank")stack.push(node("stack-top","stack",[0,hy,0],[0,1,0]),node("stack-bottom","stack",[0,-hy,0],[0,-1,0]),node("engine-mount-east","stack",[.9,-hy,0],[0,-1,0]),node("engine-mount-west","stack",[-.9,-hy,0],[0,-1,0]),node("engine-mount-north","stack",[0,-hy,.9],[0,-1,0]),node("engine-mount-south","stack",[0,-hy,-.9],[0,-1,0]));
-  if(kind==="engine")stack.push(node("stack-top","stack",[0,.4,0],[0,1,0]));
-  if(kind==="separator")stack.push(node("stack-top","stack",[0,.11,0],[0,1,0]),node("stack-bottom","stack",[0,-.11,0],[0,-1,0]));
+  if(kind==="tank")stack.push(node("stack-top","stack",[0,.48,0],[0,1,0]),node("stack-bottom","stack",[0,-.48,0],[0,-1,0]),node("engine-mount-east","stack",[.9,-.48,0],[0,-1,0]),node("engine-mount-west","stack",[-.9,-.48,0],[0,-1,0]),node("engine-mount-north","stack",[0,-.48,.9],[0,-1,0]),node("engine-mount-south","stack",[0,-.48,-.9],[0,-1,0]));
+  if(kind==="engine")stack.push(node("stack-top","stack",[0,.48,0],[0,1,0]));
+  if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
   return [...stack,...surfaceNodes(kind,part)];
 }

@@ -9,7 +9,7 @@ describe("vehicle attachment system", () => {
     expect(placement).not.toBeNull();
     expect(placement?.parentNode).toBe("stack-top");
     expect(placement?.childNode).toBe("stack-bottom");
-    expect(placement?.y).toBeCloseTo(3.3);
+    expect(placement?.y).toBeCloseTo(3.23);
   });
 
   it("places an engine below a tank", () => {
@@ -17,7 +17,7 @@ describe("vehicle attachment system", () => {
     const placement = findAttachmentPlacement(parts, "tank", "engine");
     expect(placement?.parentNode).toBe("stack-bottom");
     expect(placement?.childNode).toBe("stack-top");
-    expect(placement?.y).toBeCloseTo(0.05);
+    expect(placement?.y).toBeCloseTo(0.04);
   });
 
   it("allows every structural part to surface-snap to every other structural part", () => {
@@ -40,18 +40,20 @@ describe("vehicle attachment system", () => {
   it("provides a dense 9 by 9 surface grid on the tank wall and end caps", () => {
     const nodes=attachmentNodes("tank");
     const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
-    expect(wall).toHaveLength(81);
+    expect(wall).toHaveLength(72);
     expect(new Set(wall.map(n=>n.position[1])).size).toBe(9);
-    expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBe(9);
-    expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(81);
-    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(81);
+    expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBe(8);
+    expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(49);
+    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(49);
   });
 
   it("shapes tank snap nodes to its top and bottom radius settings", () => {
     const nodes=attachmentNodes("tank",{kind:"tank",topRadius:.7,bottomRadius:.2});
     const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
     const bottom=nodes.filter(n=>n.id.startsWith("surface-bottom-"));
+    expect(top.length).toBe(49);
     expect(Math.max(...top.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.7);
+    expect(bottom.length).toBe(49);
     expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeCloseTo(.2);
     const upperWall=nodes.find(n=>n.id==="surface-wall-a0-y8");
     const lowerWall=nodes.find(n=>n.id==="surface-wall-a0-y0");
@@ -80,7 +82,7 @@ describe("vehicle attachment system", () => {
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank-a");
     expect(placement?.parentId).toBe("tank-a");
     expect(placement?.parentNode).toBe("stack-top");
-    expect(placement?.y).toBeCloseTo(3.9);
+    expect(placement?.y).toBeCloseTo(3.76);
   });
 
   it("provides separate underside attachment points for a five-engine cluster", () => {
