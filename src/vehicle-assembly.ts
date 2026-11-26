@@ -32,7 +32,7 @@ export function attachmentNodes(kind: PartKind): AttachmentNode[] {
     case "capsule":
       return [node("stack-top", "stack", [0, 0.75, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.5, 0], [0, -1, 0]), ...radialSurfaceNodes(0.42, 0)];
     case "tank":
-      return [node("stack-top", "stack", [0, 0.55, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.55, 0], [0, -1, 0]), ...radialSurfaceNodes(0.46, 0)];
+      return [node("stack-top", "stack", [0, 0.55, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.55, 0], [0, -1, 0]), node("engine-mount-east", "stack", [0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-west", "stack", [-0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-north", "stack", [0, -0.55, 0.9], [0, -1, 0]), node("engine-mount-south", "stack", [0, -0.55, -0.9], [0, -1, 0]), ...radialSurfaceNodes(0.46, 0)];
     case "engine":
       return [node("stack-top", "stack", [0, 0.4, 0], [0, 1, 0])];
     case "separator":
@@ -136,6 +136,33 @@ export function findAvailableAttachmentPlacement(
     }
   }
   return null;
+}
+
+export function findNearestAttachmentPlacement(
+  parts: readonly BuildPart[],
+  childKind: PartKind,
+  position: readonly [number, number, number],
+  maxDistance = 0.8
+): AttachmentPlacement | null {
+  const occupied = new Map<string, string[]>();
+  for (const part of parts) {
+    if (!part.parentId || !part.parentNode) continue;
+    const list = occupied.get(part.parentId) ?? [];
+    list.push(part.parentNode);
+    occupied.set(part.parentId, list);
+  }
+  let best: AttachmentPlacement | null = null;
+  let bestDistance = maxDistance;
+  for (const parent of parts) {
+    if (!parent.id) continue;
+    for (const rotation of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+      const placement = findAttachmentPlacement(parts, parent.id, childKind, rotation, occupied.get(parent.id) ?? []);
+      if (!placement) continue;
+      const distance = Math.hypot(placement.x - position[0], placement.y - position[1], placement.z - position[2]);
+      if (distance < bestDistance) { best = placement; bestDistance = distance; }
+    }
+  }
+  return best;
 }
 
 export function validateAssembly(parts: readonly BuildPart[]): AssemblyIssue[] {
