@@ -62,16 +62,22 @@ function radialSurfaceNodes(radius: number, halfHeight: number): AttachmentNode[
   // Nine snap points per radial face: the centres of a 3×3 set of equal
   // surface sections. Keep the original centre IDs so existing saved builds
   // with surface attachments continue to resolve.
-  const thirds = [0, -2 / 3, 2 / 3];
+  const thirds = [
+    { offset: 0, index: 1 },
+    { offset: -2 / 3, index: 0 },
+    { offset: 2 / 3, index: 2 }
+  ];
   const faces = [
     { id: "east", direction: [1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [radius, y, tangent] },
     { id: "west", direction: [-1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [-radius, y, tangent] },
     { id: "north", direction: [0, 0, 1] as const, point: (y: number, tangent: number): readonly [number, number, number] => [tangent, y, radius] },
     { id: "south", direction: [0, 0, -1] as const, point: (y: number, tangent: number): readonly [number, number, number] => [tangent, y, -radius] }
   ];
-  return faces.flatMap(face => thirds.flatMap((vertical, row) => thirds.map((across, column) => {
-    const id = row === 1 && column === 1 ? `surface-${face.id}` : `surface-${face.id}-y${row}-t${column}`;
-    return node(id, "surface", face.point(vertical * halfHeight, across * radius), face.direction);
+  return faces.flatMap(face => thirds.flatMap(vertical => thirds.map(across => {
+    const id = vertical.index === 1 && across.index === 1
+      ? `surface-${face.id}`
+      : `surface-${face.id}-y${vertical.index}-t${across.index}`;
+    return node(id, "surface", face.point(vertical.offset * halfHeight, across.offset * radius), face.direction);
   })));
 }
 
