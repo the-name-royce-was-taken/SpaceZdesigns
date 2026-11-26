@@ -185,7 +185,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const throatBand=add(new THREE.TorusGeometry(.14,.018,6,12),steel,new THREE.Vector3(0,-.19,0));throatBand.rotation.x=Math.PI/2;
    const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,new THREE.Vector3(0,-.67,0));exitLip.rotation.x=Math.PI/2;
    // Four exposed support struts make the chamber-to-mount transition readable at low poly.
-   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.235,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.34,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
    add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
   }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
