@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
+import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("vehicle attachment system", () => {
@@ -38,6 +38,15 @@ describe("vehicle attachment system", () => {
   });
 
 
+  it("provides nine surface snap points per tank side including the exact centre", () => {
+    const east = attachmentNodes("tank").filter(node => node.id.startsWith("surface-east"));
+    expect(east).toHaveLength(9);
+    const centre = east.find(node => node.id === "surface-east");
+    expect(centre?.position).toEqual([0.46, 0, 0]);
+    expect(new Set(east.map(node => node.position[1])).size).toBe(3);
+    expect(new Set(east.map(node => node.position[2])).size).toBe(3);
+  });
+
   it("automatically finds the next free attachment node", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
     const first = findAvailableAttachmentPlacement(parts, "wing", "tank");
@@ -46,7 +55,9 @@ describe("vehicle attachment system", () => {
     const second = findAvailableAttachmentPlacement(parts, "wing", "tank");
     expect(second).not.toBeNull();
     expect(second?.parentNode).not.toBe(first?.parentNode);
-    expect(second?.rotationY).not.toBe(first?.rotationY);
+    // The 3×3 surface layout intentionally fills neighbouring sections on
+    // the same face before moving to another face.
+    expect(second?.rotationY).toBe(first?.rotationY);
   });
 
   it("places a stack part above the highest available stack node", () => {
