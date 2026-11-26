@@ -20,10 +20,11 @@ describe("vehicle attachment system", () => {
     expect(placement?.y).toBeCloseTo(0.05);
   });
 
-  it("allows surface-mounted parts on a tank", () => {
+  it("allows every structural part to surface-snap to every other structural part", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
     expect(canAttach(parts, "tank", "wing")).toBe(true);
-    expect(findAttachmentPlacement(parts, "tank", "wing")?.parentNode).toBe("surface-east");
+    expect(findAttachmentPlacement(parts, "tank", "wing")?.parentNode).toMatch(/^surface-/);
+    expect(canAttach([{id:"engine",kind:"engine"}],"engine","engine")).toBe(true);
   });
 
   it("supports four-way radial surface symmetry without overlapping nodes", () => {
@@ -38,13 +39,26 @@ describe("vehicle attachment system", () => {
   });
 
 
-  it("provides nine surface snap points per tank side including the exact centre", () => {
-    const east = attachmentNodes("tank").filter(node => node.id.startsWith("surface-east"));
-    expect(east).toHaveLength(9);
-    const centre = east.find(node => node.id === "surface-east");
-    expect(centre?.position).toEqual([0.46, 0, 0]);
-    expect(new Set(east.map(node => node.position[1])).size).toBe(3);
-    expect(new Set(east.map(node => node.position[2])).size).toBe(3);
+  it("provides a dense 9 by 9 surface grid on the tank wall and end caps", () => {
+    const nodes=attachmentNodes("tank");
+    const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
+    expect(wall).toHaveLength(81);
+    expect(new Set(wall.map(n=>n.position[1])).size).toBe(9);
+    expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBe(9);
+    expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(49);
+    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(49);
+  });
+
+  it("shapes tank snap nodes to its top and bottom radius settings", () => {
+    const nodes=attachmentNodes("tank",{kind:"tank",topRadius:.7,bottomRadius:.2});
+    const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
+    const bottom=nodes.filter(n=>n.id.startsWith("surface-bottom-"));
+    expect(Math.max(...top.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.7);
+    expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.2);
+    const upperWall=nodes.find(n=>n.id==="surface-wall-a0-y8");
+    const lowerWall=nodes.find(n=>n.id==="surface-wall-a0-y0");
+    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.7);
+    expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
   });
 
   it("automatically finds the next free attachment node", () => {
@@ -93,9 +107,9 @@ describe("vehicle attachment system", () => {
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
-  it("rejects an engine attached to an engine", () => {
+  it("allows engine-to-engine surface attachment", () => {
     const parts: BuildPart[] = [{ id: "engine", kind: "engine" }];
-    expect(canAttach(parts, "engine", "engine")).toBe(false);
+    expect(canAttach(parts, "engine", "engine")).toBe(true);
   });
 
   it("detects missing parents, self-links, duplicate IDs, and cycles", () => {
