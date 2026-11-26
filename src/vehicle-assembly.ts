@@ -62,7 +62,7 @@ function radialSurfaceNodes(radius: number, halfHeight: number): AttachmentNode[
   // Nine snap points per radial face: the centres of a 3×3 set of equal
   // surface sections. Keep the original centre IDs so existing saved builds
   // with surface attachments continue to resolve.
-  const thirds = [-2 / 3, 0, 2 / 3];
+  const thirds = [0, -2 / 3, 2 / 3];
   const faces = [
     { id: "east", direction: [1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [radius, y, tangent] },
     { id: "west", direction: [-1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [-radius, y, tangent] },
