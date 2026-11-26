@@ -38,7 +38,7 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="fuel-line")return [];
-  const [sx,sy,sz]=dims[kind],hx=sx/2,hy=sy/2,hz=sz/2;
+  const hy=dims[kind][1]/2;
   const stack:AttachmentNode[]=[];
   if(kind==="capsule")stack.push(node("stack-top","stack",[0,.75,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
   if(kind==="tank")stack.push(node("stack-top","stack",[0,hy,0],[0,1,0]),node("stack-bottom","stack",[0,-hy,0],[0,-1,0]),node("engine-mount-east","stack",[.9,-hy,0],[0,-1,0]),node("engine-mount-west","stack",[-.9,-hy,0],[0,-1,0]),node("engine-mount-north","stack",[0,-hy,.9],[0,-1,0]),node("engine-mount-south","stack",[0,-hy,-.9],[0,-1,0]));
