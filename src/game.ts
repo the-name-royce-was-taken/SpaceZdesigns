@@ -56,8 +56,9 @@ function makeRocket():THREE.Group{
    add(new THREE.BoxGeometry(.32,.22,.3),mat(0xb6c3cb,.65),p.x??0,y,p.z??0);
    for(const side of [-1,1])add(new THREE.CylinderGeometry(.07,.11,.22,16),mat(0xd88b62,.55),(p.x??0)+side*.2,y,p.z??0);
   }else if(p.kind==="fuel-line"){
-   const points=[new THREE.Vector3((p.x??0)-.36,y,p.z??0),new THREE.Vector3((p.x??0)-.2,y,p.z??0),new THREE.Vector3((p.x??0)-.2,y-.25,p.z??0),new THREE.Vector3((p.x??0)+.2,y-.25,p.z??0),new THREE.Vector3((p.x??0)+.2,y,p.z??0),new THREE.Vector3((p.x??0)+.36,y,p.z??0)];
-   const curve=new THREE.CatmullRomCurve3(points);add(new THREE.TubeGeometry(curve,24,.045,8,false),mat(0x65aeb4,.7),p.x??0,y,p.z??0);
+   const endpoint=(id:string|undefined)=>{if(!id)return null;const index=craft.parts.findIndex(part=>part.id===id&&part.kind==="tank");if(index<0)return null;const tank=craft.parts[index]!;return new THREE.Vector3(tank.x??0,tank.y??(craft.parts.length-1-index)*1.05,tank.z??0);};
+   const start=endpoint(p.fuelLineStartId),end=endpoint(p.fuelLineEndId);
+   if(start&&end){const delta=end.clone().sub(start),direction=delta.clone().normalize();const a=start.clone().add(direction.clone().multiplyScalar(.46)),b=end.clone().sub(direction.clone().multiplyScalar(.46));const mid=a.clone().add(b).multiplyScalar(.5);mid.y-=Math.min(.65,Math.max(.22,delta.length()*.18));const curve=new THREE.CatmullRomCurve3([a,a.clone().lerp(mid,.55),mid,b.clone().lerp(mid,.55),b]);add(new THREE.TubeGeometry(curve,32,.045,8,false),mat(0x65aeb4,.7));}
   }else if(p.kind==="engine"){
    const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
    add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(engine.accent,.72),p.x??0,y-.02,p.z??0);
