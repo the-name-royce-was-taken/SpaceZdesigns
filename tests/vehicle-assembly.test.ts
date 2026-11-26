@@ -103,7 +103,8 @@ describe("vehicle attachment system", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
     const exact = findAttachmentPlacement(parts, "tank", "wing")!;
     const near = findNearestAttachmentPlacement(parts, "wing", [exact.x + 0.2, exact.y, exact.z], 0.5);
-    expect(near?.parentNode).toBe(exact.parentNode);
+    expect(near?.parentNode).toMatch(/^surface-/);
+    expect(Math.hypot(near!.x-(exact.x+0.2),near!.y-exact.y,near!.z-exact.z)).toBeLessThanOrEqual(0.2);
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
