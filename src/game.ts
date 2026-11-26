@@ -34,6 +34,7 @@ function hangar(){
 function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
 function makeRocket():THREE.Group{
  const g=new THREE.Group();
+ const enginePlumes:THREE.Mesh[]=[];
  const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh};
  craft.parts.forEach((p,i)=>{
@@ -53,6 +54,7 @@ function makeRocket():THREE.Group{
    add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(engine.accent,.72),p.x??0,y-.02,p.z??0);
    add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),mat(0x8b9ba5,.8),p.x??0,y+.38,p.z??0);
    const engineLip=add(new THREE.TorusGeometry(.425,.035,10,40),mat(0x8b9ba5,.8),p.x??0,y-.35,p.z??0);engineLip.rotation.x=Math.PI/2;
+   const plume=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,12),new THREE.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.78}));plume.position.set(p.x??0,y-.9,p.z??0);plume.rotation.x=Math.PI;plume.visible=false;plume.userData.stage=p.engineStage??0;g.add(plume);enginePlumes.push(plume);
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
    add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);
@@ -75,6 +77,7 @@ function makeRocket():THREE.Group{
    add(new THREE.BoxGeometry(.5,.3,.5),mat(p.kind==="battery"?0x879b78:0x9caeba,.45),p.x??0,y,p.z??0);
   }
  });
+ g.userData.enginePlumes=enginePlumes;
  return g;
 }
 function launchpad(){
@@ -108,6 +111,7 @@ function launchpad(){
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),speed=Math.hypot(s.vx,s.vy),q=.5*rho*speed*speed;
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#engine-stage-readout",root).textContent="STAGE "+s.currentStage;
+   const plumes=group.userData.enginePlumes as THREE.Mesh[];plumes.forEach(plume=>{plume.visible=!s.landed&&!s.crashed&&Number(plume.userData.stage??0)===s.currentStage&&Number(range.value)>0&&s.fuelTonnes>0;});
    const nextStageButton=$("#next-stage",root) as HTMLButtonElement;nextStageButton.disabled=!vehicle.engines.some(engine=>engine.stage>s.currentStage);nextStageButton.textContent=nextStageButton.disabled?"NO LATER STAGES":"ACTIVATE NEXT STAGE";
    $("#flight-status",root).textContent=s.crashed?"VEHICLE LOST":s.landed?"LANDED":"IN FLIGHT";$("#flight-note",root).textContent=s.crashed?"Impact detected. Recover and redesign the vehicle.":s.landed?"Vehicle landed. Recover to reset the launchpad.":q>30000?"MAX-Q REGION: monitor dynamic pressure and throttle.":"Gravity turn and aerodynamic forces are active.";
    if(s.crashed||s.landed){range.value="0";updateLabels();clearFlightSave();if(s.crashed)host.toast("Vehicle impacted the surface.","error");else if(s.elapsed>1)host.toast("Vehicle returned to the surface.");sim=null;}
