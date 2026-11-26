@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
-import { mountVehicleBuilder, partCatalog, type BuildPart } from "./vehicle-builder-3d";
+import { mountVehicleBuilder, partCatalog, engineVariants, type BuildPart } from "./vehicle-builder-3d";
 import { FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar atmosphere, and the launch site."],["Luna","MOON",1737,1.62,"#b8b9c2",384400,"A nearby airless world with low gravity and ancient craters."],["Mars","TERRESTRIAL",3389,3.71,"#c87855",225000000,"A cold desert world with a thin atmosphere."],["Phobos","MARTIAN MOON",11,.0057,"#9a806d",9376,"A small, irregular moon orbiting close to Mars."],["Jupiter","GAS GIANT",69911,24.79,"#d5ae83",778000000,"A giant world with immense storms."],["Europa","ICY MOON",1561,1.31,"#d9d4c2",628000000,"An ice-covered moon and a compelling science destination."],["Saturn","GAS GIANT",58232,10.44,"#d8bd86",1427000000,"A ringed giant surrounded by an extraordinary moon system."],["Titan","ICY MOON",2575,1.35,"#c58d53",1430000000,"A hazy moon with lakes of liquid hydrocarbons."]] as const;
 type Craft={name:string;parts:BuildPart[]};
@@ -24,10 +24,12 @@ function hangar(){
  root.innerHTML=`<div class="immersive-toolbar"><button class="text-button" data-action="return-world">← WORLD SPACE CENTER</button><span class="panel-kicker">VEHICLE ASSEMBLY BUILDING / VAB-01</span><span class="live-tag">EDITOR READY</span></div>
  <section class="game-panel builder-panel vab-full-panel"><div class="game-panel-head"><div><span class="panel-kicker">CONSTRUCTION BAY / FULL-SCREEN EDITOR</span><h3>VEHICLE ASSEMBLY</h3></div><span class="live-tag">SNAP BUILD ACTIVE</span></div>
  <div class="vab-design-row"><label class="game-label">VEHICLE DESIGNATION<input id="craft-name" maxlength="32" value="${esc(craft.name)}"></label><div class="vehicle-readout vab-metrics"><div><small>WET MASS</small><b id="build-mass">${(m.mass+m.fuel*.001).toFixed(2)} t</b></div><div><small>PROPELLANT</small><b id="build-fuel">${m.fuel} u</b></div><div><small>MAX THRUST</small><b id="build-thrust">${m.thrust} kN</b></div><div><small>BUILD COST</small><b id="build-cost">${m.cost.toLocaleString()} cr</b></div></div></div>
- <div id="craft-3d-host"></div><div class="game-actions vab-save-row"><button class="primary-button compact" id="save-design">SAVE VEHICLE TO WORLD</button><span class="game-hint">Saved designs are available when you return to this world's space center.</span></div></section>`;
+ <div id="craft-3d-host"></div><div class="game-actions vab-save-row"><div class="game-actions vab-launch-actions"><button class="secondary-button compact" id="save-design">SAVE VEHICLE</button><button class="primary-button compact" id="save-launch">SAVE &amp; LAUNCH ↗</button></div><span class="game-hint">Save your design or save and head straight to the launch pad.</span></div></section>`;
  builder=mountVehicleBuilder($("#craft-3d-host",root),craft.parts,parts=>{craft.parts=parts;const v=metrics();$("#build-mass",root).textContent=(v.mass+v.fuel*.001).toFixed(2)+" t";$("#build-fuel",root).textContent=v.fuel+" u";$("#build-thrust",root).textContent=v.thrust+" kN";$("#build-cost",root).textContent=v.cost.toLocaleString()+" cr";});
  $("#craft-name",root).onchange=e=>{craft.name=(e.currentTarget as HTMLInputElement).value.trim().slice(0,32)||"Untitled Vehicle"};
- $("#save-design",root).onclick=()=>{save();host.toast("Vehicle saved to this world.")};
+ const saveCurrentDesign=()=>{craft.name=($("#craft-name",root) as HTMLInputElement).value.trim().slice(0,32)||"Untitled Vehicle";save();};
+ $("#save-design",root).onclick=()=>{saveCurrentDesign();host.toast("Vehicle saved to this world.")};
+ $("#save-launch",root).onclick=()=>{saveCurrentDesign();host.toast("Vehicle saved. Preparing launch.");nav("continue")};
 }
 function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
 function makeRocket():THREE.Group{
@@ -47,9 +49,10 @@ function makeRocket():THREE.Group{
    add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y-.48,p.z??0);
    for(const band of [-.32,.32])add(new THREE.TorusGeometry(.445,.018,8,40),mat(0x536b7d,.72),p.x??0,y+band,p.z??0);
   }else if(p.kind==="engine"){
-   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(0xd28a4f,.72),p.x??0,y-.02,p.z??0);
+   const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
+   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(engine.accent,.72),p.x??0,y-.02,p.z??0);
    add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),mat(0x8b9ba5,.8),p.x??0,y+.38,p.z??0);
-   add(new THREE.TorusGeometry(.425,.035,10,40),mat(0x8b9ba5,.8),p.x??0,y-.35,p.z??0);
+   const engineLip=add(new THREE.TorusGeometry(.425,.035,10,40),mat(0x8b9ba5,.8),p.x??0,y-.35,p.z??0);engineLip.rotation.x=Math.PI/2;
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
    add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);
@@ -86,7 +89,9 @@ function launchpad(){
  for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(.18,5,.18),new THREE.MeshStandardMaterial({color:0xa6b5bd}));tower.position.set(Math.cos(i*Math.PI/2)*2.8,2.4,Math.sin(i*Math.PI/2)*2.8);scene.add(tower);}
  const group=makeRocket();scene.add(group);
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(canvas);
- const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:m.thrust,ispSeconds:285,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
+ const selectedEngine=craft.parts.find(p=>p.kind==="engine");
+ const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
+ const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:enginePerformance.thrustKN*craft.parts.filter(p=>p.kind==="engine").length,ispSeconds:enginePerformance.ispSeconds,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
