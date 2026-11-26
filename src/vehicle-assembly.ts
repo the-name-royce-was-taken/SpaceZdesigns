@@ -1,4 +1,4 @@
-import { defaultFairingHeight, isFairingKind, type BuildPart, type PartKind } from "./vehicle-builder-3d";
+import type { BuildPart, PartKind } from "./vehicle-builder-3d";
 
 export type AttachmentClass = "stack" | "surface";
 export interface AttachmentNode {
@@ -14,6 +14,8 @@ const node=(id:string,attachmentClass:AttachmentClass,position:readonly [number,
 const rotateY=(v:readonly [number,number,number],a:number):[number,number,number]=>{const c=Math.cos(a),s=Math.sin(a);return [v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c];};
 const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length===3&&Math.abs(a[0]!+b[0]!)<1e-6&&Math.abs(a[1]!+b[1]!)<1e-6&&Math.abs(a[2]!+b[2]!)<1e-6;
 const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[1.8,.06,.7],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88]};
+const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
+const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
 const values=Array.from({length:9},(_,i)=>-1+2*i/8);
 export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
  const top=Math.max(.08,Math.min(.9,part.topRadius??.44)),bottom=Math.max(.08,Math.min(.9,part.bottomRadius??.44)),height=Math.max(.25,Math.min(3,part.height??.96));
