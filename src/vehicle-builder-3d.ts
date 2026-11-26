@@ -101,7 +101,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  function tankWorldPosition(p:BuildPart){return new THREE.Vector3(p.x??0,p.y??0,p.z??0);}
  function updateFuelLinePreview(target:THREE.Object3D|null,valid:boolean){fuelLinePreview.clear();if(!fuelLineStartId)return;const start=tankPart(fuelLineStartId);if(!start)return;let endPart:BuildPart|undefined; if(target){let root=target;while(root.parent&&root.parent!==craftGroup)root=root.parent;endPart=craft.find(p=>p.id===root.userData.partId);}
   if(!endPart){fuelLinePreview.visible=false;return;}const a=tankWorldPosition(start),b=tankWorldPosition(endPart);const mid=a.clone().add(b).multiplyScalar(.5);const line=new THREE.Mesh(pipeGeometry(a.clone().sub(mid),b.clone().sub(mid)),valid?fuelLineValidMaterial:fuelLineInvalidMaterial);fuelLinePreview.add(line);fuelLinePreview.position.copy(mid);fuelLinePreview.visible=true;}
- function beginFuelLineDrawing(){fuelLineDrawing=true;fuelLineStartId=null;fuelLinePreview.visible=false;status.textContent="FUEL PIPE MODE / CLICK A FUEL TANK";select(null);orbit.enabled=true;}
+ function beginFuelLineDrawing(){fuelLineDrawing=true;fuelLineStartId=null;fuelLinePreview.visible=false;select(null);status.textContent="FUEL PIPE MODE / CLICK A FUEL TANK";orbit.enabled=true;}
  const history:BuildPart[][]=[clone(craft)];let historyIndex=0,dragged=false;
  const status=host.querySelector<HTMLElement>("#vab-status")!;
  const uid=()=>`part-${Math.random().toString(36).slice(2,10)}`;
@@ -225,7 +225,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  host.querySelector("#vab-undo")!.addEventListener("click",()=>{if(historyIndex<=0)return;historyIndex--;craft=clone(history[historyIndex]);selectedId=null;redraw();});
  host.querySelector("#vab-redo")!.addEventListener("click",()=>{if(historyIndex>=history.length-1)return;historyIndex++;craft=clone(history[historyIndex]);selectedId=null;redraw();});
  host.querySelector("#vab-reset")!.addEventListener("click",()=>{camera.position.set(8,6,10);orbit.target.set(0,1,0);orbit.update();});
- host.addEventListener("keydown",e=>{if(e.key==="Delete"||e.key==="Backspace"){if(selectedId)removePart(selectedId);}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();host.querySelector<HTMLButtonElement>("#vab-undo")!.click();}if(e.key.toLowerCase()==="w")setTool("translate");if(e.key.toLowerCase()==="e")setTool("rotate");if(e.key.toLowerCase()==="q")setTool("select");});
+ host.addEventListener("keydown",e=>{if(e.key==="Escape"&&fuelLineDrawing){fuelLineDrawing=false;fuelLineStartId=null;fuelLinePreview.visible=false;status.textContent="FUEL PIPE DRAWING CANCELLED";}if(e.key==="Delete"||e.key==="Backspace"){if(selectedId)removePart(selectedId);}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();host.querySelector<HTMLButtonElement>("#vab-undo")!.click();}if(e.key.toLowerCase()==="w")setTool("translate");if(e.key.toLowerCase()==="e")setTool("rotate");if(e.key.toLowerCase()==="q")setTool("select");});
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
  const render=()=>{if(!alive)return;orbit.update();renderer.render(scene,camera);requestAnimationFrame(render);};
