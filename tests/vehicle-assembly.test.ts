@@ -32,7 +32,7 @@ describe("vehicle attachment system", () => {
     const placements = [0, Math.PI / 2, Math.PI, Math.PI * 1.5]
       .map(angle => findAttachmentPlacement(parts, "tank", "wing", angle));
     expect(placements.every(Boolean)).toBe(true);
-    expect(new Set(placements.map(p => p?.parentNode)).size).toBe(4);
+    expect(placements.map(p => p?.rotationY)).toEqual([0, Math.PI / 2, Math.PI, Math.PI * 1.5]);
     expect(placements.map(p => [Number(p?.x?.toFixed(2)), Number(p?.z?.toFixed(2))])).toEqual([
       [0.46, 0], [0, -0.46], [-0.46, 0], [0, 0.46]
     ]);
