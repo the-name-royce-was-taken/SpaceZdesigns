@@ -71,9 +71,21 @@ function makeRocket():THREE.Group{
    if(start&&end){const delta=end.clone().sub(start),direction=delta.clone().normalize();const a=start.clone().add(direction.clone().multiplyScalar(.46)),b=end.clone().sub(direction.clone().multiplyScalar(.46));const mid=a.clone().add(b).multiplyScalar(.5);mid.y-=Math.min(.65,Math.max(.22,delta.length()*.18));const curve=new THREE.CatmullRomCurve3([a,a.clone().lerp(mid,.55),mid,b.clone().lerp(mid,.55),b]);add(new THREE.TubeGeometry(curve,32,.045,8,false),mat(0x65aeb4,.7));}
   }else if(p.kind==="engine"){
    const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
-   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(engine.accent,.72),p.x??0,y-.02,p.z??0);
-   add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),mat(0x8b9ba5,.8),p.x??0,y+.38,p.z??0);
-   const engineLip=add(new THREE.TorusGeometry(.425,.035,10,40),mat(0x8b9ba5,.8),p.x??0,y-.35,p.z??0);engineLip.rotation.x=Math.PI/2;
+   const steel=mat(0x8c9ba4,.82),chamber=mat(engine.accent,.68),bell=mat(engine.accent,.72);
+   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,p.x??0,y+.44,p.z??0);
+   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,p.x??0,y+.30,p.z??0);
+   add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,p.x??0,y+.045,p.z??0);
+   const nozzleProfile=[
+    new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
+    new THREE.Vector2(.27,-.49),new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),
+    new THREE.Vector2(.345,-.67),new THREE.Vector2(.26,-.48),new THREE.Vector2(.18,-.33),
+    new THREE.Vector2(.115,-.22),new THREE.Vector2(.105,-.16)
+   ];
+   add(new THREE.LatheGeometry(nozzleProfile,12),bell,p.x??0,y,p.z??0);
+   const throat=add(new THREE.TorusGeometry(.14,.018,6,12),steel,p.x??0,y-.19,p.z??0);throat.rotation.x=Math.PI/2;
+   const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,p.x??0,y-.67,p.z??0);exitLip.rotation.x=Math.PI/2;
+   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,(p.x??0)+Math.cos(angle)*.205,y+.34,(p.z??0)+Math.sin(angle)*.205);strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+   add(new THREE.BoxGeometry(.11,.075,.13),mat(0x263744,.68),(p.x??0)+.19,y-.015,p.z??0);
    const plume=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,12),new THREE.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.78}));plume.position.set(p.x??0,y-.9,p.z??0);plume.rotation.x=Math.PI;plume.visible=false;plume.userData.stage=p.engineStage??0;g.add(plume);enginePlumes.push(plume);
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
