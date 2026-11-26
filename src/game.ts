@@ -72,8 +72,8 @@ function makeRocket():THREE.Group{
   }else if(p.kind==="engine"){
    const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
    const steel=mat(0x8c9ba4,.82),chamber=mat(engine.accent,.68),bell=mat(engine.accent,.72);
-   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,p.x??0,y+.34,p.z??0);
-   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,p.x??0,y+.205,p.z??0);
+   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,p.x??0,y+.44,p.z??0);
+   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,p.x??0,y+.30,p.z??0);
    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,p.x??0,y+.045,p.z??0);
    const nozzleProfile=[
     new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
@@ -84,7 +84,7 @@ function makeRocket():THREE.Group{
    add(new THREE.LatheGeometry(nozzleProfile,12),bell,p.x??0,y,p.z??0);
    const throat=add(new THREE.TorusGeometry(.14,.018,6,12),steel,p.x??0,y-.19,p.z??0);throat.rotation.x=Math.PI/2;
    const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,p.x??0,y-.67,p.z??0);exitLip.rotation.x=Math.PI/2;
-   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,(p.x??0)+Math.cos(angle)*.205,y+.235,(p.z??0)+Math.sin(angle)*.205);strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,(p.x??0)+Math.cos(angle)*.205,y+.34,(p.z??0)+Math.sin(angle)*.205);strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
    add(new THREE.BoxGeometry(.11,.075,.13),mat(0x263744,.68),(p.x??0)+.19,y-.015,p.z??0);
    const plume=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,12),new THREE.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.78}));plume.position.set(p.x??0,y-.9,p.z??0);plume.rotation.x=Math.PI;plume.visible=false;plume.userData.stage=p.engineStage??0;g.add(plume);enginePlumes.push(plume);
   }else if(p.kind==="separator"){
