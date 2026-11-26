@@ -350,3 +350,15 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
  .vab-workarea .vab-inspector{display:none;}
  .vab-design-row .game-label{display:none;}
 }
+
+
+/* Keep the editor header inside the 3D bay; let the viewport own the remaining height. */
+#craft-3d-host{display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;height:100%;}
+.vab-full-panel{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;height:100%;overflow:hidden;}
+.vab-full-panel>.vab-design-row,.vab-full-panel>.vab-save-row{flex:0 0 auto;}
+.vab-tools{flex:0 0 auto;}
+.vab-workspace{position:relative;display:flex;flex:1 1 0%;width:100%;height:auto;min-height:0;margin:0;overflow:hidden;}
+.vab-workarea,.vab-workarea .vab-viewport{flex:1 1 auto;width:100%;height:100%;min-width:0;min-height:0;}
+.vab-workarea .vab-viewport{position:relative;}
+.vab-workspace>.builder-toolbar{position:absolute;z-index:4;top:12px;right:14px;display:flex;gap:12px;max-width:calc(100% - 270px);padding:7px 10px;border:0;border-radius:10px;background:rgba(4,13,22,.58);color:#9ab6c9;font:8px var(--mono);letter-spacing:.08em;pointer-events:none;backdrop-filter:blur(8px);}
+@media(max-width:620px){.vab-workspace>.builder-toolbar{top:auto;right:8px;bottom:8px;max-width:calc(100% - 178px);font-size:7px;}}
