@@ -47,7 +47,17 @@ function makeRocket():THREE.Group{
    add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
    add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y+.48,p.z??0);
    add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),mat(0xc5d0d8,.4),p.x??0,y-.48,p.z??0);
-   for(const band of [-.32,.32])add(new THREE.TorusGeometry(.445,.018,8,40),mat(0x536b7d,.72),p.x??0,y+band,p.z??0);
+   for(const band of [-.32,.32]){const ring=add(new THREE.TorusGeometry(.445,.018,8,40),mat(0x536b7d,.72),p.x??0,y+band,p.z??0);ring.rotation.x=Math.PI/2;}
+  }else if(p.kind==="side-decoupler"){
+   add(new THREE.BoxGeometry(.72,.24,.3),mat(0xe0bd70,.55),p.x??0,y,p.z??0);
+   add(new THREE.BoxGeometry(.12,.34,.38),mat(0x5d7483,.65),(p.x??0)+.28,y,p.z??0);
+   add(new THREE.BoxGeometry(.12,.34,.38),mat(0xe0bd70,.55),(p.x??0)-.28,y,p.z??0);
+  }else if(p.kind==="separator-thruster"){
+   add(new THREE.BoxGeometry(.32,.22,.3),mat(0xb6c3cb,.65),p.x??0,y,p.z??0);
+   for(const side of [-1,1])add(new THREE.CylinderGeometry(.07,.11,.22,16),mat(0xd88b62,.55),(p.x??0)+side*.2,y,p.z??0);
+  }else if(p.kind==="fuel-line"){
+   const points=[new THREE.Vector3((p.x??0)-.36,y,p.z??0),new THREE.Vector3((p.x??0)-.2,y,p.z??0),new THREE.Vector3((p.x??0)-.2,y-.25,p.z??0),new THREE.Vector3((p.x??0)+.2,y-.25,p.z??0),new THREE.Vector3((p.x??0)+.2,y,p.z??0),new THREE.Vector3((p.x??0)+.36,y,p.z??0)];
+   const curve=new THREE.CatmullRomCurve3(points);add(new THREE.TubeGeometry(curve,24,.045,8,false),mat(0x65aeb4,.7),p.x??0,y,p.z??0);
   }else if(p.kind==="engine"){
    const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
    add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),mat(engine.accent,.72),p.x??0,y-.02,p.z??0);
@@ -56,7 +66,7 @@ function makeRocket():THREE.Group{
    const plume=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,12),new THREE.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.78}));plume.position.set(p.x??0,y-.9,p.z??0);plume.rotation.x=Math.PI;plume.visible=false;plume.userData.stage=p.engineStage??0;g.add(plume);enginePlumes.push(plume);
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
-   add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);
+   const sepRing=add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);sepRing.rotation.x=Math.PI/2;
   }else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){
    const size=p.kind==="wing"?[1.7,.12,1.1]:p.kind==="fin"?[.9,.7,.18]:[1,.1,.42];
    const surface=add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
@@ -66,7 +76,7 @@ function makeRocket():THREE.Group{
    for(const side of [-1,1])add(new THREE.BoxGeometry(.82,.035,.65),mat(0x2678a5,.62),(p.x??0)+side*.48,y,p.z??0);
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
-   add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);
+   const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
   }else if(p.kind==="wheel"){
    const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
    leg.rotation.z=-.22;
