@@ -261,3 +261,10 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
  .vab-lower .builder-palette{grid-template-columns:1fr}
  .flight-3d-viewport{height:48vh;min-height:280px}
 }
+
+.vab-inspector-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+.vab-inspector-actions button{min-height:30px;padding:0 11px;border:1px solid rgba(126,162,200,.3);background:#10253a;color:#b8cadb;font:9px var(--mono);letter-spacing:.06em}
+.vab-inspector-actions button.active{border-color:var(--cyan);color:var(--cyan);background:rgba(54,111,135,.25)}
+.vab-inspector-actions button[data-inspector-delete]{margin-left:auto;border-color:rgba(225,115,115,.45);color:#e59a9a}
+.vab-inspector-actions button[data-inspector-delete]:hover{border-color:#e57d7d;background:rgba(120,35,45,.25)}
+.vab-tool-group button[data-tool="delete"]{border-color:rgba(225,115,115,.35);color:#e59a9a}
