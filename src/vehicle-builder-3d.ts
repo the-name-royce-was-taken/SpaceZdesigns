@@ -78,6 +78,12 @@ function previewSvg(kind:string,color:number){
  control:'<path d="M13 25h46v12H13z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
  wheel:'<path d="M30 10h12v25H30z" fill="'+fill+'"/><circle cx="36" cy="43" r="9" fill="#273542" stroke="#e3edf5" stroke-width="2"/>',
  strut:'<path d="M32 8h8v44h-8z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>'
+  "nose-cone":'<path d="M36 7L12 48h48z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+  fairing:'<path d="M36 7Q31 17 18 26L13 48h46L54 26Q41 17 36 7z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+  "conical-fairing":'<path d="M36 7L13 48h46z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+  "interstage-fairing":'<path d="M18 12h36l-5 36H23z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M18 12h36M23 48h26" stroke="#dce8ef" stroke-width="2"/>',
+  "clam-shell-fairing":'<path d="M36 7Q31 17 18 26L13 48h46L54 26Q41 17 36 7z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M36 10v36" stroke="#344d61" stroke-width="2"/>'
+
  };
  return '<svg class="vab-part-preview" viewBox="0 0 72 60" role="img" aria-hidden="true">'+(shapes[kind]??shapes.strut)+'</svg>';
 }
