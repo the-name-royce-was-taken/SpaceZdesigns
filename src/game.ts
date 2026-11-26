@@ -54,7 +54,7 @@ function makeRocket():THREE.Group{
     else if(p.kind==="conical-fairing")add(new THREE.CylinderGeometry(.018,base,height,40,10),shell,p.x??0,y,p.z??0);
     else if(p.kind==="interstage-fairing")add(new THREE.CylinderGeometry(base*.78,base,height,40,2,true),shell,p.x??0,y,p.z??0);
     else {const points=Array.from({length:25},(_,i)=>{const t=i/24;return new THREE.Vector2(base*Math.sqrt(Math.max(0,1-t*t)),-height/2+t*height);});add(new THREE.LatheGeometry(points,40),shell,p.x??0,y,p.z??0);}
-   }  }else if(p.kind==="airbrake"){
+   }else if(p.kind==="airbrake"){
    add(new THREE.BoxGeometry(.7,.08,.5),mat(0xb78b68,.55),p.x??0,y,p.z??0);
   }else if(p.kind==="strake"){
    add(new THREE.BoxGeometry(.12,.8,.42),mat(0x7898ad,.45),p.x??0,y,p.z??0);
