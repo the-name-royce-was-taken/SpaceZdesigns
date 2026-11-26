@@ -16,7 +16,7 @@ const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length
 const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[1.8,.06,.7],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42]};
 const values=Array.from({length:9},(_,i)=>-1+2*i/8);
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
-  const [sx,sy,sz]=dims[kind],hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||kind==="fairing")?Math.max(.25,Math.min(3,part?.height??(kind==="fairing"?1.15:.96)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
+  const [sx,sy,sz]=dims[kind],hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||kind==="fairing")?Math.max(.25,Math.min(3,part?.height??(kind==="fairing"?1.15:.8)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
   };
