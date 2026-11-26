@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
+import { canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("vehicle attachment system", () => {
@@ -58,6 +58,28 @@ describe("vehicle attachment system", () => {
     expect(placement?.parentId).toBe("tank-a");
     expect(placement?.parentNode).toBe("stack-top");
     expect(placement?.y).toBeCloseTo(3.9);
+  });
+
+  it("provides separate underside attachment points for a five-engine cluster", () => {
+    const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
+    const placements = [];
+    for (let i = 0; i < 5; i++) {
+      const placement = findAvailableAttachmentPlacement(parts, "engine", "tank");
+      expect(placement).not.toBeNull();
+      placements.push(placement!);
+      parts.push({ id: "engine-" + i, kind: "engine", parentId: placement!.parentId, parentNode: placement!.parentNode, childNode: placement!.childNode, x: placement!.x, y: placement!.y, z: placement!.z });
+    }
+    expect(new Set(placements.map(placement => placement.parentNode)).size).toBe(5);
+    expect(placements.map(placement => placement.parentNode)).toContain("stack-bottom");
+    expect(placements.filter(placement => placement.parentNode.startsWith("engine-mount-"))).toHaveLength(4);
+  });
+
+  it("magnetically finds the nearest compatible connector without a grid", () => {
+    const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
+    const exact = findAttachmentPlacement(parts, "tank", "wing")!;
+    const near = findNearestAttachmentPlacement(parts, "wing", [exact.x + 0.2, exact.y, exact.z], 0.5);
+    expect(near?.parentNode).toBe(exact.parentNode);
+    expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
   it("rejects an engine attached to an engine", () => {
