@@ -128,12 +128,22 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="tank"){
    const alloy=new THREE.MeshStandardMaterial({color:0xc5d0d8,roughness:.4,metalness:.38});
    const seam=new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.36,metalness:.68});
-   const topRadius=Math.max(.08,Math.min(.9,p.topRadius??.44)),bottomRadius=Math.max(.08,Math.min(.9,p.bottomRadius??.44));
-   add(new THREE.CylinderGeometry(topRadius,bottomRadius,.96,48,8,false),alloy);
-   for(const y of [-.32,0,.32]){const t=(y+.48)/.96,radius=bottomRadius+(topRadius-bottomRadius)*t;const band=add(new THREE.TorusGeometry(radius+.006,.014,8,48),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
-   const topRim=add(new THREE.TorusGeometry(topRadius,.018,8,48),seam,new THREE.Vector3(0,.48,0));topRim.rotation.x=Math.PI/2;
-   const bottomRim=add(new THREE.TorusGeometry(bottomRadius,.018,8,48),seam,new THREE.Vector3(0,-.48,0));bottomRim.rotation.x=Math.PI/2;
+   const topRadius=Math.max(.08,Math.min(.9,p.topRadius??.44)),bottomRadius=Math.max(.08,Math.min(.9,p.bottomRadius??.44)),height=Math.max(.25,Math.min(3,p.height??.96)),half=height/2;
+   add(new THREE.CylinderGeometry(topRadius,bottomRadius,height,48,12,false),alloy);
+   for(const t of [.16,.5,.84]){const y=(t-.5)*height,radius=bottomRadius+(topRadius-bottomRadius)*t;const band=add(new THREE.TorusGeometry(radius+.006,.014,8,48),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
+   const topRim=add(new THREE.TorusGeometry(topRadius,.018,8,48),seam,new THREE.Vector3(0,half,0));topRim.rotation.x=Math.PI/2;
+   const bottomRim=add(new THREE.TorusGeometry(bottomRadius,.018,8,48),seam,new THREE.Vector3(0,-half,0));bottomRim.rotation.x=Math.PI/2;
   }
+  else if(p.kind==="nose-cone"||p.kind==="fairing"){
+   const base=Math.max(.08,Math.min(.9,p.bottomRadius??.44)),height=Math.max(.25,Math.min(3,p.height??(p.kind==="fairing"?1.15:.8)));
+   const shell=new THREE.MeshStandardMaterial({color:p.kind==="fairing"?0x9bb6c9:0xd4dfe7,roughness:.38,metalness:.28,side:THREE.DoubleSide});
+   if(p.kind==="nose-cone")add(new THREE.ConeGeometry(base,height,48,12,false),shell);
+   else {add(new THREE.CylinderGeometry(.035,base,height,48,12,false),shell);const rim=add(new THREE.TorusGeometry(base,.018,8,48),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.65}),new THREE.Vector3(0,-height/2,0));rim.rotation.x=Math.PI/2;}
+  }
+  else if(p.kind==="airbrake"){
+   const metal=new THREE.MeshStandardMaterial({color:0xb78b68,metalness:.55,roughness:.42});add(new THREE.BoxGeometry(.7,.08,.5),metal);for(const side of [-1,1]){const panel=add(new THREE.BoxGeometry(.06,.42,.5),metal,new THREE.Vector3(side*.31,.22,0));panel.rotation.z=side*.22;}
+  }
+  else if(p.kind==="strake"){const metal=new THREE.MeshStandardMaterial({color:0x7898ad,metalness:.45,roughness:.4});add(new THREE.BoxGeometry(.12,.8,.42),metal);}
   else if(p.kind==="engine"){
    const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
    const hot=new THREE.MeshStandardMaterial({color:0x8c9ba4,roughness:.32,metalness:.78});
@@ -197,7 +207,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||kind==="fairing")?{bottomRadius:.44,height:kind==="fairing"?1.15:.8}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
@@ -237,6 +247,6 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
  const render=()=>{if(!alive)return;orbit.update();renderer.render(scene,camera);requestAnimationFrame(render);};
- craft=craft.map((p,i)=>({...p,id:p.id??uid(),x:p.x??0,y:p.y??(craft.length-1-i)*1.15,z:p.z??0}));redraw();render();
+ craft=craft.map((p,i)=>({...p,id:p.id??uid(),x:p.x??0,y:p.y??(craft.length===3&&craft[0]?.kind==="capsule"&&craft[1]?.kind==="tank"&&craft[2]?.kind==="engine"?([1.885,.96,0][i]??0):(craft.length-1-i)*.96),z:p.z??0}));redraw();render();
  return {dispose(){alive=false;observer.disconnect();transform.detach();orbit.dispose();renderer.dispose();}};
 }
