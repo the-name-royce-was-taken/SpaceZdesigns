@@ -268,3 +268,10 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 .vab-inspector-actions button[data-inspector-delete]{margin-left:auto;border-color:rgba(225,115,115,.45);color:#e59a9a}
 .vab-inspector-actions button[data-inspector-delete]:hover{border-color:#e57d7d;background:rgba(120,35,45,.25)}
 .vab-tool-group button[data-tool="delete"]{border-color:rgba(225,115,115,.35);color:#e59a9a}
+
+.engine-stage-control{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding:8px 10px;border:1px solid rgba(126,215,233,.22);background:rgba(10,28,43,.75);color:#9db4c8;font:9px var(--mono);letter-spacing:.08em}
+.engine-stage-control select{min-height:30px;padding:0 9px;border:1px solid rgba(126,162,200,.3);background:#10253a;color:var(--cyan);font:9px var(--mono)}
+.vab-stage-summary{margin:0 0 8px;padding:8px 10px;border:1px solid rgba(126,215,233,.2);background:rgba(10,28,43,.65);color:#8fcfe0;font:8px var(--mono);letter-spacing:.06em;line-height:1.6}
+#vehicle-3d-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:pan-y}
+#vehicle-3d-canvas:focus-visible{outline:1px solid var(--cyan);outline-offset:-3px}
+#next-stage:disabled{opacity:.45;cursor:not-allowed}
