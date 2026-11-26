@@ -30,8 +30,8 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     const yBottom=kind==="capsule"?-.405:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:-hy;
     // Curved side grids sit on the circular/conical silhouette, never on the
     // empty corners of a rectangular bounding box.
-    for(let a=0;a<9;a++)for(let row=0;row<9;row++){
-      const angle=2*Math.PI*a/9,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
+    for(let a=0;a<8;a++)for(let row=0;row<9;row++){
+      const angle=2*Math.PI*a/8,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
       let radius=bottom+(top-bottom)*(v+1)/2;
       if(kind==="capsule"&&y>.23)radius=Math.max(.015,.43*(1-(y-.23)/.52));
       if(kind==="engine")radius=.43+(.19-.43)*(y-yBottom)/(yTop-yBottom);
