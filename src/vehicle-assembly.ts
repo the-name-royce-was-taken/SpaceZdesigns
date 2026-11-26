@@ -22,7 +22,7 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     // Nine angular columns by nine height rows follow the actual tapered cylindrical wall.
     for(let a=0;a<9;a++)for(let y=0;y<9;y++){const angle=2*Math.PI*a/9,fy=values[y]!,radius=bottom+(top-bottom)*(fy+1)/2;out.push(node(`surface-wall-a${a}-y${y}`,"surface",[Math.cos(angle)*radius,fy*hy,Math.sin(angle)*radius],[Math.cos(angle),0,Math.sin(angle)]));}
     // 9×9 points on each circular end cap, clipped to the actual disk.
-    for(const [face,yy,dir] of [["top",hy,[0,1,0]],["bottom",-hy,[0,-1,0]]] as const)for(let x=0;x<9;x++)for(let z=0;z<9;z++){const fx=values[x]!,fz=values[z]!;if(fx*fx+fz*fz>1.00001)continue;const radius=face==="top"?top:bottom;out.push(node(`surface-${face}-x${x}-z${z}`,"surface",[fx*radius,yy,fz*radius],dir));}
+    for(const [face,yy,dir] of [["top",hy,[0,1,0]],["bottom",-hy,[0,-1,0]]] as const)for(let x=0;x<9;x++)for(let z=0;z<9;z++){const fx=values[x]!,fz=values[z]!,length=Math.hypot(fx,fz),scale=length>1?1/length:1;const radius=face==="top"?top:bottom;out.push(node(`surface-${face}-x${x}-z${z}`,"surface",[fx*scale*radius,yy,fz*scale*radius],dir));}
     return out;
   }
   const faces=[
