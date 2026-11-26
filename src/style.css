@@ -300,3 +300,53 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 .engine-stage-hint{color:var(--muted);font:8px/1.5 var(--mono)}
 @media(max-width:980px){.vab-workspace{grid-template-columns:210px minmax(0,1fr)}.vab-catalog{max-height:calc(100vh - 150px)}}
 @media(max-width:720px){.vab-workspace{grid-template-columns:1fr}.vab-catalog{max-height:260px}.vab-categories{grid-template-columns:repeat(5,minmax(0,1fr))}.vab-categories button{font-size:7px;padding:3px}.vab-catalog-items{grid-template-columns:repeat(2,minmax(0,1fr))}.vab-part-card{grid-template-columns:50px minmax(0,1fr) 12px}.vab-part-preview{width:50px;height:48px}}
+
+
+/* Immersive rounded vehicle builder: floating compact parts browser over a full-size workspace */
+#craft-3d-host{display:flex;flex:1;min-height:0;}
+.vab-full-panel{padding:10px clamp(10px,1.5vw,22px);gap:8px;border-radius:22px 22px 0 0;overflow:hidden;}
+.vab-full-panel .game-panel-head{display:none;}
+.vab-design-row{grid-template-columns:minmax(160px,.35fr) minmax(0,1.65fr);align-items:center;gap:10px;margin:0;}
+.vab-design-row .game-label{font-size:8px;}
+.vab-design-row .game-label input{min-height:34px;border-radius:12px;}
+.vab-metrics>div{border-radius:12px;padding:6px 10px;}
+.vab-tools{border:1px solid rgba(126,162,200,.18);border-radius:16px;padding:6px 9px;background:rgba(9,25,40,.88);}
+.vab-tool-group button,.vab-tool-group select{border-radius:10px;}
+.vab-workspace{position:relative;display:flex;flex:1;min-height:320px;height:auto;margin:0;overflow:hidden;border:1px solid rgba(126,162,200,.18);border-radius:22px;background:#071522;}
+.vab-workarea{display:flex;flex:1;min-width:0;min-height:0;height:100%;gap:0;}
+.vab-workarea .vab-viewport{position:relative;flex:1;min-height:0;height:auto;border:0;border-radius:21px;overflow:hidden;}
+.vab-workarea .vab-lower{position:absolute;right:14px;bottom:14px;z-index:3;display:block;width:min(390px,38vw);max-height:28%;margin:0;overflow:auto;padding:12px;border:1px solid rgba(126,162,200,.25);border-radius:18px;background:rgba(5,16,28,.82);backdrop-filter:blur(14px);}
+.vab-workarea .vab-lower>section{max-width:none;}
+.vab-workarea .vab-stage-summary{margin-bottom:6px;border-radius:9px;}
+.vab-workarea .builder-stack{max-height:110px;margin-top:6px;}
+.vab-workarea .vab-inspector{margin-top:6px;padding:8px;border-radius:10px;}
+.vab-catalog{position:absolute;z-index:5;left:14px;top:14px;bottom:14px;width:220px;max-height:none;overflow:auto;padding:12px;border:1px solid rgba(139,184,211,.3);border-radius:20px;background:rgba(5,17,30,.88);box-shadow:0 14px 40px rgba(0,0,0,.32);backdrop-filter:blur(16px);}
+.vab-category-label{display:block;margin:8px 0 5px;color:#91a9bd;font:8px var(--mono);letter-spacing:.12em;}
+.vab-category-select{width:100%;min-height:36px;padding:0 11px;border:1px solid rgba(126,215,233,.65);border-radius:11px;background:rgba(39,91,113,.62);color:#e4f8ff;font:10px var(--mono);letter-spacing:.08em;box-shadow:0 0 0 1px rgba(126,215,233,.12),0 0 16px rgba(74,177,202,.12);}
+.vab-category-select:focus{outline:2px solid rgba(126,215,233,.6);outline-offset:2px;}
+.vab-category-select option{background:#10253a;color:#d5e5f2;}
+.vab-catalog-items{gap:6px;margin-top:9px;}
+.vab-part-card{grid-template-columns:52px minmax(0,1fr);min-height:58px;padding:4px 7px;border:1px solid rgba(126,162,200,.16);border-radius:13px;background:rgba(17,37,57,.78);transition:background .16s,border-color .16s,transform .16s;}
+.vab-part-card:hover{border-color:rgba(126,215,233,.45);background:rgba(38,75,98,.72);transform:translateX(2px);}
+.vab-part-preview{width:50px;height:46px;border-radius:9px;}
+.vab-part-card b{font-size:9px;}
+.vab-part-card small{font-size:7px;}
+.vab-section-title{margin-bottom:6px;}
+.vab-save-row{margin:0;align-items:center;}
+.vab-save-row button{border-radius:11px;}
+.builder-hud{border-radius:12px;}
+@media(max-width:850px){
+ .vab-full-panel{padding:8px;}
+ .vab-workspace{min-height:300px;}
+ .vab-catalog{left:8px;top:8px;bottom:8px;width:190px;padding:9px;}
+ .vab-workarea .vab-lower{width:min(330px,45vw);max-height:25%;right:8px;bottom:8px;}
+ .vab-design-row{grid-template-columns:1fr;}
+}
+@media(max-width:620px){
+ .vab-catalog{width:160px;max-height:62%;bottom:auto;}
+ .vab-part-card{grid-template-columns:40px minmax(0,1fr);min-height:50px;}
+ .vab-part-preview{width:38px;height:38px;}
+ .vab-workarea .vab-lower{width:calc(100% - 178px);max-height:31%;padding:7px;}
+ .vab-workarea .vab-inspector{display:none;}
+ .vab-design-row .game-label{display:none;}
+}
