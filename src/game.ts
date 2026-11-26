@@ -42,7 +42,6 @@ function makeRocket():THREE.Group{
   if(p.kind==="capsule"){
    add(new THREE.CylinderGeometry(.43,.49,.62,32,3,false),mat(0xe1e9ef,.4),p.x??0,y-.08,p.z??0);
    add(new THREE.ConeGeometry(.43,.52,32,3,false),mat(0xc7d4de,.36),p.x??0,y+.49,p.z??0);
-   add(new THREE.TorusGeometry(.445,.035,10,32),mat(0x455c6c,.7),p.x??0,y+.19,p.z??0);
    add(new THREE.SphereGeometry(.13,24,16),mat(0x45b6d5,.62),p.x??0,y+.02,(p.z??0)+.425);
   }else if(p.kind==="tank"){
    add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
