@@ -45,7 +45,6 @@ const parts:PartSpec[]=[
 export const partCatalog=parts;
 const clone=(a:BuildPart[])=>a.map(p=>({...p}));
 
-const catalogCategories=["Power","Other","Engines","Couplers","Controller"];
 function previewSvg(kind:string,color:number){
  const fill="#"+color.toString(16).padStart(6,"0");
  const shapes:Record<string,string>={
