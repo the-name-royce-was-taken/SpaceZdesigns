@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, validateAssembly } from "../src/vehicle-assembly";
+import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("vehicle attachment system", () => {
@@ -106,6 +106,24 @@ describe("vehicle attachment system", () => {
     expect(near?.parentNode).toMatch(/^surface-/);
     expect(Math.hypot(near!.x-(exact.x+0.2),near!.y-exact.y,near!.z-exact.z)).toBeLessThanOrEqual(0.2);
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
+  });
+
+  it("scales tank fuel capacity with its frustum volume", () => {
+    const standard={topRadius:.44,bottomRadius:.44,height:.96};
+    expect(tankFuelCapacity(standard)).toBeCloseTo(120);
+    expect(tankFuelCapacity({...standard,height:1.92})).toBeCloseTo(240);
+    expect(tankFuelCapacity({...standard,topRadius:.88,bottomRadius:.88})).toBeCloseTo(480);
+    expect(tankFuelCapacity({...standard,height:.48})).toBeCloseTo(60);
+  });
+
+  it("provides adjustable stack and surface attachment nodes for every payload fairing", () => {
+    for(const kind of ["fairing","conical-fairing","interstage-fairing","clam-shell-fairing"] as const){
+      const part:BuildPart={kind,height:1.8,bottomRadius:.62};
+      const nodes=attachmentNodes(kind,part);
+      expect(nodes.find(n=>n.id==="stack-bottom")?.position[1]).toBeCloseTo(-.9);
+      expect(nodes.some(n=>n.id.startsWith("surface-wall-"))).toBe(true);
+      expect(findAttachmentPlacement([{id:"tank",kind:"tank"}],"tank",kind)).not.toBeNull();
+    }
   });
 
   it("moves tank stack connectors when its editable height changes", () => {

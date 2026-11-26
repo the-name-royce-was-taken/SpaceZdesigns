@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
-import { mountVehicleBuilder, partCatalog, engineVariants, type BuildPart } from "./vehicle-builder-3d";
+import { mountVehicleBuilder, partCatalog, engineVariants, isFairingKind, defaultFairingHeight, type BuildPart } from "./vehicle-builder-3d";
+import { tankFuelCapacity } from "./vehicle-assembly";
 import { FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar atmosphere, and the launch site."],["Luna","MOON",1737,1.62,"#b8b9c2",384400,"A nearby airless world with low gravity and ancient craters."],["Mars","TERRESTRIAL",3389,3.71,"#c87855",225000000,"A cold desert world with a thin atmosphere."],["Phobos","MARTIAN MOON",11,.0057,"#9a806d",9376,"A small, irregular moon orbiting close to Mars."],["Jupiter","GAS GIANT",69911,24.79,"#d5ae83",778000000,"A giant world with immense storms."],["Europa","ICY MOON",1561,1.31,"#d9d4c2",628000000,"An ice-covered moon and a compelling science destination."],["Saturn","GAS GIANT",58232,10.44,"#d8bd86",1427000000,"A ringed giant surrounded by an extraordinary moon system."],["Titan","ICY MOON",2575,1.35,"#c58d53",1430000000,"A hazy moon with lakes of liquid hydrocarbons."]] as const;
 type Craft={name:string;parts:BuildPart[]};
@@ -12,8 +13,7 @@ let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFra
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
-const specs=()=>craft.parts.map(p=>partCatalog.find(s=>s.kind===p.kind)!).filter(Boolean);
-function metrics(){const a=specs();return{mass:a.reduce((n,p)=>n+p.mass,0),fuel:a.reduce((n,p)=>n+p.fuel,0),thrust:a.reduce((n,p)=>n+p.thrust,0),cost:a.reduce((n,p)=>n+p.mass*950+ p.fuel*8+p.thrust*40,0)}}
+function metrics(){const entries=craft.parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+e.spec.mass*950+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel)*8+e.spec.thrust*40,0);return{mass,fuel,thrust,cost}}
 function save(){const w=world();if(!w)return;const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);list.push(structuredClone(craft));w.state.craft=list;w.updatedAt=new Date().toISOString();host.setWorld(w)}
 function persistFlight(throttle:number,pitch:number){const w=world();if(!w||!sim)return;const saves=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));saves.push({kind:"spacez-flight-save",craftName:craft.name,state:structuredClone(sim.state),vehicle:structuredClone(sim.vehicle),throttle,pitch,savedAt:new Date().toISOString()} satisfies SavedFlight);w.state.missions=saves;w.updatedAt=new Date().toISOString();host.setWorld(w)}
 function clearFlightSave(){const w=world();if(!w)return;w.state.missions=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));w.updatedAt=new Date().toISOString();host.setWorld(w)}
@@ -47,10 +47,14 @@ function makeRocket():THREE.Group{
   }else if(p.kind==="tank"){
    const top=p.topRadius??.44,bottom=p.bottomRadius??.44,height=p.height??.96;
    add(new THREE.CylinderGeometry(top,bottom,height,40,8,false),mat(0xc5d0d8,.4),p.x??0,y,p.z??0);
-  }else if(p.kind==="nose-cone"||p.kind==="fairing"){
-   const base=p.bottomRadius??.44,height=p.height??(p.kind==="fairing"?1.15:.8);
-   add(p.kind==="nose-cone"?new THREE.ConeGeometry(base,height,40,10):new THREE.CylinderGeometry(.035,base,height,40,10),mat(p.kind==="fairing"?0x9bb6c9:0xd4dfe7,.35),p.x??0,y,p.z??0);
-  }else if(p.kind==="airbrake"){
+  }else if(p.kind==="nose-cone"||isFairingKind(p.kind)){
+    const base=p.bottomRadius??.44,height=p.height??defaultFairingHeight(p.kind),color=partCatalog.find(item=>item.kind===p.kind)?.color??0x9bb6c9;
+    const shell=mat(color,.35);
+    if(p.kind==="nose-cone")add(new THREE.ConeGeometry(base,height,40,10),shell,p.x??0,y,p.z??0);
+    else if(p.kind==="conical-fairing")add(new THREE.CylinderGeometry(.018,base,height,40,10),shell,p.x??0,y,p.z??0);
+    else if(p.kind==="interstage-fairing")add(new THREE.CylinderGeometry(base*.78,base,height,40,2,true),shell,p.x??0,y,p.z??0);
+    else {const points=Array.from({length:25},(_,i)=>{const t=i/24;return new THREE.Vector2(base*Math.sqrt(Math.max(0,1-t*t)),-height/2+t*height);});add(new THREE.LatheGeometry(points,40),shell,p.x??0,y,p.z??0);}
+   }else if(p.kind==="airbrake"){
    add(new THREE.BoxGeometry(.7,.08,.5),mat(0xb78b68,.55),p.x??0,y,p.z??0);
   }else if(p.kind==="strake"){
    add(new THREE.BoxGeometry(.12,.8,.42),mat(0x7898ad,.45),p.x??0,y,p.z??0);
@@ -111,7 +115,7 @@ function launchpad(){
  const engineManifest=craft.parts.filter(p=>p.kind==="engine").map(p=>{const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;return{stage:p.engineStage??0,thrustKN:variant.thrustKN,ispSeconds:variant.ispSeconds};});
  const selectedEngine=craft.parts.find(p=>p.kind==="engine");
  const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
- const aeroCounts={cones:craft.parts.filter(p=>p.kind==="nose-cone").length,fairings:craft.parts.filter(p=>p.kind==="fairing").length,wings:craft.parts.filter(p=>p.kind==="wing").length,fins:craft.parts.filter(p=>p.kind==="fin").length,controls:craft.parts.filter(p=>p.kind==="control").length,airbrakes:craft.parts.filter(p=>p.kind==="airbrake").length,strakes:craft.parts.filter(p=>p.kind==="strake").length};
+ const aeroCounts={cones:craft.parts.filter(p=>p.kind==="nose-cone").length,fairings:craft.parts.filter(p=>isFairingKind(p.kind)).length,wings:craft.parts.filter(p=>p.kind==="wing").length,fins:craft.parts.filter(p=>p.kind==="fin").length,controls:craft.parts.filter(p=>p.kind==="control").length,airbrakes:craft.parts.filter(p=>p.kind==="airbrake").length,strakes:craft.parts.filter(p=>p.kind==="strake").length};
  const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,engines:engineManifest};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
