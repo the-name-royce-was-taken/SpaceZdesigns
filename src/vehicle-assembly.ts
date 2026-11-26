@@ -76,14 +76,15 @@ export function findAttachmentPlacement(
   parts: readonly BuildPart[],
   parentId: string,
   childKind: PartKind,
-  rotationY = 0
+  rotationY = 0,
+  reservedParentNodes: readonly string[] = []
 ): AttachmentPlacement | null {
   const parent = parts.find(part => part.id === parentId);
   if (!parent) return null;
   const parentNodes = attachmentNodes(parent.kind);
   const childNodes = attachmentNodes(childKind);
   const candidates = parentNodes.flatMap(parentNode => childNodes
-    .filter(childNode => parentNode.attachmentClass === childNode.attachmentClass)
+    .filter(childNode => parentNode.attachmentClass === childNode.attachmentClass && !reservedParentNodes.includes(parentNode.id))
     .map(childNode => ({ parentNode, childNode, priority: parentNode.attachmentClass === "stack" ? 0 : 1 })))
     .sort((a, b) => a.priority - b.priority || (a.parentNode.id === "stack-top" ? 0 : a.parentNode.id === "stack-bottom" ? 1 : 2) - (b.parentNode.id === "stack-top" ? 0 : b.parentNode.id === "stack-bottom" ? 1 : 2) || a.parentNode.id.localeCompare(b.parentNode.id));
 
@@ -102,6 +103,37 @@ export function findAttachmentPlacement(
       childNode: candidate.childNode.id,
       rotationY
     };
+  }
+  return null;
+}
+
+export function findAvailableAttachmentPlacement(
+  parts: readonly BuildPart[],
+  childKind: PartKind,
+  preferredParentId?: string,
+  anchor?: readonly [number, number, number]
+): AttachmentPlacement | null {
+  const occupied = new Map<string, string[]>();
+  for (const part of parts) {
+    if (!part.parentId || !part.parentNode) continue;
+    const list = occupied.get(part.parentId) ?? [];
+    list.push(part.parentNode);
+    occupied.set(part.parentId, list);
+  }
+  const parents = [...parts].filter(part => part.id).sort((a, b) => {
+    if (a.id === preferredParentId) return -1;
+    if (b.id === preferredParentId) return 1;
+    if (!anchor) return (b.y ?? 0) - (a.y ?? 0);
+    const da = Math.hypot((a.x ?? 0) - anchor[0], (a.y ?? 0) - anchor[1], (a.z ?? 0) - anchor[2]);
+    const db = Math.hypot((b.x ?? 0) - anchor[0], (b.y ?? 0) - anchor[1], (b.z ?? 0) - anchor[2]);
+    return da - db;
+  });
+  const rotations = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+  for (const parent of parents) {
+    for (const rotation of rotations) {
+      const placement = findAttachmentPlacement(parts, parent.id!, childKind, rotation, occupied.get(parent.id!) ?? []);
+      if (placement) return placement;
+    }
   }
   return null;
 }

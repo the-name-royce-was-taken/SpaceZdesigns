@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
-import { findAttachmentPlacement, validateAssembly } from "./vehicle-assembly";
+import { findAvailableAttachmentPlacement, validateAssembly } from "./vehicle-assembly";
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number}[] = [
@@ -58,7 +58,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const craftGroup=new THREE.Group();scene.add(craftGroup);
  const transform=new TransformControls(camera,renderer.domElement);transform.setMode("translate");transform.setSpace("world");
  const helper=transform.getHelper();scene.add(helper);
- let craft=clone(initial),selected:THREE.Group|null=null,selectedId:string|null=null,tool="select",snapStep=.5,alive=true;
+ let craft=clone(initial),selected:THREE.Group|null=null,selectedId:string|null=null,tool="translate",snapStep=.5,alive=true;
  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
  const history:BuildPart[][]=[clone(craft)];let historyIndex=0,dragged=false;
  const status=host.querySelector<HTMLElement>("#vab-status")!;
@@ -111,19 +111,63 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function syncPartFromGroup(g:THREE.Group){const p=craft.find(v=>v.id===g.userData.partId);if(!p)return;p.x=snapStep? snap(g.position.x,snapStep):g.position.x;p.y=snapStep?snap(g.position.y,snapStep):g.position.y;p.z=snapStep?snap(g.position.z,snapStep):g.position.z;p.rx=g.rotation.x;p.ry=g.rotation.y;p.rz=g.rotation.z;g.position.set(p.x,p.y,p.z);}
  function record(){history.splice(historyIndex+1);history.push(clone(craft));if(history.length>60)history.shift();historyIndex=history.length-1;changed(clone(craft));}
- function inspect(){const box=host.querySelector<HTMLElement>("#vab-inspector")!;const p=craft.find(v=>v.id===selectedId);if(!p){box.innerHTML="<b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small>";return;}const s=spec(p.kind),engine=p.kind==="engine"?engineVariants.find(e=>e.id===(p.engineType??"liquid")):undefined;box.innerHTML=`<b>${engine?.name.toUpperCase()??s.name.toUpperCase()}</b><small>${s.category} / ${s.mass.toFixed(2)} t / X ${(p.x??0).toFixed(2)} · Y ${(p.y??0).toFixed(2)} · Z ${(p.z??0).toFixed(2)}</small>`;}
- function select(g:THREE.Group|null){selected=g;selectedId=g?.userData.partId??null;if(g&&tool!=="select")transform.attach(g);else transform.detach();host.querySelectorAll<HTMLElement>(".stack-row").forEach(r=>r.classList.toggle("selected",r.dataset.id===selectedId));inspect();status.textContent=g?"PART SELECTED / USE MOVE OR ROTATE":"SELECT A PART OR CLICK THE CATALOG";}
+ function inspect(){const box=host.querySelector<HTMLElement>("#vab-inspector")!;const p=craft.find(v=>v.id===selectedId);if(!p){box.innerHTML="<b>NO PART SELECTED</b><small>Select a component to move, rotate or delete it.</small>";return;}const s=spec(p.kind),engine=p.kind==="engine"?engineVariants.find(e=>e.id===(p.engineType??"liquid")):undefined;box.innerHTML=`<b>${engine?.name.toUpperCase()??s.name.toUpperCase()}</b><small>${s.category} / ${s.mass.toFixed(2)} t / X ${(p.x??0).toFixed(2)} · Y ${(p.y??0).toFixed(2)} · Z ${(p.z??0).toFixed(2)}</small><div class="vab-inspector-actions"><button type="button" data-inspector-tool="translate" class="${tool==="translate"?"active":""}">MOVE</button><button type="button" data-inspector-tool="rotate" class="${tool==="rotate"?"active":""}">ROTATE</button><button type="button" data-inspector-delete>DELETE PART</button></div>`;box.querySelectorAll<HTMLButtonElement>("[data-inspector-tool]").forEach(b=>b.onclick=()=>setTool(b.dataset.inspectorTool!));box.querySelector<HTMLButtonElement>("[data-inspector-delete]")!.onclick=()=>removePart(p.id!);}
+ function select(g:THREE.Group|null){selected=g;selectedId=g?.userData.partId??null;if(g){tool="translate";transform.setMode("translate");transform.attach(g);}else{tool="select";transform.detach();}host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));host.querySelectorAll<HTMLElement>(".stack-row").forEach(r=>r.classList.toggle("selected",r.dataset.id===selectedId));inspect();status.textContent=g?"PART SELECTED / MOVE GIZMO ACTIVE · ROTATE AVAILABLE":"SELECT A PART OR ADD FROM THE CATALOG";}
  function redraw(){craftGroup.clear();craft.forEach(p=>{if(!p.id)p.id=uid();craftGroup.add(makeMesh(p));});host.querySelector<HTMLElement>("#builder-stack")!.innerHTML=craft.map((p,i)=>`<div class="stack-row vab-stack-row ${p.id===selectedId?"selected":""}" data-id="${p.id}"><span>${String(i+1).padStart(2,"0")}</span><b>${spec(p.kind).name}</b><small>${(p.x??0).toFixed(1)}, ${(p.y??0).toFixed(1)}, ${(p.z??0).toFixed(1)}</small><button data-remove="${p.id}" aria-label="Remove part">×</button></div>`).join("");host.querySelector("#vab-part-count")!.textContent=`${craft.length} PARTS`;host.querySelectorAll<HTMLButtonElement>("[data-remove]").forEach(b=>b.onclick=e=>{e.stopPropagation();removePart(b.dataset.remove!);});host.querySelectorAll<HTMLElement>(".vab-stack-row").forEach(r=>r.onclick=()=>select(craftGroup.children.find(g=>g.userData.partId===r.dataset.id) as THREE.Group??null));select(craftGroup.children.find(g=>g.userData.partId===selectedId) as THREE.Group??null);changed(clone(craft));}
  function removePart(id:string){craft=craft.filter(p=>p.id!==id);if(selectedId===id){selectedId=null;selected=null;transform.detach();}redraw();record();}
- function addPart(kind:PartKind,engineType:EngineType="liquid"){if(craft.length>=120){status.textContent="PART LIMIT / 120";return;}const requested=Number(host.querySelector<HTMLSelectElement>("#vab-symmetry")!.value);const parentId=selected?.userData.partId as string|undefined;const additions:BuildPart[]=[];let count=requested;if(parentId){const first=findAttachmentPlacement(craft,parentId,kind,0);if(!first){status.textContent="NO COMPATIBLE ATTACHMENT NODE / SELECT ANOTHER PART";return;}if(count>1&&first.parentNode.startsWith("stack")){count=1;status.textContent="STACK NODE / SYMMETRY REDUCED TO 1×";}for(let i=0;i<count;i++){const angle=i*Math.PI*2/count;const placement=findAttachmentPlacement(craft,parentId,kind,angle);if(!placement){status.textContent="SYMMETRY NODE UNAVAILABLE / REDUCE SYMMETRY";return;}additions.push({kind,id:uid(),...(kind==="engine"?{engineType}:{}),x:snap(placement.x,snapStep||.01),y:snap(placement.y,snapStep||.01),z:snap(placement.z,snapStep||.01),ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode});}}else{const y=Math.max(0,craft.length*.55);additions.push({kind,id:uid(),...(kind==="engine"?{engineType}:{}),x:0,y:snap(y,snapStep||.01),z:0});}if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}craft.push(...additions);selectedId=additions[0]?.id??null;redraw();record();const issues=validateAssembly(craft);status.textContent=issues.length?"ASSEMBLY WARNING / CHECK CONNECTIONS":`${spec(kind).name.toUpperCase()} ATTACHED / ${count}× SYMMETRY`; }
- function setTool(next:string){tool=next;host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===next));if(next==="translate"||next==="rotate"){transform.setMode(next);if(selected)transform.attach(selected);orbit.enabled=false;}else{transform.detach();orbit.enabled=true;}if(next==="delete"&&selectedId)removePart(selectedId);status.textContent=next.toUpperCase()+" TOOL";}
+ function addPart(kind:PartKind,engineType:EngineType="liquid"){
+  if(craft.length>=120){status.textContent="PART LIMIT / 120";return;}
+  const requested=Number(host.querySelector<HTMLSelectElement>("#vab-symmetry")!.value);
+  const preferredId=selectedId??[...craft].sort((a,b)=>(b.y??0)-(a.y??0))[0]?.id;
+  const anchorPart=craft.find(p=>p.id===preferredId);
+  const anchor:readonly [number,number,number]=[anchorPart?.x??0,anchorPart?.y??0,anchorPart?.z??0];
+  const first=findAvailableAttachmentPlacement(craft,kind,preferredId,anchor);
+  const additions:BuildPart[]=[];
+  let count=Math.max(1,requested);
+  if(first){
+   if(count>1&&first.parentNode.startsWith("stack")){count=1;status.textContent="STACK ATTACHMENT / SYMMETRY SET TO 1×";}
+   const working=clone(craft);
+   for(let i=0;i<count;i++){
+    const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
+    if(!placement)break;
+    const part:BuildPart={kind,id:uid(),...(kind==="engine"?{engineType}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    additions.push(part);working.push(part);
+   }
+  }
+  if(!additions.length){
+   const maxX=craft.reduce((n,p)=>Math.max(n,(p.x??0)+spec(p.kind).size.x/2),0);
+   const topY=craft.reduce((n,p)=>Math.max(n,(p.y??0)+spec(p.kind).size.y/2),0);
+   const partSize=spec(kind).size;
+   const part:BuildPart={kind,id:uid(),...(kind==="engine"?{engineType}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
+   additions.push(part);count=1;
+  }
+  if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
+  craft.push(...additions);selectedId=additions[0]?.id??null;redraw();record();
+  const issues=validateAssembly(craft);
+  status.textContent=issues.length?"ASSEMBLY WARNING / CHECK CONNECTIONS":`${spec(kind).name.toUpperCase()} PLACED / AUTO-SNAPPED · ${additions.length}×`;
+ }
+ function snapMovedPartToNearbyNode(part:BuildPart){
+  const others=craft.filter(candidate=>candidate.id!==part.id);
+  const placement=findAvailableAttachmentPlacement(others,part.kind,part.parentId,[part.x??0,part.y??0,part.z??0]);
+  if(placement){
+   const distance=Math.hypot(placement.x-(part.x??0),placement.y-(part.y??0),placement.z-(part.z??0));
+   if(distance<=1.05){
+    part.x=placement.x;part.y=placement.y;part.z=placement.z;part.ry=placement.rotationY;
+    part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;
+    return true;
+   }
+  }
+  delete part.parentId;delete part.parentNode;delete part.childNode;
+  return false;
+ }
+ function setTool(next:string){if(next==="delete"){if(selectedId)removePart(selectedId);else status.textContent="SELECT A PART TO DELETE";return;}tool=next;host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===next));if(next==="translate"||next==="rotate"){transform.setMode(next);if(selected)transform.attach(selected);}else transform.detach();orbit.enabled=true;inspect();status.textContent=next.toUpperCase()+" TOOL";}
  host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.onclick=()=>setTool(b.dataset.tool!));
  host.querySelectorAll<HTMLButtonElement>("[data-add]").forEach(b=>b.onclick=()=>addPart(b.dataset.add as PartKind));
  host.querySelectorAll<HTMLButtonElement>("[data-add-engine]").forEach(b=>b.onclick=()=>addPart("engine",b.dataset.addEngine as EngineType));
  host.querySelector<HTMLSelectElement>("#vab-snap")!.onchange=e=>{snapStep=Number((e.currentTarget as HTMLSelectElement).value);};
- transform.addEventListener("dragging-changed",e=>{orbit.enabled=!(e.value as boolean);dragged=Boolean(e.value);if(!dragged&&selected){syncPartFromGroup(selected);record();redraw();}});
+ transform.addEventListener("dragging-changed",e=>{orbit.enabled=!(e.value as boolean);dragged=Boolean(e.value);if(!dragged&&selected){syncPartFromGroup(selected);const part=craft.find(v=>v.id===selectedId);if(part){const snapped=snapMovedPartToNearbyNode(part);selected.position.set(part.x??0,part.y??0,part.z??0);selected.rotation.set(part.rx??0,part.ry??0,part.rz??0);status.textContent=snapped?"PART SNAPPED TO NEAREST FREE ATTACHMENT":"PART MOVED / FREE PLACEMENT";}record();redraw();}});
  transform.addEventListener("objectChange",()=>{if(selected){const p=craft.find(v=>v.id===selectedId);if(p){p.x=selected.position.x;p.y=selected.position.y;p.z=selected.position.z;p.rx=selected.rotation.x;p.ry=selected.rotation.y;p.rz=selected.rotation.z;inspect();}}});
- canvas.addEventListener("pointerdown",e=>{if(tool==="translate"||tool==="rotate"||dragged)return;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(craftGroup.children,true);if(hits.length){let o=hits[0].object;while(o.parent&&o.parent!==craftGroup)o=o.parent;if(o instanceof THREE.Group){select(o);return;}}if(tool==="select"){select(null);return;}});
+ canvas.addEventListener("pointerdown",e=>{if(dragged||transform.axis)return;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(craftGroup.children,true);if(hits.length){let o=hits[0].object;while(o.parent&&o.parent!==craftGroup)o=o.parent;if(o instanceof THREE.Group){select(o);return;}}if(tool==="select")select(null);});
  host.querySelector("#vab-undo")!.addEventListener("click",()=>{if(historyIndex<=0)return;historyIndex--;craft=clone(history[historyIndex]);selectedId=null;redraw();});
  host.querySelector("#vab-redo")!.addEventListener("click",()=>{if(historyIndex>=history.length-1)return;historyIndex++;craft=clone(history[historyIndex]);selectedId=null;redraw();});
  host.querySelector("#vab-reset")!.addEventListener("click",()=>{camera.position.set(8,6,10);orbit.target.set(0,1,0);orbit.update();});
