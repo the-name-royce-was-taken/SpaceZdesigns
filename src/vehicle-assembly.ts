@@ -30,9 +30,9 @@ const SURFACE_ROOT = node("surface-root", "surface", [0, 0, 0], [-1, 0, 0]);
 export function attachmentNodes(kind: PartKind): AttachmentNode[] {
   switch (kind) {
     case "capsule":
-      return [node("stack-top", "stack", [0, 0.75, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.5, 0], [0, -1, 0]), ...radialSurfaceNodes(0.42, 0)];
+      return [node("stack-top", "stack", [0, 0.75, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.5, 0], [0, -1, 0]), ...radialSurfaceNodes(0.42, 0.5)];
     case "tank":
-      return [node("stack-top", "stack", [0, 0.55, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.55, 0], [0, -1, 0]), node("engine-mount-east", "stack", [0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-west", "stack", [-0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-north", "stack", [0, -0.55, 0.9], [0, -1, 0]), node("engine-mount-south", "stack", [0, -0.55, -0.9], [0, -1, 0]), ...radialSurfaceNodes(0.46, 0)];
+      return [node("stack-top", "stack", [0, 0.55, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.55, 0], [0, -1, 0]), node("engine-mount-east", "stack", [0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-west", "stack", [-0.9, -0.55, 0], [0, -1, 0]), node("engine-mount-north", "stack", [0, -0.55, 0.9], [0, -1, 0]), node("engine-mount-south", "stack", [0, -0.55, -0.9], [0, -1, 0]), ...radialSurfaceNodes(0.46, 0.55)];
     case "engine":
       return [node("stack-top", "stack", [0, 0.4, 0], [0, 1, 0])];
     case "separator":
@@ -58,13 +58,21 @@ export function attachmentNodes(kind: PartKind): AttachmentNode[] {
   }
 }
 
-function radialSurfaceNodes(radius: number, y: number): AttachmentNode[] {
-  return [
-    node("surface-east", "surface", [radius, y, 0], [1, 0, 0]),
-    node("surface-west", "surface", [-radius, y, 0], [-1, 0, 0]),
-    node("surface-north", "surface", [0, y, radius], [0, 0, 1]),
-    node("surface-south", "surface", [0, y, -radius], [0, 0, -1])
+function radialSurfaceNodes(radius: number, halfHeight: number): AttachmentNode[] {
+  // Nine snap points per radial face: the centres of a 3×3 set of equal
+  // surface sections. Keep the original centre IDs so existing saved builds
+  // with surface attachments continue to resolve.
+  const thirds = [-2 / 3, 0, 2 / 3];
+  const faces = [
+    { id: "east", direction: [1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [radius, y, tangent] },
+    { id: "west", direction: [-1, 0, 0] as const, point: (y: number, tangent: number): readonly [number, number, number] => [-radius, y, tangent] },
+    { id: "north", direction: [0, 0, 1] as const, point: (y: number, tangent: number): readonly [number, number, number] => [tangent, y, radius] },
+    { id: "south", direction: [0, 0, -1] as const, point: (y: number, tangent: number): readonly [number, number, number] => [tangent, y, -radius] }
   ];
+  return faces.flatMap(face => thirds.flatMap((vertical, row) => thirds.map((across, column) => {
+    const id = row === 1 && column === 1 ? `surface-${face.id}` : `surface-${face.id}-y${row}-t${column}`;
+    return node(id, "surface", face.point(vertical * halfHeight, across * radius), face.direction);
+  })));
 }
 
 function rotateY(v: readonly [number, number, number], angle: number): [number, number, number] {
