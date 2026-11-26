@@ -52,6 +52,8 @@ export function attachmentNodes(kind: PartKind): AttachmentNode[] {
     case "dock":
     case "rcs":
       return [SURFACE_ROOT];
+    default:
+      return [];
   }
 }
 
