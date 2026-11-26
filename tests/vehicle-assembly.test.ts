@@ -46,7 +46,7 @@ describe("vehicle attachment system", () => {
     expect(new Set(wall.map(n=>n.position[1])).size).toBe(9);
     expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBe(9);
     expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(81);
-    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(49);
+    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(81);
   });
 
   it("shapes tank snap nodes to its top and bottom radius settings", () => {
