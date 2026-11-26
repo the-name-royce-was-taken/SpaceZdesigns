@@ -92,8 +92,33 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  for(const parent of parents)for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){const placement=findAttachmentPlacement(parts,parent.id!,childKind,rotation,occupied.get(parent.id!)??[]);if(placement)return placement;}return null;
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
- const occupied=occupiedNodes(parts);let best:AttachmentPlacement|null=null,bestDistance=maxDistance;
- for(const parent of parts){if(!parent.id)continue;for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){const placement=findAttachmentPlacement(parts,parent.id,childKind,rotation,occupied.get(parent.id)??[],childPart);if(!placement)continue;const d=Math.hypot(placement.x-position[0],placement.y-position[1],placement.z-position[2]);if(d<bestDistance){best=placement;bestDistance=d;}}}return best;
+ const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
+ let best:AttachmentPlacement|null=null,bestDistance=maxDistance;
+ for(const parent of parts){
+  if(!parent.id)continue;
+  const parentDistance=Math.hypot((parent.x??0)-position[0],(parent.y??0)-position[1],(parent.z??0)-position[2]);
+  if(parentDistance>maxDistance+2.2)continue;
+  const reserved=occupied.get(parent.id)??[];
+  const pn=attachmentNodes(parent.kind,parent);
+  for(const p of pn){
+   if(reserved.includes(p.id))continue;
+   const pd=rotateY(p.direction,parent.ry??0),po=rotateY(p.position,parent.ry??0);
+   for(const c of cn){
+    if(p.attachmentClass!==c.attachmentClass)continue;
+    const rotations=p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6
+     ?[Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0])]
+     :[0,Math.PI/2,Math.PI,Math.PI*1.5];
+    for(const rotationY of rotations){
+     if(!opposite(pd,rotateY(c.direction,rotationY)))continue;
+     const co=rotateY(c.position,rotationY);
+     const x=(parent.x??0)+po[0]-co[0],y=(parent.y??0)+po[1]-co[1],z=(parent.z??0)+po[2]-co[2];
+     const distance=Math.hypot(x-position[0],y-position[1],z-position[2]);
+     if(distance<bestDistance){bestDistance=distance;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY};}
+    }
+   }
+  }
+ }
+ return best;
 }
 export function validateAssembly(parts:readonly BuildPart[]):AssemblyIssue[]{
  const issues:AssemblyIssue[]=[],byId=new Map<string,BuildPart>();
