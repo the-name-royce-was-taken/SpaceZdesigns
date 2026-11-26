@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "airbrake" | "strake";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
@@ -47,11 +47,16 @@ const parts:PartSpec[]=[
  {kind:"rcs",name:"RCS thruster",category:"Engines",mass:.07,fuel:0,thrust:0,color:0x9caeba,size:new THREE.Vector3(.4,.32,.4)},
  {kind:"strut",name:"Structural girder",category:"Other",mass:.04,fuel:0,thrust:0,color:0xb7a88d,size:new THREE.Vector3(.12,1,.12)},
  {kind:"nose-cone",name:"Nose cone",category:"Aerodynamics",mass:.12,fuel:0,thrust:0,color:0xd4dfe7,size:new THREE.Vector3(.88,.8,.88)},
- {kind:"fairing",name:"Payload fairing",category:"Aerodynamics",mass:.2,fuel:0,thrust:0,color:0x9bb6c9,size:new THREE.Vector3(.88,1.15,.88)},
+ {kind:"fairing",name:"Ogive payload fairing",category:"Payload",mass:.2,fuel:0,thrust:0,color:0x9bb6c9,size:new THREE.Vector3(.88,1.15,.88)},
+ {kind:"conical-fairing",name:"Conical payload fairing",category:"Payload",mass:.19,fuel:0,thrust:0,color:0xb6c7d4,size:new THREE.Vector3(.88,1.15,.88)},
+ {kind:"interstage-fairing",name:"Interstage adapter fairing",category:"Payload",mass:.22,fuel:0,thrust:0,color:0x8ea7b8,size:new THREE.Vector3(.88,1.15,.88)},
+ {kind:"clam-shell-fairing",name:"Clamshell payload fairing",category:"Payload",mass:.24,fuel:0,thrust:0,color:0xc2d0d9,size:new THREE.Vector3(.88,1.15,.88)},
  {kind:"airbrake",name:"Airbrake",category:"Aerodynamics",mass:.08,fuel:0,thrust:0,color:0xb78b68,size:new THREE.Vector3(.7,.5,.5)},
  {kind:"strake",name:"Body strake",category:"Aerodynamics",mass:.07,fuel:0,thrust:0,color:0x7898ad,size:new THREE.Vector3(.18,.8,.42)}
 ];
 export const partCatalog=parts;
+export const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
+export const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
 const clone=(a:BuildPart[])=>a.map(p=>({...p}));
 
 function previewSvg(kind:string,color:number){
@@ -82,7 +87,7 @@ function catalogCard(p:PartSpec){
 
 export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed:(parts:BuildPart[])=>void){
  host.innerHTML=`<div class="vab-tools"><div class="vab-tool-group"><button data-tool="select" class="active">SELECT</button><button data-tool="translate">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="delete">DELETE</button></div><div class="vab-tool-group"><span class="vab-snap-status">MAGNETIC ATTACHMENT / NO GRID</span><label>SYMMETRY <select id="vab-symmetry"><option value="1">OFF</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div><div class="vab-tool-group"><button id="vab-undo">UNDO</button><button id="vab-redo">REDO</button><button id="vab-reset">RESET VIEW</button></div></div>
- <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span></div><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Other","Engines","Couplers","Controller"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click a part to select it."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div></div></div>`;
+ <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span></div><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Payload","Other","Engines","Couplers","Controller"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click a part to select it."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div></div></div>`;
  const canvas=host.querySelector<HTMLCanvasElement>("#vehicle-3d-canvas")!;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;
@@ -134,11 +139,20 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const topRim=add(new THREE.TorusGeometry(topRadius,.018,8,48),seam,new THREE.Vector3(0,half,0));topRim.rotation.x=Math.PI/2;
    const bottomRim=add(new THREE.TorusGeometry(bottomRadius,.018,8,48),seam,new THREE.Vector3(0,-half,0));bottomRim.rotation.x=Math.PI/2;
   }
-  else if(p.kind==="nose-cone"||p.kind==="fairing"){
-   const base=Math.max(.08,Math.min(.9,p.bottomRadius??.44)),height=Math.max(.25,Math.min(3,p.height??(p.kind==="fairing"?1.15:.8)));
-   const shell=new THREE.MeshStandardMaterial({color:p.kind==="fairing"?0x9bb6c9:0xd4dfe7,roughness:.38,metalness:.28,side:THREE.DoubleSide});
+  else if(p.kind==="nose-cone"||isFairingKind(p.kind)){
+   const base=Math.max(.08,Math.min(.9,p.bottomRadius??.44)),height=Math.max(.25,Math.min(3,p.height??defaultFairingHeight(p.kind)));
+   const shell=new THREE.MeshStandardMaterial({color:s.color,roughness:.38,metalness:.28,side:THREE.DoubleSide});
    if(p.kind==="nose-cone")add(new THREE.ConeGeometry(base,height,48,12,false),shell);
-   else {add(new THREE.CylinderGeometry(.035,base,height,48,12,false),shell);const rim=add(new THREE.TorusGeometry(base,.018,8,48),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.65}),new THREE.Vector3(0,-height/2,0));rim.rotation.x=Math.PI/2;}
+   else if(p.kind==="conical-fairing")add(new THREE.CylinderGeometry(.018,base,height,48,12,false),shell);
+   else if(p.kind==="interstage-fairing"){
+    add(new THREE.CylinderGeometry(base*.78,base,height,48,2,true),shell);
+    for(const [y,r] of [[-height/2,base],[height/2,base*.78]] as const){const rim=add(new THREE.TorusGeometry(r,.018,8,48),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.65}),new THREE.Vector3(0,y,0));rim.rotation.x=Math.PI/2;}
+   }else{
+    const points=Array.from({length:25},(_,i)=>{const t=i/24;const radius=base*Math.sqrt(Math.max(0,1-t*t));return new THREE.Vector2(radius,-height/2+t*height);});
+    add(new THREE.LatheGeometry(points,48),shell);
+    if(p.kind==="clam-shell-fairing"){const seam=new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.55});for(const side of [-1,1])add(new THREE.CylinderGeometry(.008,.008,height*.82,8),seam,new THREE.Vector3(side*base*.7,0,0));}
+   }
+   const rim=add(new THREE.TorusGeometry(base,.018,8,48),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.65}),new THREE.Vector3(0,-height/2,0));rim.rotation.x=Math.PI/2;
   }
   else if(p.kind==="airbrake"){
    const metal=new THREE.MeshStandardMaterial({color:0xb78b68,metalness:.55,roughness:.42});add(new THREE.BoxGeometry(.7,.08,.5),metal);for(const side of [-1,1]){const panel=add(new THREE.BoxGeometry(.06,.42,.5),metal,new THREE.Vector3(side*.31,.22,0));panel.rotation.z=side*.22;}
@@ -178,7 +192,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   const stageControl=p.kind==="engine"?"<label class='engine-stage-control'>ENGINE IGNITION GROUP <select data-engine-stage>"+[0,1,2,3,4,5].map(i=>"<option value='"+i+"' "+(Number(p.engineStage??0)===i?"selected":"")+">"+(i===0?"0 · LAUNCH":i+" · ACTIVATE")+"</option>").join("")+"</select></label><small class=\"engine-stage-hint\">Engines in the same group fire together. Different groups activate in sequence.</small>":"";
   const profileControl=(key:string,label:string,value:number,min:number,max:number)=>"<label><span>"+label+"</span><input type='range' min='"+min+"' max='"+max+"' step='.01' value='"+value+"' data-profile-range='"+key+"'><input type='number' min='"+min+"' max='"+max+"' step='.01' value='"+value.toFixed(2)+"' data-profile-number='"+key+"'></label>";
   const tankControls=p.kind==="tank"?"<div class='tank-profile-controls'>"+profileControl("topRadius","TOP RADIUS",p.topRadius??.44,.08,.9)+profileControl("bottomRadius","BOTTOM RADIUS",p.bottomRadius??.44,.08,.9)+profileControl("height","HEIGHT",p.height??.96,.25,3)+"</div>":"";
-  const coneControls=p.kind==="nose-cone"||p.kind==="fairing"?"<div class='tank-profile-controls'>"+profileControl("bottomRadius","BASE RADIUS",p.bottomRadius??.44,.08,.9)+profileControl("height","HEIGHT",p.height??(p.kind==="fairing"?1.15:.8),.25,3)+"</div>":"";
+  const coneControls=p.kind==="nose-cone"||isFairingKind(p.kind)?"<div class='tank-profile-controls'>"+profileControl("bottomRadius","BASE RADIUS",p.bottomRadius??.44,.08,.9)+profileControl("height","HEIGHT",p.height??defaultFairingHeight(p.kind),.25,3)+"</div>":"";
   box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+coneControls+stageControl;
   box.querySelectorAll<HTMLButtonElement>("[data-inspector-tool]").forEach(button=>button.onclick=()=>setTool(button.dataset.inspectorTool!));
   box.querySelector<HTMLButtonElement>("[data-inspector-delete]")!.onclick=()=>removePart(p.id!);
@@ -211,7 +225,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||kind==="fairing")?{bottomRadius:.44,height:kind==="fairing"?1.15:.8}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
@@ -219,7 +233,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const maxX=craft.reduce((n,p)=>Math.max(n,(p.x??0)+spec(p.kind).size.x/2),0);
    const topY=craft.reduce((n,p)=>Math.max(n,(p.y??0)+spec(p.kind).size.y/2),0);
    const partSize=spec(kind).size;
-   const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
+   const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
