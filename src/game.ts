@@ -91,7 +91,7 @@ function launchpad(){
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(canvas);
  const selectedEngine=craft.parts.find(p=>p.kind==="engine");
  const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
- const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:enginePerformance.thrustKN,ispSeconds:enginePerformance.ispSeconds,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
+ const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:enginePerformance.thrustKN*craft.parts.filter(p=>p.kind==="engine").length,ispSeconds:enginePerformance.ispSeconds,referenceArea:.8,dragCoefficient:.48,liftSlope:2.1,inertia:1.6};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
