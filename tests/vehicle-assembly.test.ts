@@ -108,6 +108,23 @@ describe("vehicle attachment system", () => {
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
+  it("scales the invisible 9×9 attachment lattice with editable curved geometry", () => {
+    const tank = attachmentNodes("tank", { kind:"tank", topRadius:.72, bottomRadius:.28, height:2.4 });
+    const tankWall = tank.filter(n=>n.id.startsWith("surface-wall-"));
+    expect(tankWall).toHaveLength(81);
+    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeCloseTo(-1.2);
+    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeCloseTo(1.2);
+    expect(Math.hypot(...tankWall.find(n=>n.id==="surface-wall-a0-y8")!.position.filter((_,i)=>i!==1))).toBeCloseTo(.72);
+    expect(Math.hypot(...tankWall.find(n=>n.id==="surface-wall-a0-y0")!.position.filter((_,i)=>i!==1))).toBeCloseTo(.28);
+    for (const kind of ["fairing","conical-fairing","interstage-fairing","clam-shell-fairing"] as const) {
+      const nodes=attachmentNodes(kind,{kind,bottomRadius:.63,height:2.2});
+      const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
+      expect(wall).toHaveLength(81);
+      expect(Math.min(...wall.map(n=>n.position[1]))).toBeCloseTo(-1.1);
+      expect(Math.max(...wall.map(n=>n.position[1]))).toBeCloseTo(1.1);
+    }
+  });
+
   it("scales tank fuel capacity with its frustum volume", () => {
     const standard={topRadius:.44,bottomRadius:.44,height:.96};
     expect(tankFuelCapacity(standard)).toBeCloseTo(120);
