@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
@@ -25,27 +25,57 @@ export interface BuildPart {
 }
 interface PartSpec {kind:PartKind;name:string;category:string;mass:number;fuel:number;thrust:number;color:number;size:THREE.Vector3}
 const parts:PartSpec[]=[
- {kind:"capsule",name:"Command pod",category:"Command",mass:1.2,fuel:0,thrust:0,color:0xdce8ef,size:new THREE.Vector3(.9,.9,.9)},
- {kind:"tank",name:"Fuel tank",category:"Propulsion",mass:.8,fuel:120,thrust:0,color:0xb7c8d5,size:new THREE.Vector3(.9,1.1,.9)},
- {kind:"engine",name:"Liquid engine",category:"Propulsion",mass:.7,fuel:0,thrust:34,color:0xe6a65e,size:new THREE.Vector3(.85,.8,.85)},
- {kind:"separator",name:"Stack decoupler",category:"Structural",mass:.15,fuel:0,thrust:0,color:0xe5c56d,size:new THREE.Vector3(1,.22,1)},
- {kind:"fin",name:"Stability fin",category:"Aerodynamics",mass:.12,fuel:0,thrust:0,color:0x6c9db8,size:new THREE.Vector3(.9,.7,.18)},
- {kind:"wing",name:"Wing panel",category:"Aerodynamics",mass:.24,fuel:0,thrust:0,color:0x759bb7,size:new THREE.Vector3(1.7,.12,1.1)},
- {kind:"control",name:"Elevon",category:"Aerodynamics",mass:.09,fuel:0,thrust:0,color:0xd1a66b,size:new THREE.Vector3(1,.1,.42)},
- {kind:"wheel",name:"Landing gear",category:"Utility",mass:.16,fuel:0,thrust:0,color:0x8798a8,size:new THREE.Vector3(.22,.85,.22)},
- {kind:"solar",name:"Solar array",category:"Utility",mass:.08,fuel:0,thrust:0,color:0x4b91bb,size:new THREE.Vector3(1.8,.06,.7)},
- {kind:"battery",name:"Battery pack",category:"Utility",mass:.1,fuel:0,thrust:0,color:0x8d9b68,size:new THREE.Vector3(.6,.35,.6)},
- {kind:"dock",name:"Docking port",category:"Utility",mass:.12,fuel:0,thrust:0,color:0xc2cbd1,size:new THREE.Vector3(.42,.28,.42)},
- {kind:"rcs",name:"RCS thruster",category:"Propulsion",mass:.07,fuel:0,thrust:0,color:0x9caeba,size:new THREE.Vector3(.4,.32,.4)},
- {kind:"strut",name:"Structural girder",category:"Structural",mass:.04,fuel:0,thrust:0,color:0xb7a88d,size:new THREE.Vector3(.12,1,.12)}
+ {kind:"capsule",name:"Command pod",category:"Controller",mass:1.2,fuel:0,thrust:0,color:0xdce8ef,size:new THREE.Vector3(.9,.9,.9)},
+ {kind:"tank",name:"Fuel tank",category:"Power",mass:.8,fuel:120,thrust:0,color:0xb7c8d5,size:new THREE.Vector3(.9,1.1,.9)},
+ {kind:"engine",name:"Liquid engine",category:"Engines",mass:.7,fuel:0,thrust:34,color:0xe6a65e,size:new THREE.Vector3(.85,.8,.85)},
+ {kind:"separator",name:"Stack decoupler",category:"Couplers",mass:.15,fuel:0,thrust:0,color:0xe5c56d,size:new THREE.Vector3(1,.22,1)},
+ {kind:"side-decoupler",name:"Side decoupler",category:"Couplers",mass:.18,fuel:0,thrust:0,color:0xe2bd68,size:new THREE.Vector3(.72,.28,.32)},
+ {kind:"separator-thruster",name:"Separation thruster",category:"Couplers",mass:.08,fuel:0,thrust:2,color:0xd68a62,size:new THREE.Vector3(.38,.24,.3)},
+ {kind:"fuel-line",name:"Fuel connector pipe",category:"Power",mass:.035,fuel:0,thrust:0,color:0x65aeb4,size:new THREE.Vector3(.8,.12,.12)},
+ {kind:"fin",name:"Stability fin",category:"Other",mass:.12,fuel:0,thrust:0,color:0x6c9db8,size:new THREE.Vector3(.9,.7,.18)},
+ {kind:"wing",name:"Wing panel",category:"Other",mass:.24,fuel:0,thrust:0,color:0x759bb7,size:new THREE.Vector3(1.7,.12,1.1)},
+ {kind:"control",name:"Elevon",category:"Other",mass:.09,fuel:0,thrust:0,color:0xd1a66b,size:new THREE.Vector3(1,.1,.42)},
+ {kind:"wheel",name:"Landing gear",category:"Other",mass:.16,fuel:0,thrust:0,color:0x8798a8,size:new THREE.Vector3(.22,.85,.22)},
+ {kind:"solar",name:"Solar array",category:"Power",mass:.08,fuel:0,thrust:0,color:0x4b91bb,size:new THREE.Vector3(1.8,.06,.7)},
+ {kind:"battery",name:"Battery pack",category:"Power",mass:.1,fuel:0,thrust:0,color:0x8d9b68,size:new THREE.Vector3(.6,.35,.6)},
+ {kind:"dock",name:"Docking port",category:"Other",mass:.12,fuel:0,thrust:0,color:0xc2cbd1,size:new THREE.Vector3(.42,.28,.42)},
+ {kind:"rcs",name:"RCS thruster",category:"Engines",mass:.07,fuel:0,thrust:0,color:0x9caeba,size:new THREE.Vector3(.4,.32,.4)},
+ {kind:"strut",name:"Structural girder",category:"Other",mass:.04,fuel:0,thrust:0,color:0xb7a88d,size:new THREE.Vector3(.12,1,.12)}
 ];
 export const partCatalog=parts;
 const clone=(a:BuildPart[])=>a.map(p=>({...p}));
+
+const catalogCategories=["Power","Other","Engines","Couplers","Controller"];
+function previewSvg(kind:string,color:number){
+ const fill="#"+color.toString(16).padStart(6,"0");
+ const shapes:Record<string,string>={
+ capsule:'<path d="M24 39V23l12-14 12 14v16z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><circle cx="36" cy="25" r="5" fill="#50b9d8" stroke="#24465b"/>',
+ tank:'<path d="M25 12q11-9 22 0v26q-11 9-22 0z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M25 18h22M25 32h22" stroke="#536b7d" stroke-width="2"/>',
+ engine:'<path d="M29 10h14v9l8 20q-15 9-30 0l8-20z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M30 39h12" stroke="#f6c17d" stroke-width="3"/>',
+ separator:'<path d="M13 20h46v16H13z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M17 17h38M17 39h38" stroke="#f3d88b" stroke-width="3"/>',
+ "side-decoupler":'<path d="M10 25h40v14H10z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M50 22l10 10-10 10" fill="none" stroke="#f3d88b" stroke-width="3"/>',
+ "separator-thruster":'<path d="M15 20h27v20H15z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M42 23l15-7v28l-15-7z" fill="#f1a36d"/><path d="M9 30h-5" stroke="#ffd08a" stroke-width="3"/>',
+ "fuel-line":'<path d="M12 17h14v18h20V17h14" fill="none" stroke="'+fill+'" stroke-width="7" stroke-linejoin="round"/><path d="M12 17h14v18h20V17h14" fill="none" stroke="#c5e7e8" stroke-width="2"/>',
+ solar:'<path d="M8 19h20v22H8zM44 19h20v22H44zM29 28h14v4H29z" fill="'+fill+'" stroke="#8bd7ec" stroke-width="2"/>',
+ battery:'<rect x="18" y="14" width="36" height="30" rx="4" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M29 10h14v4H29z" fill="#e3edf5"/>',
+ rcs:'<rect x="24" y="19" width="24" height="22" rx="3" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M20 18l-8-7M52 18l8-7M20 42l-8 7M52 42l8 7" stroke="#d9a06f" stroke-width="4"/>',
+ dock:'<circle cx="36" cy="30" r="16" fill="'+fill+'" stroke="#e3edf5" stroke-width="3"/><circle cx="36" cy="30" r="7" fill="#263d50"/>',
+ fin:'<path d="M15 44L25 12h32L45 44z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+ wing:'<path d="M7 25l52-13 10 9-52 18z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+ control:'<path d="M13 25h46v12H13z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
+ wheel:'<path d="M30 10h12v25H30z" fill="'+fill+'"/><circle cx="36" cy="43" r="9" fill="#273542" stroke="#e3edf5" stroke-width="2"/>',
+ strut:'<path d="M32 8h8v44h-8z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>'
+ };
+ return '<svg class="vab-part-preview" viewBox="0 0 72 60" role="img" aria-hidden="true">'+(shapes[kind]??shapes.strut)+'</svg>';
+}
+function catalogCard(p:PartSpec){
+ return '<button type="button" class="vab-part-card" data-add="'+p.kind+'">'+previewSvg(p.kind,p.color)+'<span><b>'+p.name+'</b><small>'+p.mass.toFixed(2)+' t'+(p.fuel? ' · '+p.fuel+' fuel':'')+'</small></span><strong>＋</strong></button>';
+}
+
 export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed:(parts:BuildPart[])=>void){
  host.innerHTML=`<div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span></div>
  <div class="vab-tools"><div class="vab-tool-group"><button data-tool="select" class="active">SELECT</button><button data-tool="translate">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="delete">DELETE</button></div><div class="vab-tool-group"><span class="vab-snap-status">MAGNETIC ATTACHMENT / NO GRID</span><label>SYMMETRY <select id="vab-symmetry"><option value="1">OFF</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div><div class="vab-tool-group"><button id="vab-undo">UNDO</button><button id="vab-redo">REDO</button><button id="vab-reset">RESET VIEW</button></div></div>
- <div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click a part to select it."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div>
- <div class="vab-lower"><section><div class="vab-section-title">PART CATALOG <small>CLICK TO ADD / SELECT TO EDIT</small></div><div class="builder-palette">${parts.filter(p=>p.kind!=="engine").map(p=>`<button class="part-card" data-add="${p.kind}"><i class="part-swatch" style="--part-color:#${p.color.toString(16).padStart(6,"0")}"></i><span><b>${p.name}</b><small>${p.category} · ${p.mass.toFixed(2)} t</small></span><strong>＋</strong></button>`).join("")}${engineVariants.map(e=>`<button class="part-card engine-variant-card" data-add-engine="${e.id}"><i class="part-swatch" style="--part-color:#${e.accent.toString(16).padStart(6,"0")}"></i><span><b>${e.name}</b><small>${e.description} · 34 kN · ISP 285 s</small></span><strong>＋</strong></button>`).join("")}</div></section><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div>`;
+ <div class="vab-workspace"><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>CLICK TO ADD</small></div><nav class="vab-categories" aria-label="Part categories">${["Power","Other","Engines","Couplers","Controller"].map((name,i)=>`<button type="button" data-category="${name}" class="${i===0?"active":""}">${name.toUpperCase()}</button>`).join("")}</nav><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click a part to select it."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div></div></div>`;
  const canvas=host.querySelector<HTMLCanvasElement>("#vehicle-3d-canvas")!;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;
@@ -83,7 +113,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),alloy);
    add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),alloy,new THREE.Vector3(0,.48,0));
    add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),alloy,new THREE.Vector3(0,-.48,0));
-   for(const y of [-.32,.32])add(new THREE.TorusGeometry(.442,.018,8,40),seam,new THREE.Vector3(0,y,0));
+   for(const y of [-.32,.32]){const band=add(new THREE.TorusGeometry(.442,.018,8,40),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
    add(new THREE.CylinderGeometry(.445,.445,.055,40),seam,new THREE.Vector3(0,.49,0));
   }
   else if(p.kind==="engine"){
@@ -96,11 +126,14 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const lowerLip=add(new THREE.TorusGeometry(.425,.035,10,40),hot,new THREE.Vector3(0,-.35,0));lowerLip.rotation.x=Math.PI/2;
    const upperCollar=add(new THREE.TorusGeometry(.205,.022,8,32),hot,new THREE.Vector3(0,.31,0));upperCollar.rotation.x=Math.PI/2;
   }
-  else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
+  else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
+  else if(p.kind==="side-decoupler"){const metal=new THREE.MeshStandardMaterial({color:0xe0bd70,metalness:.55,roughness:.4});add(new THREE.BoxGeometry(.72,.24,.3),metal);add(new THREE.BoxGeometry(.12,.34,.38),new THREE.MeshStandardMaterial({color:0x5d7483,metalness:.65}),new THREE.Vector3(.28,0,0));add(new THREE.BoxGeometry(.12,.34,.38),metal,new THREE.Vector3(-.28,0,0));}
+  else if(p.kind==="separator-thruster"){const metal=new THREE.MeshStandardMaterial({color:0xb6c3cb,metalness:.65,roughness:.36});add(new THREE.BoxGeometry(.32,.22,.3),metal);for(const side of [-1,1]){const nozzle=add(new THREE.CylinderGeometry(.07,.11,.22,16),new THREE.MeshStandardMaterial({color:0xd88b62,metalness:.55}));nozzle.rotation.z=Math.PI/2;nozzle.position.x=side*.2;}}
+  else if(p.kind==="fuel-line"){const pipe=new THREE.MeshStandardMaterial({color:0x65aeb4,metalness:.7,roughness:.3});const points=[new THREE.Vector3(-.36,0,0),new THREE.Vector3(-.2,0,0),new THREE.Vector3(-.2,-.25,0),new THREE.Vector3(.2,-.25,0),new THREE.Vector3(.2,0,0),new THREE.Vector3(.36,0,0)];const curve=new THREE.CatmullRomCurve3(points);add(new THREE.TubeGeometry(curve,24,.045,8,false),pipe);for(const x of [-.36,.36])add(new THREE.CylinderGeometry(.075,.075,.12,16),new THREE.MeshStandardMaterial({color:0xd3e2e8,metalness:.7}),new THREE.Vector3(x,0,0));}
   else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){const geo=new THREE.BoxGeometry(s.size.x,s.size.y,s.size.z);add(geo);if(p.kind==="fin"){const fin=add(new THREE.BoxGeometry(.12,.72,.55));fin.position.set(.42,-.18,0);fin.rotation.z=-.22;}if(p.kind==="wing"){const tip=add(new THREE.BoxGeometry(.22,.12,.22));tip.position.x=.84;}}
   else if(p.kind==="solar"){add(new THREE.BoxGeometry(.14,.08,.18));for(const side of [-1,1]){const panel=add(new THREE.BoxGeometry(.82,.035,.65),new THREE.MeshStandardMaterial({color:0x2678a5,metalness:.55,roughness:.35}));panel.position.set(side*.48,0,0);}}
   else if(p.kind==="wheel"){const leg=add(new THREE.CylinderGeometry(.055,.07,.72,6));leg.position.y=.12;leg.rotation.z=-.22;const wheel=add(new THREE.CylinderGeometry(.2,.2,.12,10),new THREE.MeshStandardMaterial({color:0x273542,roughness:.9}));wheel.position.set(.18,-.28,0);wheel.rotation.z=Math.PI/2;}
-  else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
+  else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));dockRing.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
   else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
   else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,20,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.rotation.z=Math.PI/2;nozzle.position.set(i%2?-.22:.22,0,i<2?-.14:.14);}}
   else if(p.kind==="strut"){add(new THREE.BoxGeometry(.1,1,.1));}
@@ -125,6 +158,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  function restoreSafePose(g:THREE.Group,p:BuildPart){const safe=g.userData.safePose as {position:THREE.Vector3;rotation:THREE.Euler;parentId?:string;parentNode?:string;childNode?:string}|undefined;if(!safe)return;g.position.copy(safe.position);g.rotation.copy(safe.rotation);p.x=g.position.x;p.y=g.position.y;p.z=g.position.z;p.rx=g.rotation.x;p.ry=g.rotation.y;p.rz=g.rotation.z;for(const key of ["parentId","parentNode","childNode"] as const){const value=safe[key];if(value===undefined)delete p[key];else p[key]=value;}}
  function hasCollision(g:THREE.Group,p:BuildPart){craftGroup.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(g);for(const other of craftGroup.children){if(other===g)continue;const otherPart=craft.find(candidate=>candidate.id===other.userData.partId);if(!otherPart)continue;if(p.parentId===otherPart.id||otherPart.parentId===p.id)continue;if(bounds.intersectsBox(new THREE.Box3().setFromObject(other)))return true;}return false;}
  function select(g:THREE.Group|null){selected=g;selectedId=g?.userData.partId??null;if(g){tool="translate";transform.setMode("translate");transform.attach(g);const p=craft.find(part=>part.id===selectedId);if(p)rememberSafePose(g,p);}else{tool="select";transform.detach();}host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));host.querySelectorAll<HTMLElement>(".stack-row").forEach(r=>r.classList.toggle("selected",r.dataset.id===selectedId));inspect();status.textContent=g?"PART SELECTED / MOVE GIZMO ACTIVE · ROTATE AVAILABLE":"SELECT A PART OR ADD FROM THE CATALOG";}
+ function renderCatalog(category:string){const target=host.querySelector<HTMLElement>("#vab-catalog-items")!;const chosen=parts.filter(p=>p.category===category);const cards=chosen.filter(p=>p.kind!=="engine").map(catalogCard).join("")+(category==="Engines"?engineVariants.map(e=>`<button type="button" class="vab-part-card" data-add-engine="${e.id}">${previewSvg("engine",e.accent)}<span><b>${e.name}</b><small>${e.description}<br>34 kN · ISP 285 s</small></span><strong>＋</strong></button>`).join(""):"");target.innerHTML=cards||"<small class=\"vab-empty-category\">NO PARTS IN THIS CATEGORY</small>";target.querySelectorAll<HTMLButtonElement>("[data-add]").forEach(button=>button.onclick=()=>addPart(button.dataset.add as PartKind));target.querySelectorAll<HTMLButtonElement>("[data-add-engine]").forEach(button=>button.onclick=()=>addPart("engine",button.dataset.addEngine as EngineType));}
  function redraw(){craftGroup.clear();craft.forEach(p=>{if(!p.id)p.id=uid();craftGroup.add(makeMesh(p));});host.querySelector<HTMLElement>("#builder-stack")!.innerHTML=craft.map((p,i)=>`<div class="stack-row vab-stack-row ${p.id===selectedId?"selected":""}" data-id="${p.id}"><span>${String(i+1).padStart(2,"0")}</span><b>${p.kind==="engine"?"ENGINE · STAGE "+(p.engineStage??0):spec(p.kind).name}</b><small>${(p.x??0).toFixed(1)}, ${(p.y??0).toFixed(1)}, ${(p.z??0).toFixed(1)}</small><button data-remove="${p.id}" aria-label="Remove part">×</button></div>`).join("");host.querySelector("#vab-part-count")!.textContent=`${craft.length} PARTS`;const engineStages=[...new Set(craft.filter(p=>p.kind==="engine").map(p=>p.engineStage??0))].sort((a,b)=>a-b);host.querySelector<HTMLElement>("#vab-stage-summary")!.textContent=engineStages.length?engineStages.map(stage=>"GROUP "+stage+": "+craft.filter(p=>p.kind==="engine"&&(p.engineStage??0)===stage).length+" ENGINE(S)").join(" / "):"NO ENGINES / ADD AN ENGINE TO CREATE AN IGNITION GROUP";host.querySelectorAll<HTMLButtonElement>("[data-remove]").forEach(b=>b.onclick=e=>{e.stopPropagation();removePart(b.dataset.remove!);});host.querySelectorAll<HTMLElement>(".vab-stack-row").forEach(r=>r.onclick=()=>select(craftGroup.children.find(g=>g.userData.partId===r.dataset.id) as THREE.Group??null));select(craftGroup.children.find(g=>g.userData.partId===selectedId) as THREE.Group??null);changed(clone(craft));}
  function removePart(id:string){craft=craft.filter(p=>p.id!==id);if(selectedId===id){selectedId=null;selected=null;transform.detach();}redraw();record();}
  function addPart(kind:PartKind,engineType:EngineType="liquid"){
@@ -169,8 +203,8 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function setTool(next:string){if(next==="delete"){if(selectedId)removePart(selectedId);else status.textContent="SELECT A PART TO DELETE";return;}tool=next;host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===next));if(next==="translate"||next==="rotate"){transform.setMode(next);if(selected)transform.attach(selected);}else transform.detach();orbit.enabled=true;inspect();status.textContent=next.toUpperCase()+" TOOL";}
  host.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach(b=>b.onclick=()=>setTool(b.dataset.tool!));
- host.querySelectorAll<HTMLButtonElement>("[data-add]").forEach(b=>b.onclick=()=>addPart(b.dataset.add as PartKind));
- host.querySelectorAll<HTMLButtonElement>("[data-add-engine]").forEach(b=>b.onclick=()=>addPart("engine",b.dataset.addEngine as EngineType));
+ host.querySelectorAll<HTMLButtonElement>("[data-category]").forEach(button=>button.onclick=()=>{const category=button.dataset.category!;host.querySelectorAll("[data-category]").forEach(tab=>tab.classList.toggle("active",tab===button));renderCatalog(category);});
+ renderCatalog("Power");
  transform.addEventListener("dragging-changed",e=>{orbit.enabled=!(e.value as boolean);dragged=Boolean(e.value);if(!dragged&&selected){syncPartFromGroup(selected);const part=craft.find(v=>v.id===selectedId);if(part){const snapped=snapMovedPartToNearbyNode(part,selected);status.textContent=snapped?"PART SNAPPED TO NEAREST FREE ATTACHMENT":"PART MOVED / FREE PLACEMENT";}record();redraw();}});
  transform.addEventListener("objectChange",()=>{if(selected){const p=craft.find(v=>v.id===selectedId);if(p){p.x=selected.position.x;p.y=selected.position.y;p.z=selected.position.z;p.rx=selected.rotation.x;p.ry=selected.rotation.y;p.rz=selected.rotation.z;const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==p.id),p.kind,[p.x,p.y,p.z],.8);if(placement){p.x=placement.x;p.y=placement.y;p.z=placement.z;p.ry=placement.rotationY;p.parentId=placement.parentId;p.parentNode=placement.parentNode;p.childNode=placement.childNode;selected.position.set(p.x,p.y,p.z);selected.rotation.y=p.ry;}if(hasCollision(selected,p)){restoreSafePose(selected,p);status.textContent="COLLISION BLOCKED / PARTS CANNOT OVERLAP";}else{rememberSafePose(selected,p);if(placement)status.textContent="MAGNETIC ATTACHMENT / LOCKED TO CONNECTOR";inspect();}}}});
  canvas.addEventListener("pointerdown",e=>{if(dragged||transform.dragging||transform.axis)return;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(craftGroup.children,true);if(hits.length){let o=hits[0].object;while(o.parent&&o.parent!==craftGroup)o=o.parent;if(o instanceof THREE.Group){select(o);return;}}if(tool==="select")select(null);});
