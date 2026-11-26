@@ -24,6 +24,8 @@ export interface BuildPart {
   engineStage?: number;
   fuelLineStartId?: string;
   fuelLineEndId?: string;
+  topRadius?: number;
+  bottomRadius?: number;
 }
 interface PartSpec {kind:PartKind;name:string;category:string;mass:number;fuel:number;thrust:number;color:number;size:THREE.Vector3}
 const parts:PartSpec[]=[
@@ -121,11 +123,11 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="tank"){
    const alloy=new THREE.MeshStandardMaterial({color:0xc5d0d8,roughness:.4,metalness:.38});
    const seam=new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.36,metalness:.68});
-   add(new THREE.CylinderGeometry(.44,.44,.96,40,4,false),alloy);
-   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,0,Math.PI/2),alloy,new THREE.Vector3(0,.48,0));
-   add(new THREE.SphereGeometry(.44,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2),alloy,new THREE.Vector3(0,-.48,0));
-   for(const y of [-.32,.32]){const band=add(new THREE.TorusGeometry(.442,.018,8,40),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
-   add(new THREE.CylinderGeometry(.445,.445,.055,40),seam,new THREE.Vector3(0,.49,0));
+   const topRadius=Math.max(.08,Math.min(.9,p.topRadius??.44)),bottomRadius=Math.max(.08,Math.min(.9,p.bottomRadius??.44));
+   add(new THREE.CylinderGeometry(topRadius,bottomRadius,.96,48,8,false),alloy);
+   for(const y of [-.32,0,.32]){const t=(y+.48)/.96,radius=bottomRadius+(topRadius-bottomRadius)*t;const band=add(new THREE.TorusGeometry(radius+.006,.014,8,48),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
+   const topRim=add(new THREE.TorusGeometry(topRadius,.018,8,48),seam,new THREE.Vector3(0,.48,0));topRim.rotation.x=Math.PI/2;
+   const bottomRim=add(new THREE.TorusGeometry(bottomRadius,.018,8,48),seam,new THREE.Vector3(0,-.48,0));bottomRim.rotation.x=Math.PI/2;
   }
   else if(p.kind==="engine"){
    const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
@@ -159,9 +161,11 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   if(!p){box.innerHTML="<b>NO PART SELECTED</b><small>Click a component in the 3D view to move, rotate or delete it.</small>";return;}
   const specPart=spec(p.kind),engine=p.kind==="engine"?engineVariants.find(e=>e.id===(p.engineType??"liquid")):undefined;
   const stageControl=p.kind==="engine"?"<label class='engine-stage-control'>ENGINE IGNITION GROUP <select data-engine-stage>"+[0,1,2,3,4,5].map(i=>"<option value='"+i+"' "+(Number(p.engineStage??0)===i?"selected":"")+">"+(i===0?"0 · LAUNCH":i+" · ACTIVATE")+"</option>").join("")+"</select></label><small class=\"engine-stage-hint\">Engines in the same group fire together. Different groups activate in sequence.</small>":"";
-  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+stageControl;
+  const tankControls=p.kind==="tank"?"<div class='tank-profile-controls'><label>TOP RADIUS <input type='range' min='.10' max='.90' step='.01' value='"+(p.topRadius??.44)+"' data-tank-radius='top'><output>"+(p.topRadius??.44).toFixed(2)+"</output></label><label>BOTTOM RADIUS <input type='range' min='.10' max='.90' step='.01' value='"+(p.bottomRadius??.44)+"' data-tank-radius='bottom'><output>"+(p.bottomRadius??.44).toFixed(2)+"</output></label></div>":"";
+  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+stageControl;
   box.querySelectorAll<HTMLButtonElement>("[data-inspector-tool]").forEach(button=>button.onclick=()=>setTool(button.dataset.inspectorTool!));
   box.querySelector<HTMLButtonElement>("[data-inspector-delete]")!.onclick=()=>removePart(p.id!);
+  box.querySelectorAll<HTMLInputElement>("[data-tank-radius]").forEach(input=>input.oninput=()=>{const key=input.dataset.tankRadius==="top"?"topRadius":"bottomRadius";p[key]=Number(input.value);input.nextElementSibling!.textContent=p[key]!.toFixed(2);const group=craftGroup.children.find(g=>g.userData.partId===p.id) as THREE.Group|undefined;if(group){const replacement=makeMesh(p);group.clear();replacement.children.forEach(child=>group.add(child));}record();});
   const stageSelect=box.querySelector<HTMLSelectElement>("[data-engine-stage]");
   if(stageSelect)stageSelect.onchange=()=>{p.engineStage=Number(stageSelect.value);redraw();record();};
  }
@@ -188,7 +192,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
@@ -196,7 +200,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const maxX=craft.reduce((n,p)=>Math.max(n,(p.x??0)+spec(p.kind).size.x/2),0);
    const topY=craft.reduce((n,p)=>Math.max(n,(p.y??0)+spec(p.kind).size.y/2),0);
    const partSize=spec(kind).size;
-   const part:BuildPart={kind,id:uid(),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
+   const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
@@ -206,7 +210,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
-  const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.8);
+  const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.8,part);
   if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;part.ry=placement.rotationY;part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
   else{delete part.parentId;delete part.parentNode;delete part.childNode;}
   g.position.set(part.x??0,part.y??0,part.z??0);g.rotation.set(part.rx??0,part.ry??0,part.rz??0);
@@ -218,7 +222,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  host.querySelector<HTMLSelectElement>("#vab-category-select")!.addEventListener("change",event=>renderCatalog((event.currentTarget as HTMLSelectElement).value));
  renderCatalog("Power");
  transform.addEventListener("dragging-changed",e=>{orbit.enabled=!(e.value as boolean);dragged=Boolean(e.value);if(!dragged&&selected){syncPartFromGroup(selected);const part=craft.find(v=>v.id===selectedId);if(part){const snapped=snapMovedPartToNearbyNode(part,selected);status.textContent=snapped?"PART SNAPPED TO NEAREST FREE ATTACHMENT":"PART MOVED / FREE PLACEMENT";}record();redraw();}});
- transform.addEventListener("objectChange",()=>{if(selected){const p=craft.find(v=>v.id===selectedId);if(p){p.x=selected.position.x;p.y=selected.position.y;p.z=selected.position.z;p.rx=selected.rotation.x;p.ry=selected.rotation.y;p.rz=selected.rotation.z;const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==p.id),p.kind,[p.x,p.y,p.z],.8);if(placement){p.x=placement.x;p.y=placement.y;p.z=placement.z;p.ry=placement.rotationY;p.parentId=placement.parentId;p.parentNode=placement.parentNode;p.childNode=placement.childNode;selected.position.set(p.x,p.y,p.z);selected.rotation.y=p.ry;}if(hasCollision(selected,p)){restoreSafePose(selected,p);status.textContent="COLLISION BLOCKED / PARTS CANNOT OVERLAP";}else{rememberSafePose(selected,p);if(placement)status.textContent="MAGNETIC ATTACHMENT / LOCKED TO CONNECTOR";inspect();}}}});
+ transform.addEventListener("objectChange",()=>{if(selected){const p=craft.find(v=>v.id===selectedId);if(p){p.x=selected.position.x;p.y=selected.position.y;p.z=selected.position.z;p.rx=selected.rotation.x;p.ry=selected.rotation.y;p.rz=selected.rotation.z;const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==p.id),p.kind,[p.x,p.y,p.z],.8,p);if(placement){p.x=placement.x;p.y=placement.y;p.z=placement.z;p.ry=placement.rotationY;p.parentId=placement.parentId;p.parentNode=placement.parentNode;p.childNode=placement.childNode;selected.position.set(p.x,p.y,p.z);selected.rotation.y=p.ry;}if(hasCollision(selected,p)){restoreSafePose(selected,p);status.textContent="COLLISION BLOCKED / PARTS CANNOT OVERLAP";}else{rememberSafePose(selected,p);if(placement)status.textContent="MAGNETIC ATTACHMENT / LOCKED TO CONNECTOR";inspect();}}}});
  canvas.addEventListener("pointermove",e=>{if(!fuelLineDrawing)return;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(craftGroup.children,true);let root:THREE.Object3D|null=hits[0]?.object??null;if(root)while(root.parent&&root.parent!==craftGroup)root=root.parent;const targetId=root?.userData.partId as string|undefined;const target=targetId?craft.find(p=>p.id===targetId):undefined;updateFuelLinePreview(root,target?.kind==="tank"&&target.id!==fuelLineStartId);if(root&&target?.kind!=="tank"){fuelLinePreview.children.forEach(o=>{const m=o as THREE.Mesh;m.material=fuelLineInvalidMaterial;});}});
  canvas.addEventListener("pointerdown",e=>{if(dragged||transform.dragging||transform.axis)return;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(craftGroup.children,true);if(fuelLineDrawing){let root:THREE.Object3D|null=hits[0]?.object??null;if(root)while(root.parent&&root.parent!==craftGroup)root=root.parent;const targetId=root?.userData.partId as string|undefined;const target=tankPart(targetId??null);if(!fuelLineStartId){if(!target){status.textContent="INVALID START / FUEL PIPES CAN ONLY START ON FUEL TANKS";return;}fuelLineStartId=target.id!;status.textContent="START TANK LOCKED / CLICK A SECOND FUEL TANK";return;}if(!target||target.id===fuelLineStartId){status.textContent="INVALID TARGET / FUEL PIPES ONLY CONNECT TWO DIFFERENT FUEL TANKS";fuelLinePreview.children.forEach(o=>{(o as THREE.Mesh).material=fuelLineInvalidMaterial;});return;}const start=tankPart(fuelLineStartId)!;const a=tankWorldPosition(start),b=tankWorldPosition(target),route=pipeGeometry(a,b,start.id!,target.id!);if(!route.clear){status.textContent="NO CLEAR PIPE ROUTE / MOVE COMPONENTS OR CHOOSE ANOTHER TANK";return;}const mid=route.midpoint;const line:BuildPart={kind:"fuel-line",id:uid(),x:mid.x,y:mid.y,z:mid.z,fuelLineStartId:start.id,fuelLineEndId:target.id};craft.push(line);fuelLineStartId=null;fuelLineDrawing=false;fuelLinePreview.visible=false;redraw();record();status.textContent="FUEL PIPE CONNECTED / TANK TO TANK";return;}if(hits.length){let o=hits[0].object;while(o.parent&&o.parent!==craftGroup)o=o.parent;if(o instanceof THREE.Group){if(tool==="fuel-line-draw")return;select(o);return;}}if(tool==="select")select(null);});
  host.querySelector("#vab-undo")!.addEventListener("click",()=>{if(historyIndex<=0)return;historyIndex--;craft=clone(history[historyIndex]);selectedId=null;redraw();});
