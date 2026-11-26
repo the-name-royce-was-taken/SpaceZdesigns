@@ -19,7 +19,7 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
  });
  it("fires only engines assigned to the active stage and advances in order",()=>{
-  const staged:VehiclePhysics={...vehicle,engines:[{stage:0,thrustKN:10,ispSeconds:300},{stage:1,thrustKN:30,ispSeconds:300}]};
+  const staged:VehiclePhysics={...vehicle,engines:[{stage:0,thrustKN:40,ispSeconds:300},{stage:1,thrustKN:80,ispSeconds:300}]};
   const sim=new FlightSimulator(staged);sim.launch();
   sim.step(1/120,{throttle:1,pitch:0});
   const stageZeroVelocity=sim.state.vy;
