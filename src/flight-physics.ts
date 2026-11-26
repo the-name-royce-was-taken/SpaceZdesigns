@@ -1,11 +1,12 @@
 export interface FlightInputs { throttle:number; pitch:number; }
 export interface FlightState {
   x:number; altitude:number; vx:number; vy:number; angle:number; angularVelocity:number;
-  fuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; maxQ:number;
+  fuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; maxQ:number; currentStage:number;
 }
+export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
 export interface VehiclePhysics {
   dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number;
-  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number;
+  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; engines?:FlightEngine[];
 }
 const G0=9.80665, EARTH_MU=3.986004418e14, EARTH_RADIUS=6_371_000, SEA_LEVEL_DENSITY=1.225, SCALE_HEIGHT=8500;
 const FIXED_DT=1/120, MAX_SUBSTEPS=24;
@@ -13,10 +14,11 @@ export class FlightSimulator {
   readonly state:FlightState;
   private accumulator=0;
   constructor(readonly vehicle:VehiclePhysics){
-    this.state={x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0};
+    this.state={x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0};
   }
   launch(){this.state.landed=false;this.state.crashed=false;this.state.elapsed=0;this.state.maxQ=0;}
-  reset(){Object.assign(this.state,{x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:this.vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0});this.accumulator=0;}
+  reset(){Object.assign(this.state,{x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:this.vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0});this.accumulator=0;}
+  activateNextStage(){const stages=(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(stage=>stage>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
   step(frameDt:number,input:FlightInputs){
     if(this.state.landed||this.state.crashed)return;
     this.accumulator+=Math.min(Math.max(frameDt,0),.1);
@@ -34,8 +36,13 @@ export class FlightSimulator {
     const drag=q*v.referenceArea*v.dragCoefficient;
     const lift=q*v.referenceArea*v.liftSlope*aoa;
     const massKg=Math.max(1,(v.dryMassTonnes+s.fuelTonnes)*1000);
-    const thrust=s.fuelTonnes>0?v.thrustKN*1000*Math.max(0,Math.min(1,input.throttle)):0;
-    const mdot=thrust/(v.ispSeconds*G0);
+    const throttle=Math.max(0,Math.min(1,input.throttle));
+    const activeEngines=v.engines?.filter(engine=>engine.stage===s.currentStage)??[];
+    const hasEngineManifest=Array.isArray(v.engines);
+    const thrustKN=hasEngineManifest?activeEngines.reduce((sum,engine)=>sum+engine.thrustKN,0):v.thrustKN;
+    const mdotPerThrottle=hasEngineManifest?activeEngines.reduce((sum,engine)=>sum+engine.thrustKN*1000/(engine.ispSeconds*G0),0):v.thrustKN*1000/(v.ispSeconds*G0);
+    const thrust=s.fuelTonnes>0?thrustKN*1000*throttle:0;
+    const mdot=mdotPerThrottle*throttle;
     const fuelUsed=Math.min(s.fuelTonnes,mdot*dt/1000);
     s.fuelTonnes-=fuelUsed;
     const tx=Math.sin(s.angle)*thrust,ty=Math.cos(s.angle)*thrust;
