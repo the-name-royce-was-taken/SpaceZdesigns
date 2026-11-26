@@ -174,6 +174,9 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.44,0));
    add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.30,0));
    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
+   // Bridge the throat and chamber transitions so no open seams show through.
+   add(new THREE.CylinderGeometry(.12,.12,.16,12),steel,new THREE.Vector3(0,-.08,0));
+   add(new THREE.CylinderGeometry(.16,.145,.12,12),chamber,new THREE.Vector3(0,.16,0));
    // Thin-walled, bell-shaped converging/diverging nozzle; no solid plug below it.
    const nozzleProfile=[
     new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
