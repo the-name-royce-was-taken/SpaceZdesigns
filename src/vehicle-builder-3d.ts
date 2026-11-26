@@ -166,13 +166,27 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="strake"){const metal=new THREE.MeshStandardMaterial({color:0x7898ad,metalness:.45,roughness:.4});add(new THREE.BoxGeometry(.12,.8,.42),metal);}
   else if(p.kind==="engine"){
    const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
-   const hot=new THREE.MeshStandardMaterial({color:0x8c9ba4,roughness:.32,metalness:.78});
-   const bell=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.34,metalness:.68,side:THREE.DoubleSide});
-   add(new THREE.CylinderGeometry(.19,.43,.66,40,5,false),bell,new THREE.Vector3(0,-.02,0));
-   add(new THREE.CylinderGeometry(.18,.2,.2,32,2,false),hot,new THREE.Vector3(0,.38,0));
-   add(new THREE.CylinderGeometry(.16,.16,.08,32),new THREE.MeshStandardMaterial({color:0x263744,metalness:.5}),new THREE.Vector3(0,-.39,0));
-   const lowerLip=add(new THREE.TorusGeometry(.425,.035,10,40),hot,new THREE.Vector3(0,-.35,0));lowerLip.rotation.x=Math.PI/2;
-   const upperCollar=add(new THREE.TorusGeometry(.205,.022,8,32),hot,new THREE.Vector3(0,.31,0));upperCollar.rotation.x=Math.PI/2;
+   const steel=new THREE.MeshStandardMaterial({color:0x8c9ba4,roughness:.3,metalness:.82});
+   const chamber=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.38,metalness:.68});
+   const bell=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.32,metalness:.72,side:THREE.DoubleSide});
+   const dark=new THREE.MeshStandardMaterial({color:0x263744,roughness:.45,metalness:.68});
+   // Mounting flange and compact combustion chamber sit above the nozzle.
+   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.34,0));
+   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.205,0));
+   add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
+   // Thin-walled, bell-shaped converging/diverging nozzle; no solid plug below it.
+   const nozzleProfile=[
+    new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
+    new THREE.Vector2(.27,-.49),new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),
+    new THREE.Vector2(.345,-.67),new THREE.Vector2(.26,-.48),new THREE.Vector2(.18,-.33),
+    new THREE.Vector2(.115,-.22),new THREE.Vector2(.105,-.16)
+   ];
+   add(new THREE.LatheGeometry(nozzleProfile,12),bell);
+   const throatBand=add(new THREE.TorusGeometry(.14,.018,6,12),steel,new THREE.Vector3(0,-.19,0));throatBand.rotation.x=Math.PI/2;
+   const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,new THREE.Vector3(0,-.67,0));exitLip.rotation.x=Math.PI/2;
+   // Four exposed support struts make the chamber-to-mount transition readable at low poly.
+   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.235,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+   add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
   }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
   else if(p.kind==="side-decoupler"){const metal=new THREE.MeshStandardMaterial({color:0xe0bd70,metalness:.55,roughness:.4});add(new THREE.BoxGeometry(.72,.24,.3),metal);add(new THREE.BoxGeometry(.12,.34,.38),new THREE.MeshStandardMaterial({color:0x5d7483,metalness:.65}),new THREE.Vector3(.28,0,0));add(new THREE.BoxGeometry(.12,.34,.38),metal,new THREE.Vector3(-.28,0,0));}
