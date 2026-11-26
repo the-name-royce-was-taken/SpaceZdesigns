@@ -39,8 +39,9 @@ export function attachmentNodes(kind: PartKind): AttachmentNode[] {
       return [node("stack-top", "stack", [0, 0.11, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.11, 0], [0, -1, 0])];
     case "side-decoupler":
     case "separator-thruster":
-    case "fuel-line":
       return [SURFACE_ROOT];
+    case "fuel-line":
+      return [];
     case "strut":
       return [node("stack-top", "stack", [0, 0.5, 0], [0, 1, 0]), node("stack-bottom", "stack", [0, -0.5, 0], [0, -1, 0])];
     case "wing":
