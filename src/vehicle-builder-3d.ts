@@ -77,7 +77,7 @@ function previewSvg(kind:string,color:number){
  wing:'<path d="M7 25l52-13 10 9-52 18z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
  control:'<path d="M13 25h46v12H13z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
  wheel:'<path d="M30 10h12v25H30z" fill="'+fill+'"/><circle cx="36" cy="43" r="9" fill="#273542" stroke="#e3edf5" stroke-width="2"/>',
- strut:'<path d="M32 8h8v44h-8z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>'
+ strut:'<path d="M32 8h8v44h-8z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
   "nose-cone":'<path d="M36 7L12 48h48z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
   fairing:'<path d="M36 7Q31 17 18 26L13 48h46L54 26Q41 17 36 7z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
   "conical-fairing":'<path d="M36 7L13 48h46z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
