@@ -65,14 +65,14 @@ describe(".spaze world archives", () => {
 
   it("rejects malformed blueprint records inside a .spaze archive", () => {
     const archive = unzipSync(exportWorld(sampleWorld));
-    archive["world/blueprints.json"] = strToU8(JSON.stringify([{ id: "bad", name: "", parts: [] }]));
+    archive["world/blueprints.json"] = strToU8(JSON.stringify([{ id: "bad", name: "Bad blueprint", parts: [], createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" }]));
     const manifest = JSON.parse(new TextDecoder().decode(archive["world/manifest.json"]));
     const malformed = zipSync({
       "world/manifest.json": strToU8(JSON.stringify(manifest)),
       "world/world.json": archive["world/world.json"]!,
       "world/blueprints.json": archive["world/blueprints.json"]!
     });
-    expect(() => importWorld(malformed)).toThrow(/Blueprint name cannot be empty|between 1 and 120/i);
+    expect(() => importWorld(malformed)).toThrow(/between 1 and 120/i);
   });
 
   it("assigns an independent ID to imported worlds", () => {
