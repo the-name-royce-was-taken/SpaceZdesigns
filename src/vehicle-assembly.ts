@@ -151,9 +151,13 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
  let best:AttachmentPlacement|null=null,bestDistance=Infinity;
  for(const parent of parts){
   if(!parent.id)continue;
-  const parentDistance=Math.hypot((parent.x??0)-position[0],(parent.y??0)-position[1],(parent.z??0)-position[2]);
-  if(parentDistance>maxDistance+2.2)continue;
   const reserved=occupied.get(parent.id)??[],pn=attachmentNodes(parent.kind,parent);
+  // Bound the search using the actual connector reach of both parts. A fixed
+  // center-distance cutoff silently excluded the far ends of long structural beams.
+  const parentReach=pn.reduce((reach,n)=>Math.max(reach,Math.hypot(...n.position)),0);
+  const childReach=cn.reduce((reach,n)=>Math.max(reach,Math.hypot(...n.position)),0);
+  const parentDistance=Math.hypot((parent.x??0)-position[0],(parent.y??0)-position[1],(parent.z??0)-position[2]);
+  if(parentDistance>maxDistance+parentReach+childReach)continue;
   for(const p of pn){
    if(reserved.includes(p.id))continue;
    const pd=rotatePart(p.direction,parent),po=rotatePart(p.position,parent);
