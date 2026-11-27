@@ -31,7 +31,8 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   const shieldThickness=kind==="heat-shield"?Math.max(.04,Math.min(.5,part?.thickness??.16)):.16;
   // Grid bounds follow the rendered geometry, including off-centre/scalable parts.
   const centerX=kind==="solar"?.1+solarLength/2:0;
-  const roverMinY=-.12-roverRadius,roverMaxY=Math.max(.22,-.12+roverRadius);\n  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:0;
+  const roverMinY=-.12-roverRadius,roverMaxY=Math.max(.22,-.12+roverRadius);
+  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:0;
   const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:baseX;
   const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:sy;
   const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:sz;
