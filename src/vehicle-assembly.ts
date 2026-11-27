@@ -106,7 +106,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  let best:AttachmentPlacement|null=null,bestScore=Infinity;
  for(let parentIndex=0;parentIndex<parents.length;parentIndex++){
   const parent=parents[parentIndex]!,nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
-  const usedWallAngles=used.map(id=>/^surface-wall-a(\\d+)-y\\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
+  const usedWallAngles=used.map(id=>/^surface-wall-a(\d+)-y\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
   for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
    for(const candidate of nodes){
     if(used.includes(candidate.id))continue;
@@ -115,7 +115,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
     if(!placement||placement.parentNode!==candidate.id)continue;
     let score=parentIndex*100000;
     if(candidate.attachmentClass==="stack")score-=10000;
-    const wall=/^surface-wall-a(\\d+)-y\\d+$/.exec(candidate.id);
+    const wall=/^surface-wall-a(\d+)-y\d+$/.exec(candidate.id);
     if(wall&&usedWallAngles.length){
      const angle=Number(wall[1]);
      const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));
