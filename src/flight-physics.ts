@@ -6,7 +6,7 @@ export interface FlightState {
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
 export interface VehiclePhysics {
   dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number;
-  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; engines?:FlightEngine[];
+  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; engines?:FlightEngine[]; activationGroups?:number[];
 }
 const G0=9.80665, EARTH_MU=3.986004418e14, EARTH_RADIUS=6_371_000, SEA_LEVEL_DENSITY=1.225, SCALE_HEIGHT=8500;
 const FIXED_DT=1/120, MAX_SUBSTEPS=24;
@@ -18,7 +18,9 @@ export class FlightSimulator {
   }
   launch(){this.state.landed=false;this.state.crashed=false;this.state.elapsed=0;this.state.maxQ=0;}
   reset(){Object.assign(this.state,{x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:this.vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0});this.accumulator=0;}
-  activateNextStage(){const stages=(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(stage=>stage>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
+  activateNextStage(){const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(stage=>stage>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
+  activateStage(stage:number){if(!Number.isInteger(stage)||stage<=this.state.currentStage)return false;const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(value=>value>this.state.currentStage).sort((a,b)=>a-b)[0];if(next!==stage)return false;this.state.currentStage=stage;return true;}
+  applyImpulse(deltaVx:number,deltaVy:number){if(this.state.landed||this.state.crashed||!Number.isFinite(deltaVx)||!Number.isFinite(deltaVy))return;this.state.vx+=deltaVx;this.state.vy+=deltaVy;}
   step(frameDt:number,input:FlightInputs){
     if(this.state.landed||this.state.crashed)return;
     this.accumulator+=Math.min(Math.max(frameDt,0),.1);
