@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { groundClearanceOffset, groundDropDistance, sideSpawnPosition, translatePartsY } from "../src/grounding";
+import { groundClearanceOffset, groundDropDistance, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "../src/grounding";
 
 describe("ground clearance", () => {
   it("spawns a new part beside the craft and rests its local bottom on the ground", () => {
     const position = sideSpawnPosition(3.2, -0.6, -0.45);
     expect(position.x).toBeCloseTo(4.15);
     expect(position.y).toBeCloseTo(0.45);
+  });
+
+  it("moves an overlapping spawn left until clear, then leaves two extra units", () => {
+    const candidate = { minX: 1, maxX:2, minY: 0, maxY: 1, minZ: 0, maxZ: 1 };
+    const obstacles = [{ minX: 0, maxX: 1.5, minY: 0, maxY: 1, minZ: 0, maxZ: 1 }];
+    const offset = leftwardClearanceOffset(candidate, obstacles, .1, 2);
+    expect(offset).toBeLessThan(-2);
+    const moved = { ...candidate, minX: candidate.minX + offset, maxX: candidate.maxX + offset };
+    expect(obstacles.some(obstacle => moved.minX < obstacle.maxX && moved.maxX > obstacle.minX && moved.minY < obstacle.maxY && moved.maxY > obstacle.minY && moved.minZ < obstacle.maxZ && moved.maxZ > obstacle.minZ)).toBe(false);
+    expect(leftwardClearanceOffset(candidate, [{ ...obstacles[0]!, minY: 2, maxY: 3 }], .1, 2)).toBe(0);
   });
 
   it("raises a part whose lowest point is below the ground plane", () => {

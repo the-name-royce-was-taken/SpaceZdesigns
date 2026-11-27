@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "./vehicle-assembly";
-import { groundClearanceOffset, groundDropDistance, sideSpawnPosition, translatePartsY } from "./grounding";
+import { groundClearanceOffset, groundDropDistance, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "./grounding";
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number}[] = [
@@ -403,6 +403,14 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
       const preview=makeMesh(part);preview.position.set(0,0,0);preview.rotation.set(part.rx??0,part.ry??0,part.rz??0);preview.updateMatrixWorld(true);
       const localBounds=new THREE.Box3().setFromObject(preview);
       const position=sideSpawnPosition(rightEdge,localBounds.min.x,localBounds.min.y,.35);part.x=position.x;part.y=position.y;
+      preview.position.set(part.x,part.y,part.z??0);preview.updateMatrixWorld(true);
+      const candidateBounds=new THREE.Box3().setFromObject(preview);
+      const obstacleBounds=craftGroup.children.map(group=>new THREE.Box3().setFromObject(group)).filter(bounds=>!bounds.isEmpty());
+      const shiftLeft=leftwardClearanceOffset(
+       {minX:candidateBounds.min.x,maxX:candidateBounds.max.x,minY:candidateBounds.min.y,maxY:candidateBounds.max.y,minZ:candidateBounds.min.z,maxZ:candidateBounds.max.z},
+       obstacleBounds.map(bounds=>({minX:bounds.min.x,maxX:bounds.max.x,minY:bounds.min.y,maxY:bounds.max.y,minZ:bounds.min.z,maxZ:bounds.max.z}))
+      );
+      part.x+=shiftLeft;
       preview.traverse(object=>{if(object instanceof THREE.Mesh){object.geometry.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>material.dispose());}});
      }
     }

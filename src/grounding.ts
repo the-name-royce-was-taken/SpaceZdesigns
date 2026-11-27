@@ -25,3 +25,22 @@ export function sideSpawnPosition(rightEdge: number, localMinX: number, localMin
   if (![rightEdge, localMinX, localMinY, gap].every(Number.isFinite)) return { x: 0, y: 0 };
   return { x: rightEdge + Math.max(0, gap) - localMinX, y: -localMinY };
 }
+
+export interface SpawnBounds {
+  minX:number; maxX:number; minY:number; maxY:number; minZ:number; maxZ:number;
+}
+
+/**
+ * If the proposed spawn bounds overlap existing parts, walk left in small steps
+ * until clear, then add the requested extra left-hand clearance.
+ */
+export function leftwardClearanceOffset(candidate:SpawnBounds, obstacles:SpawnBounds[], step=.1, extraGap=2):number {
+  if (![candidate.minX,candidate.maxX,candidate.minY,candidate.maxY,candidate.minZ,candidate.maxZ,step,extraGap].every(Number.isFinite) || step<=0 || extraGap<0) return 0;
+  const overlaps=(a:SpawnBounds,b:SpawnBounds)=>a.minX<=b.maxX&&a.maxX>=b.minX&&a.minY<=b.maxY&&a.maxY>=b.minY&&a.minZ<=b.maxZ&&a.maxZ>=b.minZ;
+  if(!obstacles.some(obstacle=>overlaps(candidate,obstacle))) return 0;
+  let offset=0,iterations=0;
+  const shifted=()=>({...candidate,minX:candidate.minX+offset,maxX:candidate.maxX+offset});
+  while(obstacles.some(obstacle=>overlaps(shifted(),obstacle))&&iterations<10000){offset-=step;iterations++;}
+  if(iterations>=10000)return 0;
+  return offset-extraGap;
+}
