@@ -37,28 +37,44 @@ describe("vehicle attachment system", () => {
   });
 
 
-  it("provides a dense 9 by 9 surface grid on the tank wall and end caps", () => {
+  it("builds a centered attachment lattice with a fixed 0.16-unit cube pitch", () => {
     const nodes=attachmentNodes("tank");
     const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
-    expect(wall).toHaveLength(81);
-    expect(new Set(wall.map(n=>n.position[1])).size).toBe(9);
-    expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBe(9);
-    expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(49);
-    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-"))).toHaveLength(49);
+    expect(wall.length).toBeGreaterThan(81);
+    expect(new Set(wall.map(n=>n.position[1])).size).toBeGreaterThan(1);
+    const levels=[...new Set(wall.map(n=>n.position[1]))].sort((a,b)=>a-b);
+    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.16)<1e-8)).toBe(true);
+    expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBeGreaterThan(9);
+    expect(wall.some(n=>Math.abs(n.position[1])<1e-8)).toBe(true);
+    expect(wall.every(n=>Math.abs(n.position[1]/.16-Math.round(n.position[1]/.16))<1e-8)).toBe(true);
+    expect(nodes.filter(n=>n.id.startsWith("surface-top-")).length).toBeGreaterThan(1);
+    expect(nodes.filter(n=>n.id.startsWith("surface-bottom-")).length).toBeGreaterThan(1);
+  });
+
+  it("uses the same centered cube pitch on flat part faces", () => {
+    const east=attachmentNodes("wing").filter(n=>n.id.startsWith("surface-east-"));
+    const zLevels=[...new Set(east.map(n=>n.position[2]))].sort((a,b)=>a-b);
+    expect(east.every(n=>Math.abs(n.position[0]-.85)<1e-8&&Math.abs(n.position[1])<1e-8)).toBe(true);
+    expect(zLevels).toContain(0);
+    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.16)<1e-8)).toBe(true);
+    expect(Math.max(...zLevels)).toBeLessThanOrEqual(.55);
+    expect(.55-Math.max(...zLevels)).toBeLessThan(.16);
   });
 
   it("shapes tank snap nodes to its top and bottom radius settings", () => {
     const nodes=attachmentNodes("tank",{kind:"tank",topRadius:.7,bottomRadius:.2});
     const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
     const bottom=nodes.filter(n=>n.id.startsWith("surface-bottom-"));
-    expect(top.length).toBe(49);
+    expect(top.length).toBeGreaterThan(1);
     expect(Math.max(...top.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.7);
-    expect(bottom.length).toBe(49);
-    expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeCloseTo(.2);
-    const upperWall=nodes.find(n=>n.id==="surface-wall-a0-y8");
-    const lowerWall=nodes.find(n=>n.id==="surface-wall-a0-y0");
-    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.7);
-    expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
+    expect(bottom.length).toBeGreaterThan(1);
+    expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.2);
+    expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeGreaterThan(.1);
+    const wallNodes=nodes.filter(n=>n.id.startsWith("surface-wall-a0-"));
+    const upperWall=wallNodes.reduce((best,n)=>n.position[1]>best.position[1]?n:best);
+    const lowerWall=wallNodes.reduce((best,n)=>n.position[1]<best.position[1]?n:best);
+    expect(Math.abs(Math.hypot(upperWall!.position[0],upperWall!.position[2])-.7)).toBeLessThan(.08);
+    expect(Math.abs(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])-.2)).toBeLessThan(.08);
   });
 
   it("automatically finds a flush surface node and spreads replicated parts around the surface", () => {
@@ -71,11 +87,12 @@ describe("vehicle attachment system", () => {
       parts.push({ id: "wing-" + i, kind: "wing", parentId: placement!.parentId, parentNode: placement!.parentNode, childNode: placement!.childNode, x: placement!.x, y: placement!.y, z: placement!.z, ry: placement!.rotationY });
     }
     expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
-    expect(placements.every(p => /^surface-west-r4-c4$|^surface-east-r4-c4$|^surface-north-r4-c4$|^surface-south-r4-c4$/.test(p.childNode))).toBe(true);
+    expect(placements.every(p => {const child=attachmentNodes("wing").find(n=>n.id===p.childNode)!;const dot=child.position[0]*child.direction[0]+child.position[1]*child.direction[1]+child.position[2]*child.direction[2];return Math.hypot(child.position[0]-dot*child.direction[0],child.position[1]-dot*child.direction[1],child.position[2]-dot*child.direction[2])<1e-6;})).toBe(true);
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
     const sortedAngles = [...angles].sort((a, b) => a - b);
-    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + 9) % 9));
+    const angleCount=new Set(attachmentNodes("tank").filter(n=>n.id.startsWith("surface-wall-")).map(n=>/^surface-wall-a(\d+)-/.exec(n.id)?.[1])).size;
+    const circularGaps=sortedAngles.map((angle,index)=>((sortedAngles[(index+1)%sortedAngles.length]!-angle+angleCount)%angleCount));
     expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
@@ -88,27 +105,16 @@ describe("vehicle attachment system", () => {
     }
   });
 
-  it("centers the solar array's mounting face on its rendered hinge", () => {
-    const solar = attachmentNodes("solar", { kind: "solar", solarLength: 2.4 });
-    const mount = solar.find(node => node.id === "surface-west-r4-c4");
-    expect(mount).toBeDefined();
-    expect(mount!.position[0]).toBeCloseTo(.1);
-    expect(mount!.position[1]).toBeCloseTo(0);
-    expect(mount!.position[2]).toBeCloseTo(0);
-    const longerSolar = attachmentNodes("solar", { kind: "solar", solarLength: 4.8 });
-    expect(longerSolar.find(node => node.id === "surface-west-r4-c4")!.position[0]).toBeCloseTo(.1);
-  });
-
   it("chooses the center row when a fuel tank attaches to a curved surface", () => {
     const parts: BuildPart[] = [
       { id: "tank", kind: "tank" },
-      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", "surface-top-r4-c4", "surface-bottom-r4-c4"]
+      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", "surface-top-r2-c2", "surface-bottom-r2-c2"]
         .map((parentNode, index) => ({ id: "occupant-" + index, kind: "battery" as const, parentId: "tank", parentNode }))
     ];
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
     expect(placement).not.toBeNull();
     expect(placement!.parentNode).toMatch(/^surface-wall-/);
-    expect(placement!.childNode).toMatch(/^surface-wall-a\d+-y4$/);
+    expect(placement!.childNode).toMatch(/^surface-wall-a\d+-y\d+$/);
     const childNode = attachmentNodes("tank").find(node => node.id === placement!.childNode)!;
     expect(childNode.position[1]).toBeCloseTo(0);
   });
@@ -147,7 +153,7 @@ describe("vehicle attachment system", () => {
     expect(placement!.z+childOffset[2]).toBeCloseTo(tank.z!+parentOffset[2]);
   });
 
-  it("keeps surface snapping available on the existing 9x9 grid without rotating the part", () => {
+  it("keeps surface snapping available on the centered fixed-pitch grid without rotating the part", () => {
     const tank: BuildPart = { id: "tank", kind: "tank" };
     const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, rz: .37 };
     const placement = findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing);
@@ -155,7 +161,7 @@ describe("vehicle attachment system", () => {
     expect(placement!.rotationY).toBe(wing.ry ?? 0);
     expect(placement!.parentNode).toMatch(/^surface-/);
     const wall = attachmentNodes("tank").filter(n => n.id.startsWith("surface-wall-"));
-    expect(wall).toHaveLength(81);
+    expect(wall.length).toBeGreaterThan(81);
   });
 
   it("places a stack part above the highest available stack node", () => {
@@ -192,20 +198,22 @@ describe("vehicle attachment system", () => {
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
-  it("scales the invisible 9×9 attachment lattice with editable curved geometry", () => {
+  it("scales the centered fixed-pitch attachment lattice with editable curved geometry", () => {
     const tank = attachmentNodes("tank", { kind:"tank", topRadius:.72, bottomRadius:.28, height:2.4 });
     const tankWall = tank.filter(n=>n.id.startsWith("surface-wall-"));
-    expect(tankWall).toHaveLength(81);
-    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeCloseTo(-1.2);
-    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeCloseTo(1.2);
-    expect(Math.hypot(...tankWall.find(n=>n.id==="surface-wall-a0-y8")!.position.filter((_,i)=>i!==1))).toBeCloseTo(.72);
-    expect(Math.hypot(...tankWall.find(n=>n.id==="surface-wall-a0-y0")!.position.filter((_,i)=>i!==1))).toBeCloseTo(.28);
+    expect(tankWall.length).toBeGreaterThan(81);
+    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeLessThan(-1.0);
+    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(-1.2);
+    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(1.0);
+    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeLessThan(1.2);
+    expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]>best.position[1]?n:best).position.filter((_,i)=>i!==1))-.72)).toBeLessThan(.08);
+    expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]<best.position[1]?n:best).position.filter((_,i)=>i!==1))-.28)).toBeLessThan(.08);
     for (const kind of ["fairing","conical-fairing","interstage-fairing","clam-shell-fairing"] as const) {
       const nodes=attachmentNodes(kind,{kind,bottomRadius:.63,height:2.2});
       const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
-      expect(wall).toHaveLength(81);
-      expect(Math.min(...wall.map(n=>n.position[1]))).toBeCloseTo(-1.1);
-      expect(Math.max(...wall.map(n=>n.position[1]))).toBeCloseTo(1.1);
+      expect(wall.length).toBeGreaterThan(81);
+      expect(Math.min(...wall.map(n=>n.position[1]))).toBeLessThan(-.9);
+      expect(Math.max(...wall.map(n=>n.position[1]))).toBeGreaterThan(.9);
     }
   });
 

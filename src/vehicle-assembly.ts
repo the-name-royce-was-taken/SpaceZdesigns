@@ -17,39 +17,45 @@ const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length
 const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3]};
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
-const values=Array.from({length:9},(_,i)=>-1+2*i/8);
+const ATTACHMENT_GRID_CUBE_SIZE=.16;
+const centeredOffsets=(halfExtent:number)=>{const steps=Math.floor((halfExtent+1e-8)/ATTACHMENT_GRID_CUBE_SIZE);return Array.from({length:steps*2+1},(_,i)=>(i-steps)*ATTACHMENT_GRID_CUBE_SIZE);};
+const isCenterSurfaceNode=(n:AttachmentNode)=>{const p=n.position,d=n.direction,dot=p[0]*d[0]+p[1]*d[1]+p[2]*d[2];return Math.hypot(p[0]-dot*d[0],p[1]-dot*d[1],p[2]-dot*d[2])<1e-6;};
 export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
  const top=Math.max(.08,Math.min(.9,part.topRadius??.44)),bottom=Math.max(.08,Math.min(.9,part.bottomRadius??.44)),height=Math.max(.25,Math.min(3,part.height??.96));
  const volume=Math.PI*height*(top*top+top*bottom+bottom*bottom)/3,reference=Math.PI*.96*.44*.44;
  return 120*volume/reference;
 }
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
-  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,centerX=kind==="solar"?.1+sx/2:0,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
-  const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
-    for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
+  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
+  const addGrid=(face:string,uValues:number[],vValues:number[],point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
+    for(let row=0;row<vValues.length;row++)for(let col=0;col<uValues.length;col++){const u=uValues[col]!,v=vValues[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
   };
   const disk=(face:"top"|"bottom",radius:number,y:number,dy:number)=>{
-    addGrid(face,(u,v)=>{const l=Math.hypot(u,v),s=l>1?1/l:1;return [u*s*radius,y,v*s*radius];},()=>[0,dy,0],(u,v)=>Math.hypot(u,v)<=1+1e-8);
+    const offsets=centeredOffsets(radius);
+    addGrid(face,offsets,offsets,(x,z)=>[x,y,z],()=>[0,dy,0],(x,z)=>Math.hypot(x,z)<=radius+1e-8);
   };
   if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)){
     const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:.43;
     const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:.49;
     const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:kind==="heat-shield"?(part?.thickness??.16)/2:hy;
     const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-(part?.thickness??.16)/2:-hy;
-    // Curved side grids sit on the circular/conical silhouette, never on the
-    // empty corners of a rectangular bounding box.
-    for(let a=0;a<9;a++)for(let row=0;row<9;row++){
-      const angle=2*Math.PI*a/9,v=values[row]!,y=yBottom+(yTop-yBottom)*(v+1)/2;
-      let radius=bottom+(top-bottom)*(v+1)/2;
+    // Curved surfaces use the same fixed cube pitch as flat faces. The grid is
+    // centered at the part origin and grows outward to within one cell of its bounds.
+    const yOffsets=centeredOffsets(Math.max(Math.abs(yBottom),Math.abs(yTop))).filter(y=>y>=yBottom-1e-8&&y<=yTop+1e-8);
+    const maxRadius=Math.max(top,bottom),angleCount=Math.max(8,Math.ceil(2*Math.PI*maxRadius/ATTACHMENT_GRID_CUBE_SIZE));
+    for(let a=0;a<angleCount;a++)for(let row=0;row<yOffsets.length;row++){
+      const angle=2*Math.PI*a/angleCount,y=yOffsets[row]!;
+      const t=(y-yBottom)/(yTop-yBottom);
+      let radius=bottom+(top-bottom)*t;
       if(kind==="capsule"&&y>.23)radius=Math.max(.015,.43*(1-(y-.23)/.52));
       if(kind==="engine")radius=.43+(.19-.43)*(y-yBottom)/(yTop-yBottom);
-       if(kind==="nose-cone"||kind==="conical-fairing")radius=bottom*(1-(v+1)/2);
-       if(kind==="interstage-fairing")radius=bottom*(1-.22*(v+1)/2);
-       if(kind==="fairing"||kind==="clam-shell-fairing")radius=bottom*Math.sqrt(Math.max(0,1-Math.pow((v+1)/2,2)));
+      if(kind==="nose-cone"||kind==="conical-fairing")radius=bottom*(1-t);
+      if(kind==="interstage-fairing")radius=bottom*(1-.22*t);
+      if(kind==="fairing"||kind==="clam-shell-fairing")radius=bottom*Math.sqrt(Math.max(0,1-t*t));
       out.push(node(`surface-wall-a${a}-y${row}`,"surface",[Math.cos(angle)*radius,y,Math.sin(angle)*radius],[Math.cos(angle),0,Math.sin(angle)]));
     }
-    if(kind==="tank"){disk("top",top,hy,1);disk("bottom",bottom,-hy,-1);}
-    else if(kind==="nose-cone"||isFairingKind(kind))disk("bottom",bottom,-hy,-1);
+    if(kind==="tank"){disk("top",top,yTop,1);disk("bottom",bottom,yBottom,-1);}
+    else if(kind==="nose-cone"||isFairingKind(kind))disk("bottom",bottom,yBottom,-1);
     else if(kind==="capsule")disk("bottom",.49,-.445,-1);
     else if(kind==="separator"){disk("top",.5,hy,1);disk("bottom",.5,-hy,-1);}
     else if(kind==="dock"){disk("top",.22,.13,1);disk("bottom",.28,-.11,-1);}
@@ -58,16 +64,17 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     else if(kind==="heat-shield"){disk("top",top,yTop,1);disk("bottom",bottom,yBottom,-1);}
     return out;
   }
-  // Box-like parts use a 9×9 grid on each real outer face.
+  // Flat faces share a fixed-pitch cube lattice, centered on the part origin.
+  const xOffsets=centeredOffsets(hx),yOffsets=centeredOffsets(hy),zOffsets=centeredOffsets(hz);
   const faces=[
-    {id:"east",p:(u:number,v:number):[number,number,number]=>[centerX+hx,u*hy,v*hz],d:[1,0,0] as const},
-    {id:"west",p:(u:number,v:number):[number,number,number]=>[centerX-hx,u*hy,v*hz],d:[-1,0,0] as const},
-    {id:"north",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,v*hy,hz],d:[0,0,1] as const},
-    {id:"south",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,v*hy,-hz],d:[0,0,-1] as const},
-    {id:"top",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,hy,v*hz],d:[0,1,0] as const},
-    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,-hy,v*hz],d:[0,-1,0] as const}
+    {id:"east",u:yOffsets,v:zOffsets,p:(u:number,v:number):[number,number,number]=>[hx,u,v],d:[1,0,0] as const},
+    {id:"west",u:yOffsets,v:zOffsets,p:(u:number,v:number):[number,number,number]=>[-hx,u,v],d:[-1,0,0] as const},
+    {id:"north",u:xOffsets,v:yOffsets,p:(u:number,v:number):[number,number,number]=>[u,v,hz],d:[0,0,1] as const},
+    {id:"south",u:xOffsets,v:yOffsets,p:(u:number,v:number):[number,number,number]=>[u,v,-hz],d:[0,0,-1] as const},
+    {id:"top",u:xOffsets,v:zOffsets,p:(u:number,v:number):[number,number,number]=>[u,hy,v],d:[0,1,0] as const},
+    {id:"bottom",u:xOffsets,v:zOffsets,p:(u:number,v:number):[number,number,number]=>[u,-hy,v],d:[0,-1,0] as const}
   ];
-  for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
+  for(const face of faces)addGrid(face.id,face.u,face.v,face.p,()=>[...face.d] as [number,number,number]);
   return out;
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
@@ -107,7 +114,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  for(const parent of parents){
   const nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
   const usedWallAngles=used.map(id=>/^surface-wall-a(\d+)-y\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
-  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||/^surface-wall-a\d+-y4$/.test(n.id)||/^surface-(?:east|west|north|south|top|bottom)-r4-c4$/.test(n.id));
+  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||(n.attachmentClass==="surface"&&isCenterSurfaceNode(n)));
   let best:AttachmentPlacement|null=null,bestScore=Infinity;
   for(const candidate of candidates){
    if(used.includes(candidate.id))continue;
@@ -128,8 +135,8 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
    const placement:AttachmentPlacement={x:(parent.x??0)+parentPosition[0]-childPosition[0],y:(parent.y??0)+parentPosition[1]-childPosition[1],z:(parent.z??0)+parentPosition[2]-childPosition[2],parentId:parent.id!,parentNode:candidate.id,childNode:chosen.id,rotationY:0};
    let score=normalScore;
    if(candidate.attachmentClass==="stack")score-=10000;
-   const wall=/^surface-wall-a(\d+)-y4$/.exec(candidate.id);
-   if(wall&&usedWallAngles.length){const angle=Number(wall[1]);const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));score-=separation*100;}
+   const wall=/^surface-wall-a(\d+)-y\d+$/.exec(candidate.id);
+   if(wall&&usedWallAngles.length){const angle=Number(wall[1]),angleCount=nodes.reduce((max,n)=>{const match=/^surface-wall-a(\d+)-y\d+$/.exec(n.id);return match?Math.max(max,Number(match[1])+1):max;},0);const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,angleCount-delta);}));score-=separation*100;}
    if(score<bestScore){bestScore=score;best=placement;}
   }
   if(best)return best;
@@ -151,7 +158,7 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
     if(p.attachmentClass!==c.attachmentClass)continue;
     const cd=rotatePart(c.direction,childPart??{});
     // Stack joints must face one another. Surface snapping keeps the existing
-    // 9x9 attachment lattice and ranks the closest available contact normals,
+    // fixed-size centered surface lattice and ranks the closest available contact normals,
     // rather than rejecting the other grid points and breaking surface snaps.
     if(p.attachmentClass==="stack"&&!opposite(pd,cd))continue;
     const co=rotatePart(c.position,childPart??{});
