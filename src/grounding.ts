@@ -9,6 +9,11 @@ export function groundClearanceOffset(minY: number): number {
   return Number.isFinite(minY) ? Math.max(0, -minY) : 0;
 }
 
+/** Returns how far a selection above y=0 must move down to touch the ground. */
+export function groundDropDistance(minY: number): number {
+  return Number.isFinite(minY) ? Math.max(0, minY) : 0;
+}
+
 /** Applies one rigid vertical translation to the requested parts. */
 export function translatePartsY<T extends GroundablePart>(parts: T[], ids: ReadonlySet<string>, offset: number): T[] {
   if (!Number.isFinite(offset) || offset === 0) return parts.map(part => ({ ...part }));
