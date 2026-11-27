@@ -47,5 +47,5 @@ export function leftwardClearanceOffset(candidate:SpawnBounds, obstacles:SpawnBo
 
 /** Exact vertical correction that places a part's measured lowest point on y=0. */
 export function groundSnapOffset(minY:number):number {
-  return Number.isFinite(minY) ? -minY : 0;
+  return Number.isFinite(minY) && minY !== 0 ? -minY : 0;
 }
