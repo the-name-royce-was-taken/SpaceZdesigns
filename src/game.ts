@@ -85,6 +85,7 @@ function disposeTrackingScene(){if(trackingFrame)cancelAnimationFrame(trackingFr
 function makeRocket():THREE.Group{
  const g=new THREE.Group();
  const enginePlumes:THREE.Mesh[]=[];
+ const rcsPlumes:THREE.Mesh[]=[];
  const solarAssemblies:{group:number;partId:string;hinge:THREE.Group;deployed:boolean}[]=[];
  const activationParts:{group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[]=[];
  const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
@@ -173,6 +174,11 @@ function makeRocket():THREE.Group{
    const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,(p.x??0),y-.12,p.z??0);tire.rotation.z=Math.PI/2;
    const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,(p.x??0),y-.12,p.z??0);rim.rotation.z=Math.PI/2;
    for(let i=0;i<16;i++){const a=i*Math.PI/8;const lug=add(new THREE.BoxGeometry(.2,.045,.045),rubber,p.x??0,y-.12+Math.cos(a)*(radius+.006),(p.z??0)+Math.sin(a)*(radius+.006));lug.rotation.x=a;}
+  }else if(p.kind==="rcs"){
+   add(new THREE.BoxGeometry(.34,.22,.34),mat(0x899ba8,.72),p.x??0,y,p.z??0);
+   for(let i=0;i<4;i++){const a=i*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),nozzle=add(new THREE.CylinderGeometry(.055,.075,.13,10),mat(0xb5c3ca,.78),(p.x??0)+dx*.18,y,(p.z??0)+dz*.18);nozzle.rotation.z=dz*.55;nozzle.rotation.x=dx*.55;
+    const plume=new THREE.Mesh(new THREE.ConeGeometry(.055,.3,8),new THREE.MeshBasicMaterial({color:0x7ed7e9,transparent:true,opacity:.72}));plume.position.set((p.x??0)+dx*.27,y,(p.z??0)+dz*.27);plume.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,0,dz));plume.visible=false;plume.userData.stage=partActivationGroup(p)??0;g.add(plume);rcsPlumes.push(plume);
+   }
   }else if(p.kind==="remote-control"||p.kind==="reaction-wheel"){
    const top=p.topRadius??.28,bottom=p.bottomRadius??.28,height=.28,half=height/2;
    const shell=mat(p.kind==="remote-control"?0x718fa0:0x9baab4,.68),trim=mat(p.kind==="remote-control"?0x29495b:0x344d5e,.8),detail=mat(p.kind==="remote-control"?0x4bb6d4:0xcbd5db,.55);
@@ -202,6 +208,7 @@ function makeRocket():THREE.Group{
   }
  });
  g.userData.enginePlumes=enginePlumes;
+ g.userData.rcsPlumes=rcsPlumes;
  g.userData.solarAssemblies=solarAssemblies;
  g.userData.activationParts=activationParts;
  return g;
@@ -280,6 +287,7 @@ function launchpad(){
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#engine-stage-readout",root).textContent="STAGE "+s.currentStage;
    const plumes=group.userData.enginePlumes as THREE.Mesh[];plumes.forEach(plume=>{plume.visible=!s.landed&&!s.crashed&&Number(plume.userData.stage??0)===s.currentStage&&Number(range.value)>0&&s.fuelTonnes>0;});
+   const rcsJets=group.userData.rcsPlumes as THREE.Mesh[];const rcsCommand=heldKeys.has("KeyA")||heldKeys.has("KeyD")||heldKeys.has("ArrowLeft")||heldKeys.has("ArrowRight");rcsJets.forEach(jet=>{jet.visible=!s.landed&&!s.crashed&&rcsCommand&&Number(jet.userData.stage??0)<=s.currentStage&&s.rcsFuelTonnes>0;});
    const nextStageButton=$("#next-stage",root) as HTMLButtonElement;nextStageButton.disabled=!vehicle.activationGroups?.some(stage=>stage>s.currentStage);nextStageButton.textContent=nextStageButton.disabled?"NO LATER STAGES":"ACTIVATE NEXT STAGE";
    $("#flight-status",root).textContent=s.crashed?"VEHICLE LOST":s.landed?"LANDED":"IN FLIGHT";$("#flight-note",root).textContent=s.crashed?"Impact detected. Recover and redesign the vehicle.":s.landed?"Vehicle landed. Recover to reset the launchpad.":q>30000?"MAX-Q REGION: monitor dynamic pressure and throttle.":"Gravity turn and aerodynamic forces are active.";
    if(s.crashed||s.landed){range.value="0";updateLabels();clearFlightSave();if(s.crashed)host.toast("Vehicle impacted the surface.","error");else if(s.elapsed>1){awardCareerAchievements(s,"landing",root);host.toast("Vehicle returned to the surface.");}sim=null;}
