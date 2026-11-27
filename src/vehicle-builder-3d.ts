@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "./vehicle-assembly";
-import { groundClearanceOffset, groundDropDistance, translatePartsY } from "./grounding";
+import { groundClearanceOffset, groundDropDistance, sideSpawnPosition, translatePartsY } from "./grounding";
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number}[] = [
@@ -395,6 +395,17 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const topY=craft.reduce((n,p)=>Math.max(n,(p.y??0)+spec(p.kind).size.y/2),0);
    const partSize=spec(kind).size;
    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="remote-control"||kind==="reaction-wheel")?{topRadius:.28,bottomRadius:.28}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
+    if(craft.length){
+     scene.updateMatrixWorld(true);
+     const grounded=craftGroup.children.some(group=>{const bounds=new THREE.Box3().setFromObject(group);return !bounds.isEmpty()&&Math.abs(bounds.min.y)<=.08;});
+     if(grounded){
+      const rightEdge=craftGroup.children.reduce((edge,group)=>{const bounds=new THREE.Box3().setFromObject(group);return bounds.isEmpty()?edge:Math.max(edge,bounds.max.x);},-Infinity);
+      const preview=makeMesh(part);preview.position.set(0,0,0);preview.rotation.set(part.rx??0,part.ry??0,part.rz??0);preview.updateMatrixWorld(true);
+      const localBounds=new THREE.Box3().setFromObject(preview);
+      const position=sideSpawnPosition(rightEdge,localBounds.min.x,localBounds.min.y,.35);part.x=position.x;part.y=position.y;
+      preview.traverse(object=>{if(object instanceof THREE.Mesh){object.geometry.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>material.dispose());}});
+     }
+    }
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
