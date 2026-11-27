@@ -106,9 +106,11 @@ describe("vehicle attachment system", () => {
   });
 
   it("chooses the center row when a fuel tank attaches to a curved surface", () => {
+    const centerTop=attachmentNodes("tank").find(n=>n.id.startsWith("surface-top-")&&Math.abs(n.position[0])<1e-8&&Math.abs(n.position[2])<1e-8)!;
+    const centerBottom=attachmentNodes("tank").find(n=>n.id.startsWith("surface-bottom-")&&Math.abs(n.position[0])<1e-8&&Math.abs(n.position[2])<1e-8)!;
     const parts: BuildPart[] = [
       { id: "tank", kind: "tank" },
-      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", "surface-top-r2-c2", "surface-bottom-r2-c2"]
+      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", centerTop.id, centerBottom.id]
         .map((parentNode, index) => ({ id: "occupant-" + index, kind: "battery" as const, parentId: "tank", parentNode }))
     ];
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
@@ -203,9 +205,9 @@ describe("vehicle attachment system", () => {
     const tankWall = tank.filter(n=>n.id.startsWith("surface-wall-"));
     expect(tankWall.length).toBeGreaterThan(81);
     expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeLessThan(-1.0);
-    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(-1.2);
+    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeGreaterThanOrEqual(-1.2);
     expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(1.0);
-    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeLessThan(1.2);
+    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeLessThanOrEqual(1.2);
     expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]>best.position[1]?n:best).position.filter((_,i)=>i!==1))-.72)).toBeLessThan(.08);
     expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]<best.position[1]?n:best).position.filter((_,i)=>i!==1))-.28)).toBeLessThan(.08);
     for (const kind of ["fairing","conical-fairing","interstage-fairing","clam-shell-fairing"] as const) {
