@@ -71,7 +71,7 @@ describe("vehicle attachment system", () => {
       parts.push({ id: "wing-" + i, kind: "wing", parentId: placement!.parentId, parentNode: placement!.parentNode, childNode: placement!.childNode, x: placement!.x, y: placement!.y, z: placement!.z, ry: placement!.rotationY });
     }
     expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
-    const angles = placements.map(p => Number(/^surface-wall-a(\\d+)-/.exec(p.parentNode)?.[1]));
+    const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
     expect(angles).toEqual([0, 4, 2, 6]);
     for (const p of placements) {
