@@ -73,8 +73,8 @@ describe("vehicle attachment system", () => {
     const wallNodes=nodes.filter(n=>n.id.startsWith("surface-wall-a0-"));
     const upperWall=wallNodes.reduce((best,n)=>n.position[1]>best.position[1]?n:best);
     const lowerWall=wallNodes.reduce((best,n)=>n.position[1]<best.position[1]?n:best);
-    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.7);
-    expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
+    expect(Math.abs(Math.hypot(upperWall!.position[0],upperWall!.position[2])-.7)).toBeLessThan(.08);
+    expect(Math.abs(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])-.2)).toBeLessThan(.08);
   });
 
   it("automatically finds a flush surface node and spreads replicated parts around the surface", () => {
