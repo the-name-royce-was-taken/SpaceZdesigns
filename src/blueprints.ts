@@ -90,6 +90,43 @@ export function validateBlueprintParts(value: unknown): BuildPart[] {
   return parts;
 }
 
+export function validateBlueprintRecords(value: unknown): BlueprintRecord[] {
+  if (!Array.isArray(value) || value.length > 500) throw new Error("Blueprint library must contain no more than 500 entries.");
+  const records = value.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error(`Blueprint ${index + 1} is invalid.`);
+    const record = item as Record<string, unknown>;
+    if (typeof record.id !== "string" || !record.id || typeof record.name !== "string"
+      || typeof record.createdAt !== "string" || !Number.isFinite(Date.parse(record.createdAt))
+      || typeof record.updatedAt !== "string" || !Number.isFinite(Date.parse(record.updatedAt))) {
+      throw new Error(`Blueprint ${index + 1} has invalid metadata.`);
+    }
+    return {
+      id: record.id,
+      name: cleanName(record.name),
+      parts: validateBlueprintParts(record.parts),
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt
+    } satisfies BlueprintRecord;
+  });
+  if (new Set(records.map(record => record.id)).size !== records.length) throw new Error("Blueprint library contains duplicate IDs.");
+  return records;
+}
+
+export async function replaceBlueprints(value: unknown): Promise<void> {
+  const records = validateBlueprintRecords(value);
+  const db = await database();
+  try {
+    const tx = db.transaction(STORE, "readwrite");
+    const done = transactionDone(tx);
+    const store = tx.objectStore(STORE);
+    store.clear();
+    for (const record of records) store.put(record);
+    await done;
+  } finally {
+    db.close();
+  }
+}
+
 export async function listBlueprints(): Promise<BlueprintRecord[]> {
   const db = await database();
   try {
