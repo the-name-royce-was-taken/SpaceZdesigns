@@ -1,4 +1,5 @@
 import { validateBlueprintRecords, type BlueprintRecord } from "./blueprints";
+import { CAREER_STARTING_CREDITS } from "./career";
 import { strToU8, unzipSync, zipSync } from "fflate";
 
 export type GameMode = "sandbox" | "career";
@@ -14,6 +15,8 @@ export interface WorldState {
   missions: unknown[];
   research: string[];
   blueprints?: BlueprintRecord[];
+  achievements?: string[];
+  purchasedParts?: string[];
 }
 
 export interface WorldRecord {
@@ -51,11 +54,11 @@ function makeId(): string {
   return `world-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function defaultState(): WorldState {
+function defaultState(mode: GameMode): WorldState {
   return {
     currentScene: "space-center",
     currentBody: "Earth",
-    credits: 100000,
+    credits: mode === "career" ? CAREER_STARTING_CREDITS : 100000,
     science: 0,
     reputation: 0,
     playTimeSeconds: 0,
@@ -94,7 +97,7 @@ function validateWorld(value: unknown): value is WorldRecord {
     && Array.isArray(state.missions)
     && Array.isArray(state.research)
     && state.research.every((item) => typeof item === "string")
-    && (state.blueprints === undefined || Array.isArray(state.blueprints));
+    && (state.blueprints === undefined || Array.isArray(state.blueprints))\n    && (state.achievements === undefined || (Array.isArray(state.achievements) && state.achievements.every((item) => typeof item === "string")))\n    && (state.purchasedParts === undefined || (Array.isArray(state.purchasedParts) && state.purchasedParts.every((item) => typeof item === "string")));
 }
 
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -162,7 +165,7 @@ export async function createWorld(name: string, mode: GameMode): Promise<WorldRe
     updatedAt: now,
     gameVersion: GAME_VERSION,
     schemaVersion: 1,
-    state: defaultState()
+    state: defaultState(mode)
   };
   await saveWorld(world);
   return world;
