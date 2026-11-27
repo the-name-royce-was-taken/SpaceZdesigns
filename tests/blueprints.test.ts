@@ -6,7 +6,9 @@ import type { BuildPart } from "../src/vehicle-builder-3d";
 const sample: BuildPart[] = [
   { id: "pod-1", kind: "capsule", x: 0.25, y: 1.8, z: -0.1, ry: 0.2 },
   { id: "tank-1", kind: "tank", x: 0, y: 0.8, z: 0, parentId: "pod-1", parentNode: "stack-bottom", childNode: "stack-top", topRadius: 0.62, bottomRadius: 0.44, height: 1.4 },
-  { id: "engine-1", kind: "engine", x: 0, y: -0.2, z: 0, engineType: "hydrolox", engineStage: 2, parentId: "tank-1" }
+  { id: "separator-1", kind: "separator", x: 0, y: 0.1, z: 0, activationGroup: 1 },
+  { id: "engine-1", kind: "engine", x: 0, y: -0.2, z: 0, engineType: "hydrolox", engineStage: 2, activationGroup: 2, parentId: "tank-1" },
+  { id: "solar-1", kind: "solar", x: 1, y: 0.8, z: 0, activationGroup: 3 }
 ];
 
 describe("buildz blueprint archives", () => {
@@ -14,7 +16,9 @@ describe("buildz blueprint archives", () => {
     const bytes = exportBuildz("Heavy Lifter", sample);
     expect(bytes[0]).toBe(0x50);
     expect(bytes[1]).toBe(0x4b);
-    expect(importBuildz(bytes)).toEqual({ name: "Heavy Lifter", parts: sample });
+    const imported = importBuildz(bytes);
+    expect(imported).toEqual({ name: "Heavy Lifter", parts: sample });
+    expect(imported.parts.map(part => part.activationGroup).filter(Boolean)).toEqual([1, 2, 3]);
   });
 
   it("trims and validates names before exporting", () => {
