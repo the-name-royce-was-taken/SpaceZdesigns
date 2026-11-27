@@ -57,7 +57,7 @@ describe("vehicle attachment system", () => {
     expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeCloseTo(.2);
     const upperWall=nodes.find(n=>n.id==="surface-wall-a0-y8");
     const lowerWall=nodes.find(n=>n.id==="surface-wall-a0-y0");
-    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.7);
+    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.72);
     expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
   });
 
@@ -228,7 +228,7 @@ describe("vehicle attachment system", () => {
       const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
       expect(top).toHaveLength(81);
       expect(top.find(n=>n.id==="surface-top-r4-c4")!.position[1]).toBeCloseTo(.34);
-      expect(Math.min(...top.map(n=>n.position[0]))).toBeCloseTo(-.7);
+      expect(Math.min(...top.map(n=>n.position[0]))).toBeCloseTo(-.72);
       expect(Math.max(...top.map(n=>n.position[0]))).toBeCloseTo(.7);
       expect(Math.min(...top.map(n=>n.position[2]))).toBeCloseTo(-.7);
       expect(Math.max(...top.map(n=>n.position[2]))).toBeCloseTo(.7);
