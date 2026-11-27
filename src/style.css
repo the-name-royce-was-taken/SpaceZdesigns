@@ -507,7 +507,7 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 .flight-key-hints{display:flex;justify-content:center;gap:17px;flex-wrap:wrap;margin-top:9px;color:#6f8ca2;font:7px var(--mono);letter-spacing:.07em}
 .flight-key-hints b{color:#c2eaf0}
 .flight-bottom-controls>p{margin:7px 0 0;color:#7894a9;font:7px/1.4 var(--mono);text-align:center}
-.tracking-3d-shell{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:calc(100vh - 190px);border:1px solid var(--line);background:rgba(4,14,25,.9)}
+.tracking-3d-shell{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:calc(100vh - 190px);border:1px solid var(--line);background:rgba(4,14,25,.9)}
 .tracking-3d-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;z-index:2;pointer-events:none}
 .tracking-3d-top>*{pointer-events:auto}
 .tracking-3d-stage{position:relative;min-width:0;min-height:680px;background:#030a13}
