@@ -43,7 +43,7 @@ describe("vehicle attachment system", () => {
     expect(wall.length).toBeGreaterThan(81);
     expect(new Set(wall.map(n=>n.position[1])).size).toBeGreaterThan(1);
     const levels=[...new Set(wall.map(n=>n.position[1]))].sort((a,b)=>a-b);
-    expect(levels.every((value,index)=>index===0||Math.abs(value-levels[index-1]!) ).filter(Boolean).length).toBeGreaterThan(0);
+    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.16)<1e-8)).toBe(true);
     expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBeGreaterThan(9);
     expect(wall.some(n=>Math.abs(n.position[1])<1e-8)).toBe(true);
     expect(wall.every(n=>Math.abs(n.position[1]/.16-Math.round(n.position[1]/.16))<1e-8)).toBe(true);
@@ -81,7 +81,7 @@ describe("vehicle attachment system", () => {
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
     const sortedAngles = [...angles].sort((a, b) => a - b);
-    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + 32) % 32));
+    const angleCount=new Set(attachmentNodes("tank").filter(n=>n.id.startsWith("surface-wall-")).map(n=>/^surface-wall-a(\\d+)-/.exec(n.id)?.[1])).size;\n    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + angleCount) % angleCount));
     expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
