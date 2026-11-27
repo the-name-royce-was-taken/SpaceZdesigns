@@ -91,7 +91,7 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="tank"){const h=Math.max(.25,Math.min(3,part?.height??.96))/2,r=Math.max(part?.topRadius??.44,part?.bottomRadius??.44);stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]),node("engine-mount-east","stack",[r+.46,-h,0],[0,-1,0]),node("engine-mount-west","stack",[-r-.46,-h,0],[0,-1,0]),node("engine-mount-north","stack",[0,-h,r+.46],[0,-1,0]),node("engine-mount-south","stack",[0,-h,-r-.46],[0,-1,0]));}
   if(kind==="nose-cone"||isFairingKind(kind))stack.push(node("stack-bottom","stack",[0,-Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2,0],[0,-1,0]));
   if(kind==="engine")stack.push(node("stack-top","stack",[0,.48,0],[0,1,0]));
-  if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
+  if(kind==="heat-shield"){const thickness=Math.max(.04,Math.min(.5,part?.thickness??.16));stack.push(node("stack-top","stack",[0,0,0],[0,1,0]),node("stack-bottom","stack",[0,-thickness,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
   return [...stack,...surfaceNodes(kind,part)];
