@@ -279,8 +279,8 @@ function launchpad(){
    if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
    if(part.kind==="separator-thruster"&&part.plume){part.plume.visible=true;window.setTimeout(()=>{part.plume!.visible=false;},450);return;}
    if(part.kind==="separator"||part.kind==="side-decoupler"||part.kind==="fairing"||part.kind==="conical-fairing"||part.kind==="interstage-fairing"||part.kind==="clam-shell-fairing"||part.kind==="heat-shield"){part.object.visible=false;return;}
-   if(part.kind==="landing-leg"||part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="dock"){part.object.visible=!part.object.visible;return;}
-   part.object.visible=false;
+   if(part.kind==="landing-leg"||part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="reaction-wheel"||part.kind==="dock"){part.object.visible=true;return;}
+   part.object.visible=true;
   });
   $("#engine-stage-readout",root).textContent="STAGE "+groupId;
   host.toast("Activation group "+groupId+" activated.");
