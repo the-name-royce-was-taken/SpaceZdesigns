@@ -20,7 +20,7 @@ describe("career achievement progression", () => {
   });
 
   it("recognizes reentry and a safe return after spaceflight", () => {
-    const reentry = getNewCareerAchievements({ altitude: 70_000, vx: 400, vy: -200, maxQ: 0 }, ["altitude-1km", "altitude-10km", "altitude-50km", "space-100km"]);
+    const reentry = getNewCareerAchievements({ altitude: 70_000, vx: 400, vy: -200, maxQ: 0 }, ["first-launch", "altitude-1km", "altitude-10km", "altitude-50km", "space-100km"]);
     expect(reentry.map(item => item.id)).toEqual(["reentry"]);
     const landing = getNewCareerAchievements({ altitude: 0, vx: 0, vy: 0, maxQ: 0 }, ["space-100km", "reentry"], "landing");
     expect(landing.map(item => item.id)).toEqual(["first-landing", "space-landing"]);
