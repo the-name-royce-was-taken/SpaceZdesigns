@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "remote-control" | "reaction-wheel" | "rcs | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "remote-control" | "reaction-wheel" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
