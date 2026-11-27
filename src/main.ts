@@ -309,7 +309,7 @@ async function initialize(): Promise<void> {
     $("#storage-status").textContent = "UNAVAILABLE";
     toast("Local world storage could not be initialized. Check browser settings.", "error");
   }
-  mountGame({ getWorld: () => activeWorld, setWorld: (world) => { activeWorld = world; setActiveWorldId(world.id); updateActiveWorldCard(); void refreshWorlds(); }, toast });
+  mountGame({ getWorld: () => activeWorld, setWorld: async (world) => { activeWorld = world; setActiveWorldId(world.id); await saveWorld(world); updateActiveWorldCard(); await refreshWorlds(); }, toast });
   initializeScene();
 }
 
