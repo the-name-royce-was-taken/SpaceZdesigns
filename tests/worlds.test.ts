@@ -25,6 +25,8 @@ const sampleWorld: WorldRecord = {
       ] }],
     missions: [],
     research: [],
+    achievements: ["first-launch", "space-100km"],
+    purchasedParts: ["part-owned-001"],
     blueprints: [{
       id: "bp-001",
       name: "Heavy Lifter",
@@ -50,6 +52,8 @@ describe(".spaze world archives", () => {
     expect(imported.state.currentBody).toBe("Earth");
     expect(imported.state.blueprints).toEqual(sampleWorld.state.blueprints);
     expect(imported.state.craft).toEqual(sampleWorld.state.craft);
+    expect(imported.state.achievements).toEqual(sampleWorld.state.achievements);
+    expect(imported.state.purchasedParts).toEqual(sampleWorld.state.purchasedParts);
   });
 
   it("stores blueprint records as a separate file inside the .spaze ZIP", () => {
