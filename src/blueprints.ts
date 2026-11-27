@@ -1,5 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import type { BuildPart, PartKind } from "./vehicle-builder-3d";
+import { normalizeActivationAssignments } from "./activation";
 
 export interface BlueprintRecord {
   id: string;
@@ -87,7 +88,7 @@ export function validateBlueprintParts(value: unknown): BuildPart[] {
   });
   const ids = parts.map(part => part.id).filter((id): id is string => Boolean(id));
   if (new Set(ids).size !== ids.length) throw new Error("Blueprint contains duplicate part IDs.");
-  return parts;
+  return normalizeActivationAssignments(parts);
 }
 
 export function validateBlueprintRecords(value: unknown): BlueprintRecord[] {
