@@ -186,11 +186,11 @@ async function handleAction(action: string, id?: string): Promise<void> {
       break;
     case "export-world": {
       const world = (await listWorlds()).find((item) => item.id === id);
-      if (world) downloadArchive(world);
+      if (world) await downloadArchive(world);
       break;
     }
     case "export-active-world":
-      if (activeWorld) downloadArchive(activeWorld);
+      if (activeWorld) await downloadArchive(activeWorld);
       else toast("Select a world before exporting.", "error");
       break;
     case "rename-world": {
