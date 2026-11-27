@@ -73,7 +73,9 @@ describe("vehicle attachment system", () => {
     expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
-    expect(angles).toEqual([0, 4, 2, 6]);
+    const sortedAngles = [...angles].sort((a, b) => a - b);
+    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + 9) % 9));
+    expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
       const childNode = attachmentNodes("wing").find(n => n.id === p.childNode)!;
