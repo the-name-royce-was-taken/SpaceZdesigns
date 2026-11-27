@@ -32,10 +32,11 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   // Grid bounds follow the rendered geometry, including off-centre/scalable parts.
   const centerX=kind==="solar"?.1+solarLength/2:0;
   const roverMinY=-.12-roverRadius,roverMaxY=Math.max(.22,-.12+roverRadius);
-  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:0;
-  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:baseX;
-  const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:sy;
-  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:sz;
+  const landingMinY=-.92,landingMaxY=.34;
+  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:kind==="wheel"||kind==="landing-leg"?(landingMinY+landingMaxY)/2:0;
+  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.44:baseX;
+  const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:kind==="wheel"||kind==="landing-leg"?landingMaxY-landingMinY:sy;
+  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.44:sz;
   const hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:effectiveY/2,hz=effectiveZ/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
@@ -43,11 +44,11 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   const disk=(face:"top"|"bottom",radius:number,y:number,dy:number)=>{
     addGrid(face,(u,v)=>{const l=Math.hypot(u,v),s=l>1?1/l:1;return [u*s*radius,y,v*s*radius];},()=>[0,dy,0],(u,v)=>Math.hypot(u,v)<=1+1e-8);
   };
-  if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)){
-    const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:.43;
-    const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:.49;
-    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:kind==="heat-shield"?0:hy;
-    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-shieldThickness:-hy;
+  if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)){
+    const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:.43;
+    const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:.49;
+    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="heat-shield"?0:hy;
+    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="heat-shield"?-shieldThickness:-hy;
     // Curved side grids sit on the circular/conical silhouette, never on the
     // empty corners of a rectangular bounding box.
     for(let a=0;a<9;a++)for(let row=0;row<9;row++){
@@ -65,7 +66,6 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     else if(kind==="capsule")disk("bottom",.49,-.445,-1);
     else if(kind==="separator"){disk("top",.5,hy,1);disk("bottom",.5,-hy,-1);}
     else if(kind==="dock"){disk("top",.22,.13,1);disk("bottom",.28,-.11,-1);}
-    else if(kind==="wheel"){disk("top",.2,.425,1);disk("bottom",.2,-.425,-1);}
     else if(kind==="engine")disk("top",.19,.31,1);
     else if(kind==="heat-shield"){disk("top",top,yTop,1);disk("bottom",bottom,yBottom,-1);}
     return out;
@@ -80,6 +80,17 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY-hy,v*hz],d:[0,-1,0] as const}
   ];
   for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
+  // The solar panel folds around its hinge when stowed. Keep its attachment
+  // lattice on the visible panel by applying the same local hinge rotation.
+  if(kind==="solar"&&part?.solarDeployed!==true){
+    const angle=-Math.PI/2,c=Math.cos(angle),s=Math.sin(angle),hingeX=.1;
+    for(const attachment of out){
+      const [x,y,z]=attachment.position,dx=x-hingeX;
+      const [nx,ny,nz]=attachment.direction;
+      (attachment as {position:readonly [number,number,number]}).position=[hingeX+c*dx-s*y,s*dx+c*y,z];
+      (attachment as {direction:readonly [number,number,number]}).direction=[c*nx-s*ny,s*nx+c*ny,nz];
+    }
+  }
   return out;
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{

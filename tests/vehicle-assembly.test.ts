@@ -184,7 +184,7 @@ describe("vehicle attachment system", () => {
   });
 
   it("centres scalable solar, rover-wheel and heat-shield grids on their rendered geometry", () => {
-    const solar=attachmentNodes("solar",{kind:"solar",solarLength:8});
+    const solar=attachmentNodes("solar",{kind:"solar",solarLength:8,solarDeployed:true});
     const solarTop=solar.filter(n=>n.id.startsWith("surface-top-"));
     expect(solarTop).toHaveLength(81);
     expect(Math.min(...solarTop.map(n=>n.position[0]))).toBeCloseTo(.1);
@@ -206,6 +206,33 @@ describe("vehicle attachment system", () => {
     expect(Math.max(...wall.map(n=>n.position[1]))).toBeCloseTo(0);
     expect(shield.find(n=>n.id==="stack-top")!.position[1]).toBeCloseTo(0);
     expect(shield.find(n=>n.id==="stack-bottom")!.position[1]).toBeCloseTo(-.4);
+  });
+
+  it("aligns the solar attachment grid with the folded and deployed panel", () => {
+    const length=3;
+    const folded=attachmentNodes("solar",{kind:"solar",solarLength:length,solarDeployed:false});
+    const deployed=attachmentNodes("solar",{kind:"solar",solarLength:length,solarDeployed:true});
+    const foldedTop=folded.find(n=>n.id==="surface-top-r4-c8")!;
+    const deployedTop=deployed.find(n=>n.id==="surface-top-r4-c8")!;
+    expect(foldedTop.position[0]).toBeCloseTo(.1175);
+    expect(foldedTop.position[1]).toBeCloseTo(-length);
+    expect(foldedTop.direction[0]).toBeCloseTo(1);
+    expect(deployedTop.position[0]).toBeCloseTo(.1+length);
+    expect(deployedTop.position[1]).toBeCloseTo(.0175);
+    expect(deployedTop.direction[1]).toBeCloseTo(1);
+  });
+
+  it("centres landing-leg and wheel grids over their full deployed geometry", () => {
+    for(const kind of ["wheel","landing-leg"] as const){
+      const nodes=attachmentNodes(kind);
+      const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
+      expect(top).toHaveLength(81);
+      expect(top.find(n=>n.id==="surface-top-r4-c4")!.position[1]).toBeCloseTo(.34);
+      expect(Math.min(...top.map(n=>n.position[0]))).toBeCloseTo(-.72);
+      expect(Math.max(...top.map(n=>n.position[0]))).toBeCloseTo(.72);
+      expect(Math.min(...top.map(n=>n.position[2]))).toBeCloseTo(-.72);
+      expect(Math.max(...top.map(n=>n.position[2]))).toBeCloseTo(.72);
+    }
   });
 
   it("scales tank fuel capacity with its frustum volume", () => {
