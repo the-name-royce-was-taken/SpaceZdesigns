@@ -71,6 +71,7 @@ describe("vehicle attachment system", () => {
       parts.push({ id: "wing-" + i, kind: "wing", parentId: placement!.parentId, parentNode: placement!.parentNode, childNode: placement!.childNode, x: placement!.x, y: placement!.y, z: placement!.z, ry: placement!.rotationY });
     }
     expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
+    expect(placements.every(p => /^surface-west-r4-c4$|^surface-east-r4-c4$|^surface-north-r4-c4$|^surface-south-r4-c4$/.test(p.childNode))).toBe(true);
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
     const sortedAngles = [...angles].sort((a, b) => a - b);
@@ -85,6 +86,20 @@ describe("vehicle attachment system", () => {
       expect(p.y + childPosition[1]).toBeCloseTo(parentNode.position[1]);
       expect(p.z + childPosition[2]).toBeCloseTo(parentNode.position[2]);
     }
+  });
+
+  it("chooses the center row when a fuel tank attaches to a curved surface", () => {
+    const parts: BuildPart[] = [
+      { id: "tank", kind: "tank" },
+      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south"]
+        .map((parentNode, index) => ({ id: "occupant-" + index, kind: "battery" as const, parentId: "tank", parentNode }))
+    ];
+    const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
+    expect(placement).not.toBeNull();
+    expect(placement!.parentNode).toMatch(/^surface-wall-/);
+    expect(placement!.childNode).toMatch(/^surface-wall-a\\d+-y4$/);
+    const childNode = attachmentNodes("tank").find(node => node.id === placement!.childNode)!;
+    expect(childNode.position[1]).toBeCloseTo(0);
   });
 
   it("keeps the part's rotation unchanged while snapping its connector exactly onto a surface node", () => {
