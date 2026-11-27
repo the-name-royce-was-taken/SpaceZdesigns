@@ -437,3 +437,12 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 .vab-activation-part small{color:#7895aa;font:6px var(--mono);letter-spacing:.04em;}
 .vab-stack-row.activation-member{border-color:rgba(112,220,239,.72);background:rgba(36,91,111,.56);}
 @media(max-width:620px){.vab-activation-panel{right:8px;bottom:calc(31% + 26px);width:calc(100% - 178px);max-height:42%;padding:8px;border-radius:12px;}.vab-activation-part-list{grid-template-columns:1fr;max-height:130px;}.vab-activation-trigger{font-size:7px;padding:0 6px;}}
+
+
+.flight-activation-list{display:grid;gap:7px;margin-top:10px;padding:11px;border:1px solid rgba(126,215,233,.2);border-radius:10px;background:rgba(7,21,34,.72);}
+.flight-activation-list> b{color:#a9e7ed;font:9px var(--mono);letter-spacing:.12em;}
+.flight-activation-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;padding:7px 8px;border:1px solid rgba(126,162,200,.18);border-radius:7px;background:rgba(16,39,58,.72);}
+.flight-activation-row>span{display:grid;gap:4px;min-width:0;}
+.flight-activation-row>span>b{color:#d9edf4;font:8px var(--mono);letter-spacing:.08em;}
+.flight-activation-row>span>small{overflow:hidden;color:#8ea9bd;font:7px var(--mono);text-overflow:ellipsis;white-space:nowrap;}
+.flight-activation-row button{min-height:28px;padding:0 9px;font:8px var(--mono);}
