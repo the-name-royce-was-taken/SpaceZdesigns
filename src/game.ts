@@ -101,7 +101,7 @@ function makeRocket():THREE.Group{
   }else if(p.kind==="solar"){
    const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;
    add(new THREE.BoxGeometry(.2,.12,.22),mat(0x8799a7,.65),p.x??0,y,p.z??0);
-   add(new THREE.CylinderGeometry(.055,.055,.28,10),mat(0x607786,.72),p.x??0,y-.16,p.z??0);
+   
    const hinge=new THREE.Group();hinge.position.set((p.x??0)+.1,y,p.z??0);hinge.rotation.z=deployed?0:-Math.PI/2;
    const panel=new THREE.Mesh(new THREE.BoxGeometry(length,.035,.72),mat(0x2678a5,.62));panel.position.x=length/2;panel.castShadow=true;panel.receiveShadow=true;hinge.add(panel);
    const gridMaterial=mat(0x9be4f4,.35);for(let i=1;i<8;i++){const x=length*i/8,z=-.36+.72*i/8;const vertical=new THREE.Mesh(new THREE.BoxGeometry(.012,.004,.72),gridMaterial);vertical.position.set(x,.0195,0);hinge.add(vertical);const horizontal=new THREE.Mesh(new THREE.BoxGeometry(length,.004,.012),gridMaterial);horizontal.position.set(length/2,.0195,z);hinge.add(horizontal);}g.add(hinge);solarAssemblies.push({group:p.activationGroup??1,hinge,deployed});
