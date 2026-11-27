@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "./vehicle-assembly";
-import { groundClearanceOffset, groundDropDistance, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "./grounding";
+import { groundDropDistance, groundSnapOffset, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "./grounding";
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number}[] = [
@@ -417,10 +417,13 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
-  const lowestSpawnPoint=Math.min(...additions.map(groundMinYForPart));
-  const spawnLift=groundClearanceOffset(lowestSpawnPoint);
-  if(spawnLift>0){
-   for(const part of additions)part.y=(part.y??0)+spawnLift;
+  // Measure each newly-created mesh at its proposed transform, then move it
+  // vertically until its actual lowest point rests exactly on the y=0 ground.
+  // Do this in both directions: new parts may otherwise remain floating.
+  for(const part of additions){
+   const minY=groundMinYForPart(part);
+   const correction=groundSnapOffset(minY);
+   if(Math.abs(correction)>1e-7)part.y=(part.y??0)+correction;
   }
   craft.push(...additions);selectedId=additions[0]?.id??null;redraw();record();
   const issues=validateAssembly(craft);
