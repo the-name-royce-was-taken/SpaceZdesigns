@@ -36,7 +36,7 @@ function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);f
 function makeRocket():THREE.Group{
  const g=new THREE.Group();
  const enginePlumes:THREE.Mesh[]=[];
- const solarAssemblies:{group:number;side:number;hinge:THREE.Group;deployed:boolean}[]=[];
+ const solarAssemblies:{group:number;hinge:THREE.Group;deployed:boolean}[]=[];
  const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh};
  craft.parts.forEach((p,i)=>{
@@ -99,10 +99,12 @@ function makeRocket():THREE.Group{
    const surface=add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
    surface.rotation.y=p.ry??0;
   }else if(p.kind==="solar"){
-   const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),half=(length-.2)/2,deployed=p.solarDeployed===true;
+   const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;
    add(new THREE.BoxGeometry(.2,.12,.22),mat(0x8799a7,.65),p.x??0,y,p.z??0);
    add(new THREE.CylinderGeometry(.055,.055,.28,10),mat(0x607786,.72),p.x??0,y-.16,p.z??0);
-   for(const side of [-1,1]){const hinge=new THREE.Group();hinge.position.set((p.x??0)+side*.1,y,p.z??0);hinge.rotation.z=deployed?0:side*Math.PI/2;const panel=new THREE.Mesh(new THREE.BoxGeometry(half,.035,.72),mat(0x2678a5,.62));panel.position.x=side*half/2;panel.castShadow=true;panel.receiveShadow=true;hinge.add(panel);for(let i=1;i<5;i++){const line=new THREE.Mesh(new THREE.BoxGeometry(.012,.039,.72),mat(0x8bd7ec,.45));line.position.x=side*(-half/2+half*i/5);hinge.add(line);}g.add(hinge);solarAssemblies.push({group:p.activationGroup??1,side,hinge,deployed});}
+   const hinge=new THREE.Group();hinge.position.set((p.x??0)+.1,y,p.z??0);hinge.rotation.z=deployed?0:-Math.PI/2;
+   const panel=new THREE.Mesh(new THREE.BoxGeometry(length,.035,.72),mat(0x2678a5,.62));panel.position.x=length/2;panel.castShadow=true;panel.receiveShadow=true;hinge.add(panel);
+   const gridMaterial=mat(0x9be4f4,.35);for(let i=1;i<8;i++){const x=length*i/8,z=-.36+.72*i/8;const vertical=new THREE.Mesh(new THREE.BoxGeometry(.012,.004,.72),gridMaterial);vertical.position.set(x,.0195,0);hinge.add(vertical);const horizontal=new THREE.Mesh(new THREE.BoxGeometry(length,.004,.012),gridMaterial);horizontal.position.set(length/2,.0195,z);hinge.add(horizontal);}g.add(hinge);solarAssemblies.push({group:p.activationGroup??1,hinge,deployed});
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
@@ -158,8 +160,8 @@ function launchpad(){
  let lastPersist=performance.now();
  $("#ignite",root).onclick=()=>{if(!craft.parts.some(p=>p.kind==="capsule")||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod and engine before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();persistFlight(Number(range.value)/100,Number(pitch.value));host.toast("Ignition. Fixed-step flight simulation started.");}};
  $("#next-stage",root).onclick=()=>{if(!sim){host.toast("Launch the vehicle before activating later stages.","error");return;}if(!sim.activateNextStage()){host.toast("No later engine stage is assigned.","error");return;}$("#engine-stage-readout",root).textContent="STAGE "+sim.state.currentStage;host.toast("Stage "+sim.state.currentStage+" activated.");};
- const solarAssemblies=group.userData.solarAssemblies as {group:number;side:number;hinge:THREE.Group;deployed:boolean}[];
- root.querySelectorAll<HTMLButtonElement>("[data-activation-group]").forEach(button=>{const groupId=Number(button.dataset.activationGroup);button.onclick=()=>{const members=solarAssemblies.filter(panel=>panel.group===groupId);const deploy=members.some(panel=>!panel.deployed);members.forEach(panel=>{panel.deployed=deploy;panel.hinge.rotation.z=deploy?0:panel.side*Math.PI/2;});button.textContent=`GROUP ${groupId} · ${deploy?"RETRACT SOLAR ARRAYS":"DEPLOY SOLAR ARRAYS"}`;host.toast(`Activation group ${groupId}: solar arrays ${deploy?"deployed":"retracted"}.`);};});
+ const solarAssemblies=group.userData.solarAssemblies as {group:number;hinge:THREE.Group;deployed:boolean}[];
+ root.querySelectorAll<HTMLButtonElement>("[data-activation-group]").forEach(button=>{const groupId=Number(button.dataset.activationGroup);button.onclick=()=>{const members=solarAssemblies.filter(panel=>panel.group===groupId);const deploy=members.some(panel=>!panel.deployed);members.forEach(panel=>{panel.deployed=deploy;panel.hinge.rotation.z=deploy?0:-Math.PI/2;});button.textContent=`GROUP ${groupId} · ${deploy?"RETRACT SOLAR ARRAYS":"DEPLOY SOLAR ARRAYS"}`;host.toast(`Activation group ${groupId}: solar arrays ${deploy?"deployed":"retracted"}.`);};});
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;range.value="0";pitch.value="0";updateLabels();group.position.set(0,0,0);group.rotation.set(0,0,0);$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
  let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;
