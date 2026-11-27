@@ -299,12 +299,10 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group,axis?:string){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
-  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.16,part);
+  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.16,part,axis);
   if(placement&&axis&&/^[XYZ]$/.test(axis)){
-   const key=axis.toLowerCase() as "x"|"y"|"z",other=([ "x","y","z" ] as const).filter(value=>value!==key);
-   const offAxis=Math.hypot((placement[other[0]]-(part[other[0]]??0)),(placement[other[1]]-(part[other[1]]??0)));
-   if(offAxis>.04)placement=null;
-   else{part[key]=placement[key];}
+   const key=axis.toLowerCase() as "x"|"y"|"z";
+   part[key]=placement[key];
   }else if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;}
   if(placement){part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
   else{delete part.parentId;delete part.parentNode;delete part.childNode;}
