@@ -412,9 +412,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   const lowestSpawnPoint=Math.min(...additions.map(groundMinYForPart));
   const spawnLift=groundClearanceOffset(lowestSpawnPoint);
   if(spawnLift>0){
-   const spawnedIds=new Set(additions.map(part=>part.id??""));
-   const corrected=translatePartsY(additions,spawnedIds,spawnLift);
-   additions.splice(0,additions.length,...corrected);
+   for(const part of additions)part.y=(part.y??0)+spawnLift;
   }
   craft.push(...additions);selectedId=additions[0]?.id??null;redraw();record();
   const issues=validateAssembly(craft);
