@@ -9,6 +9,7 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.fuelTonnes).toBeLessThan(vehicle.fuelTonnes);
   expect(sim.state.maxQ).toBeGreaterThan(0);
  });
+ it("maintains a circular orbit when tangential speed balances central gravity",()=>{const sim=new FlightSimulator(vehicle);sim.launch();sim.state.altitude=200_000;sim.state.vx=Math.sqrt(3.986004418e14/(6_371_000+200_000));for(let i=0;i<1200;i++)sim.step(1/120,{throttle:0,pitch:0});expect(sim.state.altitude).toBeCloseTo(200_000,2);expect(Math.abs(sim.state.vy)).toBeLessThan(.01);expect(sim.state.x).toBeGreaterThan(70_000);});
  it("accelerates downward under gravity with zero throttle",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.state.altitude=1000;
   sim.step(1/120,{throttle:0,pitch:0});
