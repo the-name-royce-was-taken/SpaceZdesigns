@@ -120,7 +120,32 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const canvas=host.querySelector<HTMLCanvasElement>("#vehicle-3d-canvas")!;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;
- const scene=new THREE.Scene();scene.background=new THREE.Color(0x081625);
+ const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d2a);
+ // Industrial VAB shell: open toward the camera so the craft remains easy to work on.
+ const hangar=new THREE.Group();hangar.name="vehicle-assembly-hangar";scene.add(hangar);
+ const hangarSteel=new THREE.MeshStandardMaterial({color:0x34495a,roughness:.78,metalness:.58});
+ const hangarEdge=new THREE.MeshStandardMaterial({color:0x78909f,roughness:.48,metalness:.72});
+ const hangarWall=new THREE.MeshStandardMaterial({color:0x1b2d3c,roughness:.86,metalness:.28,side:THREE.DoubleSide});
+ const hangarDoor=new THREE.MeshStandardMaterial({color:0x263f50,roughness:.7,metalness:.45});
+ const hangarGlow=new THREE.MeshStandardMaterial({color:0x9bd9e4,emissive:0x4b9db2,emissiveIntensity:1.5,roughness:.35});
+ const hangarBox=(w:number,h:number,d:number,x:number,y:number,z:number,material:THREE.Material)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.receiveShadow=true;mesh.castShadow=true;hangar.add(mesh);return mesh;};
+ // Reinforced concrete floor and raised perimeter rails.
+ const hangarFloor=new THREE.Mesh(new THREE.PlaneGeometry(22,28),new THREE.MeshStandardMaterial({color:0x263542,roughness:.92,metalness:.12}));hangarFloor.rotation.x=-Math.PI/2;hangarFloor.position.set(0,-.035,-1);hangarFloor.receiveShadow=true;hangar.add(hangarFloor);
+ hangarBox(22,.18,.22,0,.02,12.8,hangarEdge);hangarBox(22,.18,.22,0,.02,-14.8,hangarEdge);
+ // Side walls, structural columns, roof trusses and overhead service rails.
+ hangarBox(.32,13,28,-10.8,6.45,-1,hangarSteel);hangarBox(.32,13,28,10.8,6.45,-1,hangarSteel);
+ hangarBox(.12,10.8,27,-10.58,6.3,-1,hangarWall);hangarBox(.12,10.8,27,10.58,6.3,-1,hangarWall);
+ for(let z=-13;z<=11;z+=4){hangarBox(.42,13,.42,-10.35,6.45,z,hangarEdge);hangarBox(.42,13,.42,10.35,6.45,z,hangarEdge);hangarBox(21.2,.32,.34,0,12.8,z,hangarEdge);hangarBox(.22,.22,21,0,12.35,z,hangarSteel);}
+ hangarBox(21.6,.42,.42,0,12.95,-1,hangarEdge);hangarBox(21.6,.42,.42,0,12.95,11,hangarEdge);
+ // Tall segmented blast doors at the far end of the bay.
+ hangarBox(21.6,13,.36,0,6.45,-14.85,hangarSteel);
+ for(let x=-9.6;x<=9.6;x+=1.6){hangarBox(1.48,10.6,.12,x,5.65,-14.62,hangarDoor);hangarBox(.045,10.2,.035,x+.74,5.65,-14.53,hangarEdge);}
+ hangarBox(21.4,.28,.24,0,11.15,-14.45,hangarEdge);hangarBox(21.4,.28,.24,0,.25,-14.45,hangarEdge);
+ // Repeating roof lights and yellow safety markings around the assembly pad.
+ for(let z=-11;z<=9;z+=5){hangarBox(7,.055,.42,0,12.45,z,hangarGlow);hangarBox(.12,.08,20,-10.1,.08,z,hangarGlow);hangarBox(.12,.08,20,10.1,.08,z,hangarGlow);}
+ const safetyYellow=new THREE.MeshStandardMaterial({color:0xe3b64d,roughness:.8,metalness:.12});
+ hangarBox(.16,.025,19,-8.9,.012,-1,safetyYellow);hangarBox(.16,.025,19,8.9,.012,-1,safetyYellow);
+ for(let z=-10;z<=8;z+=3){hangarBox(1.2,.018,.09,0,.014,z,hangarEdge);}
  const camera=new THREE.PerspectiveCamera(42,canvas.clientWidth/canvas.clientHeight,.1,500);camera.position.set(8,6,10);
  const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,1,0);orbit.enableDamping=true;orbit.dampingFactor=.07;
  scene.add(new THREE.HemisphereLight(0xc5e6ff,0x263448,2));
