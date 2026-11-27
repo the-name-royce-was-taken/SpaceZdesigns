@@ -74,14 +74,14 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   // Box-like parts use a centred 9×9 grid on each outer face. The extents
   // above follow adjustable solar-panel length and rover-wheel radius.
   const faces=[
-    {id:"east",p:(u:number,v:number):[number,number,number]=>[centerX+hx,centerY+u*hy,v*hz],[1,0,0] as const},
-    {id:"west",p:(u:number,v:number):[number,number,number]=>[centerX-hx,centerY+u*hy,v*hz],[-1,0,0] as const},
-    {id:"north",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,hz],[0,0,1] as const},
-    {id:"south",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,-hz],[0,0,-1] as const},
-    {id:"top",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+hy,v*hz],[0,1,0] as const},
-    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY-hy,v*hz],[0,-1,0] as const}
+    {id:"east",p:(u:number,v:number):[number,number,number]=>[centerX+hx,centerY+u*hy,v*hz],d:[1,0,0] as const},
+    {id:"west",p:(u:number,v:number):[number,number,number]=>[centerX-hx,centerY+u*hy,v*hz],d:[-1,0,0] as const},
+    {id:"north",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,hz],d:[0,0,1] as const},
+    {id:"south",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,-hz],d:[0,0,-1] as const},
+    {id:"top",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+hy,v*hz],d:[0,1,0] as const},
+    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY-hy,v*hz],d:[0,-1,0] as const}
   ];
-  for(const face of faces)addGrid(face.id,face.p,()=>[...face[Object.keys(face).length>0?"d":"d"]] as [number,number,number]);
+  for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
   return out;
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
