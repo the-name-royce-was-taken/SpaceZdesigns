@@ -103,6 +103,20 @@ function makeRocket():THREE.Group{
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
+  }else if(p.kind==="landing-leg"){
+   const steel=mat(0x9aa9b2,.72),rubber=mat(0x273542,.12),retracted=!!p.retracted;
+   for(let i=0;i<3;i++){const a=i*Math.PI*2/3,dx=Math.cos(a),dz=Math.sin(a),pivot=new THREE.Vector3((p.x??0)+dx*.12,y+(retracted?.08:-.22),(p.z??0)+dz*.12),foot=new THREE.Vector3((p.x??0)+dx*(retracted?.2:.58),y+(retracted?-.08:-.78),(p.z??0)+dz*(retracted?.2:.58)),delta=foot.clone().sub(pivot),strut=add(new THREE.CylinderGeometry(.035,.045,delta.length(),8),steel,...pivot.clone().add(foot).multiplyScalar(.5).toArray());strut.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());const tire=add(new THREE.CylinderGeometry(.14,.14,.09,12),rubber,...foot.toArray());tire.rotation.z=Math.PI/2;}
+   add(new THREE.CylinderGeometry(.09,.12,.12,10),steel,p.x??0,y+.28,p.z??0);
+  }else if(p.kind==="heat-shield"){
+   const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
+   add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-.08,p.z??0);
+   const edge=add(new THREE.TorusGeometry(radius*.97,.025,6,32),rim,p.x??0,y-thickness/2-.08,p.z??0);edge.rotation.x=Math.PI/2;
+   add(new THREE.CylinderGeometry(radius*.58,radius*.7,.035,32),mat(0x493d38,.05),p.x??0,y+.02,p.z??0);
+  }else if(p.kind==="rover-wheel"){
+   const radius=p.radius??.24,rubber=mat(0x26343d,.02),hub=mat(0x9aa8ad,.7);
+   const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,(p.x??0),y-.12,p.z??0);tire.rotation.z=Math.PI/2;
+   const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,(p.x??0),y-.12,p.z??0);rim.rotation.z=Math.PI/2;
+   for(let i=0;i<12;i++){const a=i*Math.PI/6;add(new THREE.BoxGeometry(.035,.035,.2),hub,(p.x??0)+Math.cos(a)*radius,y-.12+Math.sin(a)*radius,p.z??0);}
   }else if(p.kind==="wheel"){
    const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
    leg.rotation.z=-.22;

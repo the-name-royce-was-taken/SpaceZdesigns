@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
@@ -27,6 +27,9 @@ export interface BuildPart {
   topRadius?: number;
   bottomRadius?: number;
   height?: number;
+  retracted?: boolean;
+  radius?: number;
+  thickness?: number;
 }
 interface PartSpec {kind:PartKind;name:string;category:string;mass:number;fuel:number;thrust:number;color:number;size:THREE.Vector3}
 const parts:PartSpec[]=[
@@ -40,7 +43,10 @@ const parts:PartSpec[]=[
  {kind:"fin",name:"Stability fin",category:"Aerodynamics",mass:.12,fuel:0,thrust:0,color:0x6c9db8,size:new THREE.Vector3(.9,.7,.18)},
  {kind:"wing",name:"Wing panel",category:"Aerodynamics",mass:.24,fuel:0,thrust:0,color:0x759bb7,size:new THREE.Vector3(1.7,.12,1.1)},
  {kind:"control",name:"Elevon",category:"Aerodynamics",mass:.09,fuel:0,thrust:0,color:0xd1a66b,size:new THREE.Vector3(1,.1,.42)},
- {kind:"wheel",name:"Landing gear",category:"Other",mass:.16,fuel:0,thrust:0,color:0x8798a8,size:new THREE.Vector3(.22,.85,.22)},
+ {kind:"landing-leg",name:"Retractable landing leg",category:"Other",mass:.2,fuel:0,thrust:0,color:0x8798a8,size:new THREE.Vector3(.3,1.05,.3)},
+ {kind:"heat-shield",name:"Heat shield",category:"Other",mass:.28,fuel:0,thrust:0,color:0x9a6b50,size:new THREE.Vector3(1,.18,1)},
+ {kind:"rover-wheel",name:"Rover wheel",category:"Other",mass:.12,fuel:0,thrust:0,color:0x34434e,size:new THREE.Vector3(.65,.55,.3)},
+ {kind:"wheel",name:"Legacy landing gear",category:"Other",mass:.16,fuel:0,thrust:0,color:0x8798a8,size:new THREE.Vector3(.22,.85,.22)},
  {kind:"solar",name:"Solar array",category:"Power",mass:.08,fuel:0,thrust:0,color:0x4b91bb,size:new THREE.Vector3(1.8,.06,.7)},
  {kind:"battery",name:"Battery pack",category:"Power",mass:.1,fuel:0,thrust:0,color:0x8d9b68,size:new THREE.Vector3(.6,.35,.6)},
  {kind:"dock",name:"Docking port",category:"Other",mass:.12,fuel:0,thrust:0,color:0xc2cbd1,size:new THREE.Vector3(.42,.28,.42)},
@@ -197,7 +203,18 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="fuel-line"){const a=tankPart(p.fuelLineStartId),b=tankPart(p.fuelLineEndId);if(a&&b){const route=pipeGeometry(tankWorldPosition(a),tankWorldPosition(b),a.id!,b.id!);const pipe=new THREE.MeshStandardMaterial({color:0x65aeb4,metalness:.7,roughness:.3,emissive:0x123b3e,emissiveIntensity:.35});add(route.geometry,pipe);for(const x of [-.46,.46])add(new THREE.CylinderGeometry(.075,.075,.12,16),new THREE.MeshStandardMaterial({color:0xd3e2e8,metalness:.7}),new THREE.Vector3(x,0,0));g.position.copy(route.midpoint);} }
   else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){const geo=new THREE.BoxGeometry(s.size.x,s.size.y,s.size.z);add(geo);if(p.kind==="fin"){const fin=add(new THREE.BoxGeometry(.12,.72,.55));fin.position.set(.42,-.18,0);fin.rotation.z=-.22;}if(p.kind==="wing"){const tip=add(new THREE.BoxGeometry(.22,.12,.22));tip.position.x=.84;}}
   else if(p.kind==="solar"){add(new THREE.BoxGeometry(.14,.08,.18));for(const side of [-1,1]){const panel=add(new THREE.BoxGeometry(.82,.035,.65),new THREE.MeshStandardMaterial({color:0x2678a5,metalness:.55,roughness:.35}));panel.position.set(side*.48,0,0);}}
-  else if(p.kind==="wheel"){const leg=add(new THREE.CylinderGeometry(.055,.07,.72,6));leg.position.y=.12;leg.rotation.z=-.22;const wheel=add(new THREE.CylinderGeometry(.2,.2,.12,10),new THREE.MeshStandardMaterial({color:0x273542,roughness:.9}));wheel.position.set(.18,-.28,0);wheel.rotation.z=Math.PI/2;}
+  else if(p.kind==="wheel"||p.kind==="landing-leg"){
+   const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.72,roughness:.36}),rubber=new THREE.MeshStandardMaterial({color:0x273542,roughness:.92}),retracted=!!p.retracted;
+   for(let i=0;i<3;i++){const a=i*Math.PI*2/3,dx=Math.cos(a),dz=Math.sin(a),pivot=new THREE.Vector3(dx*.12,retracted?.08:-.22,dz*.12),foot=new THREE.Vector3(dx*(retracted?.2:.58),retracted?-.08:-.78,dz*(retracted?.2:.58)),delta=foot.clone().sub(pivot),strut=add(new THREE.CylinderGeometry(.035,.045,delta.length(),8),steel,pivot.clone().add(foot).multiplyScalar(.5));strut.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());const wheel=add(new THREE.CylinderGeometry(.14,.14,.09,12),rubber,foot);wheel.rotation.z=Math.PI/2;}
+   add(new THREE.CylinderGeometry(.09,.12,.12,10),steel,new THREE.Vector3(0,.28,0));
+  }else if(p.kind==="rover-wheel"){
+   const rubber=new THREE.MeshStandardMaterial({color:0x26343d,roughness:.96}),hub=new THREE.MeshStandardMaterial({color:0x9aa8ad,metalness:.7,roughness:.32}),axle=new THREE.MeshStandardMaterial({color:0x667986,metalness:.65}),radius=p.radius??.24;
+   add(new THREE.BoxGeometry(.58,.12,.24),axle,new THREE.Vector3(0,.16,0));
+   for(const side of [-1,1]){const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,new THREE.Vector3(side*.22,-.12,0));tire.rotation.z=Math.PI/2;const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,new THREE.Vector3(side*.22,-.12,0));rim.rotation.z=Math.PI/2;for(let i=0;i<12;i++){const a=i*Math.PI/6;add(new THREE.BoxGeometry(.035,.035,.2),hub,new THREE.Vector3(side*.22+Math.cos(a)*radius,-.12+Math.sin(a)*radius,0));}}
+  }else if(p.kind==="heat-shield"){
+   const radius=p.radius??.62,thickness=p.thickness??.16,ablative=new THREE.MeshStandardMaterial({color:0x9a6548,roughness:.88,metalness:.08}),rim=new THREE.MeshStandardMaterial({color:0xc2a18a,roughness:.6,metalness:.35});
+   add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,new THREE.Vector3(0,-.08,0));add(new THREE.TorusGeometry(radius*.97,.025,6,32),rim,new THREE.Vector3(0,-thickness/2-.08,0));add(new THREE.CylinderGeometry(radius*.58,radius*.7,.035,32),new THREE.MeshStandardMaterial({color:0x493d38,roughness:.95}),new THREE.Vector3(0,.02,0));
+  }
   else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));dockRing.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
   else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
   else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,20,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.rotation.z=Math.PI/2;nozzle.position.set(i%2?-.22:.22,0,i<2?-.14:.14);}}
@@ -219,9 +236,13 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   const profileControl=(key:string,label:string,value:number,min:number,max:number)=>"<label><span>"+label+"</span><input type='range' min='"+min+"' max='"+max+"' step='.01' value='"+value+"' data-profile-range='"+key+"'><input type='number' min='"+min+"' max='"+max+"' step='.01' value='"+value.toFixed(2)+"' data-profile-number='"+key+"'></label>";
   const tankControls=p.kind==="tank"?"<div class='tank-profile-controls'>"+profileControl("topRadius","TOP RADIUS",p.topRadius??.44,.08,.9)+profileControl("bottomRadius","BOTTOM RADIUS",p.bottomRadius??.44,.08,.9)+profileControl("height","HEIGHT",p.height??.96,.25,3)+"<small data-tank-capacity>FUEL CAPACITY "+tankFuelCapacity(p).toFixed(1)+" U</small></div>":"";
   const coneControls=p.kind==="nose-cone"||isFairingKind(p.kind)?"<div class='tank-profile-controls'>"+profileControl("bottomRadius","BASE RADIUS",p.bottomRadius??.44,.08,.9)+profileControl("height","HEIGHT",p.height??defaultFairingHeight(p.kind),.25,3)+"</div>":"";
-  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+coneControls+stageControl;
+  const landingControls=p.kind==="landing-leg"?"<button type='button' data-toggle-retract>"+(p.retracted?"EXTEND LANDING LEGS":"RETRACT LANDING LEGS")+"</button><small>Toggle between deployed and stowed positions.</small>":"";
+  const shieldControls=p.kind==="heat-shield"?"<div class='tank-profile-controls'>"+profileControl("radius","SHIELD RADIUS",p.radius??.62,.2,1.8)+profileControl("thickness","SHIELD THICKNESS",p.thickness??.16,.04,.5)+"</div>":"";
+  const roverControls=p.kind==="rover-wheel"?"<div class='tank-profile-controls'>"+profileControl("radius","WHEEL RADIUS",p.radius??.24,.1,.65)+"</div>":"";
+  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+coneControls+landingControls+shieldControls+roverControls+stageControl;
   box.querySelectorAll<HTMLButtonElement>("[data-inspector-tool]").forEach(button=>button.onclick=()=>setTool(button.dataset.inspectorTool!));
   box.querySelector<HTMLButtonElement>("[data-inspector-delete]")!.onclick=()=>removePart(p.id!);
+  const retractButton=box.querySelector<HTMLButtonElement>("[data-toggle-retract]");if(retractButton)retractButton.onclick=()=>{p.retracted=!p.retracted;redraw();record();};
   const rebuildProfile=(key:string,value:number)=>{const group=craftGroup.children.find(g=>g.userData.partId===p.id) as THREE.Group|undefined;if(!group)return;const replacement=makeMesh(p);group.clear();replacement.children.forEach(child=>group.add(child));const range=box.querySelector<HTMLInputElement>("[data-profile-range='"+key+"']"),number=box.querySelector<HTMLInputElement>("[data-profile-number='"+key+"']");if(range)range.value=String(value);if(number)number.value=value.toFixed(2);const capacity=box.querySelector<HTMLElement>("[data-tank-capacity]");if(capacity)capacity.textContent="FUEL CAPACITY "+tankFuelCapacity(p).toFixed(1)+" U";};
   box.querySelectorAll<HTMLInputElement>("[data-profile-range]").forEach(input=>{const key=input.dataset.profileRange!,min=Number(input.min),max=Number(input.max);input.oninput=()=>{const raw=Number(input.value);if(!Number.isFinite(raw))return;const value=Math.min(max,Math.max(min,raw));(p as unknown as Record<string,number>)[key]=value;rebuildProfile(key,value);record();};});
   box.querySelectorAll<HTMLInputElement>("[data-profile-number]").forEach(input=>{const key=input.dataset.profileNumber!,min=Number(input.min),max=Number(input.max);input.onchange=()=>{const raw=Number(input.value);if(!Number.isFinite(raw))return;const value=Math.min(max,Math.max(min,raw));(p as unknown as Record<string,number>)[key]=value;rebuildProfile(key,value);record();};});
@@ -254,7 +275,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
@@ -262,7 +283,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    const maxX=craft.reduce((n,p)=>Math.max(n,(p.x??0)+spec(p.kind).size.x/2),0);
    const topY=craft.reduce((n,p)=>Math.max(n,(p.y??0)+spec(p.kind).size.y/2),0);
    const partSize=spec(kind).size;
-   const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
+   const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:craft.length?maxX+partSize.x/2+.35:0,y:craft.length?Math.max(partSize.y/2,topY):0,z:0};
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
