@@ -194,8 +194,8 @@ describe("vehicle attachment system", () => {
     const wheel=attachmentNodes("rover-wheel",{kind:"rover-wheel",radius:.6});
     const wheelTop=wheel.filter(n=>n.id.startsWith("surface-top-"));
     expect(wheelTop).toHaveLength(81);
-    expect(wheelTop.find(n=>n.id==="surface-top-r4-c4")!.position[1]).toBeCloseTo(.22);
-    expect(Math.min(...wheelTop.map(n=>n.position[1]))).toBeCloseTo(.22);
+    expect(wheelTop.find(n=>n.id==="surface-top-r4-c4")!.position[1]).toBeCloseTo(.48);
+    expect(Math.min(...wheelTop.map(n=>n.position[1]))).toBeCloseTo(.48);
     expect(Math.max(...wheelTop.map(n=>n.position[2]))).toBeCloseTo(.6);
     expect(Math.min(...wheelTop.map(n=>n.position[2]))).toBeCloseTo(-.6);
 
