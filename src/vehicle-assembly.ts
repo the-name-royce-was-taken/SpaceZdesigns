@@ -112,13 +112,16 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
   for(const candidate of candidates){
    if(used.includes(candidate.id))continue;
    const parentDirection=rotateY(candidate.direction,parent.ry??0),parentPosition=rotateY(candidate.position,parent.ry??0);
-   let chosen:AttachmentNode|null=null,normalScore=Infinity;
+   let chosen:AttachmentNode|null=null,normalScore=Infinity,chosenCenterDistance=Infinity;
    for(const childNode of attachmentNodes(childKind).filter(n=>n.attachmentClass===candidate.attachmentClass)){
     const childDirection=rotateY(childNode.direction,0);
     if(candidate.attachmentClass==="stack"&&!opposite(parentDirection,childDirection))continue;
     const alignment=parentDirection[0]*childDirection[0]+parentDirection[1]*childDirection[1]+parentDirection[2]*childDirection[2];
     const score=candidate.attachmentClass==="stack"?0:1+alignment;
-    if(score<normalScore){normalScore=score;chosen=childNode;}
+    const centerDistance=Math.hypot(...childNode.position);
+    if(score<normalScore-1e-9||(candidate.attachmentClass==="surface"&&Math.abs(score-normalScore)<=1e-9&&centerDistance<chosenCenterDistance)){
+     normalScore=score;chosen=childNode;chosenCenterDistance=centerDistance;
+    }
    }
    if(!chosen)continue;
    const childPosition=rotateY(chosen.position,0);
