@@ -121,10 +121,15 @@ describe("vehicle attachment system", () => {
     expect(placement!.z+childOffset[2]).toBeCloseTo(tank.z!+parentOffset[2]);
   });
 
-  it("does not claim a flush snap when the part's contact face is misaligned", () => {
+  it("keeps surface snapping available on the existing 9x9 grid without rotating the part", () => {
     const tank: BuildPart = { id: "tank", kind: "tank" };
     const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, rz: .37 };
-    expect(findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing)).toBeNull();
+    const placement = findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing);
+    expect(placement).not.toBeNull();
+    expect(placement!.rotationY).toBe(wing.ry ?? 0);
+    expect(placement!.parentNode).toMatch(/^surface-/);
+    const wall = attachmentNodes("tank").filter(n => n.id.startsWith("surface-wall-"));
+    expect(wall).toHaveLength(81);
   });
 
   it("places a stack part above the highest available stack node", () => {
