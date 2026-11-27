@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "remote-control" | "reaction-wheel" | "rcs | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
@@ -38,6 +38,8 @@ export interface BuildPart {
 interface PartSpec {kind:PartKind;name:string;category:string;mass:number;fuel:number;thrust:number;color:number;size:THREE.Vector3}
 const parts:PartSpec[]=[
  {kind:"capsule",name:"Command pod",category:"Controller",mass:1.2,fuel:0,thrust:0,color:0xdce8ef,size:new THREE.Vector3(.9,.9,.9)},
+ {kind:"remote-control",name:"Remote control module",category:"Controller",mass:.16,fuel:0,thrust:0,color:0x6fa7bd,size:new THREE.Vector3(.55,.42,.55)},
+ {kind:"reaction-wheel",name:"Reaction wheel",category:"Controller",mass:.22,fuel:0,thrust:0,color:0xb8c2ca,size:new THREE.Vector3(.48,.42,.48)},
  {kind:"tank",name:"Fuel tank",category:"Power",mass:.8,fuel:120,thrust:0,color:0xb7c8d5,size:new THREE.Vector3(.9,1.1,.9)},
  {kind:"engine",name:"Liquid engine",category:"Engines",mass:.7,fuel:0,thrust:34,color:0xe6a65e,size:new THREE.Vector3(.85,.8,.85)},
  {kind:"separator",name:"Stack decoupler",category:"Couplers",mass:.15,fuel:0,thrust:0,color:0xe5c56d,size:new THREE.Vector3(1,.22,1)},
@@ -85,6 +87,8 @@ function previewSvg(kind:string,color:number){
  "fuel-line":'<path d="M12 17h14v18h20V17h14" fill="none" stroke="'+fill+'" stroke-width="7" stroke-linejoin="round"/><path d="M12 17h14v18h20V17h14" fill="none" stroke="#c5e7e8" stroke-width="2"/>',
  solar:'<path d="M15 15h42v30H15z" fill="'+fill+'" stroke="#8bd7ec" stroke-width="2"/><path d="M25.5 15v30M36 15v30M46.5 15v30M15 25h42M15 35h42" stroke="#d5f4ff" stroke-width="1.5"/><path d="M10 30h5M57 30h5" stroke="#e3edf5" stroke-width="3"/>',
  battery:'<rect x="18" y="14" width="36" height="30" rx="4" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M29 10h14v4H29z" fill="#e3edf5"/>',
+ "remote-control":'<rect x="17" y="19" width="38" height="27" rx="4" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M36 19V8m0 0l-8 5m8-5l8 5" stroke="#d9e8ef" stroke-width="3"/><circle cx="27" cy="31" r="3" fill="#69e0c1"/><circle cx="39" cy="31" r="3" fill="#e8c36d"/>',
+ "reaction-wheel":'<circle cx="36" cy="30" r="21" fill="'+fill+'" stroke="#e3edf5" stroke-width="3"/><circle cx="36" cy="30" r="8" fill="#344c5d" stroke="#dce8ef" stroke-width="2"/><path d="M36 9v13m0 16v13M15 30h13m16 0h13" stroke="#dce8ef" stroke-width="3"/>',
  rcs:'<rect x="24" y="19" width="24" height="22" rx="3" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M20 18l-8-7M52 18l8-7M20 42l-8 7M52 42l8 7" stroke="#d9a06f" stroke-width="4"/>',
  dock:'<circle cx="36" cy="30" r="16" fill="'+fill+'" stroke="#e3edf5" stroke-width="3"/><circle cx="36" cy="30" r="7" fill="#263d50"/>',
  fin:'<path d="M15 44L25 12h32L45 44z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/>',
@@ -280,6 +284,16 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   }
   else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));dockRing.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
   else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
+  else if(p.kind==="remote-control"){
+   const casing=new THREE.MeshStandardMaterial({color:0x607f91,roughness:.42,metalness:.62}),dark=new THREE.MeshStandardMaterial({color:0x253b4b,roughness:.34,metalness:.55}),screen=new THREE.MeshStandardMaterial({color:0x4bb6d4,emissive:0x12495b,emissiveIntensity:.65,roughness:.22});
+   add(new THREE.BoxGeometry(.52,.3,.5),casing);add(new THREE.BoxGeometry(.32,.16,.035),screen,new THREE.Vector3(0,.04,.267));
+   const antenna=add(new THREE.CylinderGeometry(.012,.018,.28,8),dark,new THREE.Vector3(.17,.26,0));antenna.rotation.z=-.2;add(new THREE.SphereGeometry(.045,12,8),screen,new THREE.Vector3(.2,.4,0));
+   for(let i=0;i<3;i++)add(new THREE.SphereGeometry(.025,8,6),new THREE.MeshStandardMaterial({color:[0x58d6ad,0xe7bd62,0x70aee0][i],emissive:[0x145a43,0x624b18,0x183c62][i]}),new THREE.Vector3(-.15+i*.15,-.12,.255));
+  }
+  else if(p.kind==="reaction-wheel"){
+   const housing=new THREE.MeshStandardMaterial({color:0x9baab4,roughness:.34,metalness:.78}),rim=new THREE.MeshStandardMaterial({color:0x344d5e,roughness:.28,metalness:.82}),hub=new THREE.MeshStandardMaterial({color:0xcbd5db,roughness:.25,metalness:.8});
+   add(new THREE.CylinderGeometry(.22,.22,.3,32,2),housing);const rotor=add(new THREE.TorusGeometry(.17,.035,10,32),rim);rotor.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.09,.09,.34,20),hub);for(let i=0;i<4;i++){const angle=i*Math.PI/2,spoke=add(new THREE.BoxGeometry(.035,.035,.28),hub,new THREE.Vector3(Math.cos(angle)*.08,0,Math.sin(angle)*.08));spoke.rotation.y=-angle;}
+  }
   else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const x=i%2?-.707:.707,z=i<2?-.707:.707;const direction=new THREE.Vector3(x,0,z).normalize();const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,12,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);nozzle.position.set(direction.x*.265,0,direction.z*.265);}g.scale.setScalar(.5);}
   else if(p.kind==="strut"){add(new THREE.BoxGeometry(.1,1,.1));}
   else if(p.kind==="structural-beam"){
