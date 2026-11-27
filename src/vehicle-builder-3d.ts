@@ -11,7 +11,7 @@ export const engineVariants: {id:EngineType;name:string;description:string;accen
  {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285},
  {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285}
 ];
-export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel";
+export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
 export interface BuildPart {
   kind: PartKind;
   id?: string;
@@ -31,6 +31,7 @@ export interface BuildPart {
   radius?: number;
   thickness?: number;
   solarLength?: number;
+  structuralLength?: number;
   solarDeployed?: boolean;
   activationGroup?: number;
 }
@@ -55,6 +56,9 @@ const parts:PartSpec[]=[
  {kind:"dock",name:"Docking port",category:"Other",mass:.12,fuel:0,thrust:0,color:0xc2cbd1,size:new THREE.Vector3(.42,.28,.42)},
  {kind:"rcs",name:"RCS thruster",category:"Engines",mass:.07,fuel:0,thrust:0,color:0x9caeba,size:new THREE.Vector3(.4,.32,.4)},
  {kind:"strut",name:"Structural girder",category:"Other",mass:.04,fuel:0,thrust:0,color:0xb7a88d,size:new THREE.Vector3(.12,1,.12)},
+ {kind:"structural-beam",name:"Braced beam",category:"Structural",mass:.09,fuel:0,thrust:0,color:0x9eacb7,size:new THREE.Vector3(.28,1.2,.28)},
+ {kind:"structural-angle",name:"Right-angle connector",category:"Structural",mass:.06,fuel:0,thrust:0,color:0xd0a66d,size:new THREE.Vector3(.55,.55,.22)},
+ {kind:"structural-hub",name:"Six-way connector",category:"Structural",mass:.08,fuel:0,thrust:0,color:0xc0ccd4,size:new THREE.Vector3(.48,.48,.48)},
  {kind:"nose-cone",name:"Nose cone",category:"Aerodynamics",mass:.12,fuel:0,thrust:0,color:0xd4dfe7,size:new THREE.Vector3(.88,.8,.88)},
  {kind:"fairing",name:"Ogive payload fairing",category:"Payload",mass:.2,fuel:0,thrust:0,color:0x9bb6c9,size:new THREE.Vector3(.88,1.15,.88)},
  {kind:"conical-fairing",name:"Conical payload fairing",category:"Payload",mass:.19,fuel:0,thrust:0,color:0xb6c7d4,size:new THREE.Vector3(.88,1.15,.88)},
@@ -103,7 +107,7 @@ function catalogCard(p:PartSpec){
 
 export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed:(parts:BuildPart[])=>void){
  host.innerHTML=`<div class="vab-tools"><div class="vab-tool-group"><button data-tool="select" class="active">SELECT</button><button data-tool="translate">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="delete">DELETE</button></div><div class="vab-tool-group"><span class="vab-snap-status">MAGNETIC PART SNAP / ALWAYS ON · INVISIBLE 9×9 SURFACE NODES</span><label>SYMMETRY <select id="vab-symmetry"><option value="1">OFF</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div><div class="vab-tool-group"><button id="vab-undo">UNDO</button><button id="vab-redo">REDO</button><button id="vab-reset">RESET VIEW</button></div></div>
- <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span></div><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Payload","Other","Engines","Couplers","Controller"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click to select; Control or Command click to add or remove parts; Shift click to select a range."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div></div></div>`;
+ <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span></div><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Payload","Other","Engines","Couplers","Controller","Structural"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click to select; Control or Command click to add or remove parts; Shift click to select a range."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title">CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></div><div class="vab-stage-summary" id="vab-stage-summary">STAGE 0 / ENGINES IGNITE AT LAUNCH</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div></div></div>`;
  const canvas=host.querySelector<HTMLCanvasElement>("#vehicle-3d-canvas")!;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;
@@ -275,6 +279,26 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
   else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const x=i%2?-.707:.707,z=i<2?-.707:.707;const direction=new THREE.Vector3(x,0,z).normalize();const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,12,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);nozzle.position.set(direction.x*.265,0,direction.z*.265);}g.scale.setScalar(.5);}
   else if(p.kind==="strut"){add(new THREE.BoxGeometry(.1,1,.1));}
+  else if(p.kind==="structural-beam"){
+   const bays=Math.max(1,Math.min(12,Math.round(p.structuralLength??3))),bayLength=.4,half=bays*bayLength/2,rail=.105,tube=.022;
+   const steel=new THREE.MeshStandardMaterial({color:0xaab8c2,metalness:.72,roughness:.34}),brace=new THREE.MeshStandardMaterial({color:0x687d8d,metalness:.68,roughness:.4});
+   const bar=(start:THREE.Vector3,end:THREE.Vector3,r:number,m:THREE.Material)=>{const delta=end.clone().sub(start),mesh=add(new THREE.CylinderGeometry(r,r,delta.length(),8),m,start.clone().add(end).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());};
+   for(const x of [-rail,rail])for(const z of [-rail,rail])bar(new THREE.Vector3(x,-half,z),new THREE.Vector3(x,half,z),tube,steel);
+   for(let i=0;i<=bays;i++){const y=-half+i*bayLength;for(const x of [-rail,rail])bar(new THREE.Vector3(x,y,-rail),new THREE.Vector3(x,y,rail),tube,steel);for(const z of [-rail,rail])bar(new THREE.Vector3(-rail,y,z),new THREE.Vector3(rail,y,z),tube,steel);}
+   for(let i=0;i<bays;i++){const y0=-half+i*bayLength,y1=y0+bayLength;for(const z of [-rail,rail]){bar(new THREE.Vector3(-rail,y0,z),new THREE.Vector3(rail,y1,z),tube,brace);bar(new THREE.Vector3(rail,y0,z),new THREE.Vector3(-rail,y1,z),tube,brace);}for(const x of [-rail,rail]){bar(new THREE.Vector3(x,y0,-rail),new THREE.Vector3(x,y1,rail),tube,brace);bar(new THREE.Vector3(x,y0,rail),new THREE.Vector3(x,y1,-rail),tube,brace);}}
+   for(const y of [-half,half])add(new THREE.BoxGeometry(.25,.035,.25),steel,new THREE.Vector3(0,y,0));
+  }
+  else if(p.kind==="structural-angle"){
+   const steel=new THREE.MeshStandardMaterial({color:0xd0a66d,metalness:.7,roughness:.34});
+   add(new THREE.BoxGeometry(.2,.2,.2),steel);
+   add(new THREE.BoxGeometry(.16,.32,.16),steel,new THREE.Vector3(0,.22,0));
+   add(new THREE.BoxGeometry(.32,.16,.16),steel,new THREE.Vector3(.22,0,0));
+  }
+  else if(p.kind==="structural-hub"){
+   const steel=new THREE.MeshStandardMaterial({color:0xc0ccd4,metalness:.72,roughness:.3}),dark=new THREE.MeshStandardMaterial({color:0x607789,metalness:.68});
+   add(new THREE.BoxGeometry(.22,.22,.22),steel);
+   for(const [x,y,z,axis] of [[0,.16,0,"y"],[0,-.16,0,"y"],[.16,0,0,"x"],[-.16,0,0,"x"],[0,0,.16,"z"],[0,0,-.16,"z"]] as [number,number,number,string][]){const socket=add(new THREE.CylinderGeometry(.09,.09,.12,8),dark,new THREE.Vector3(x,y,z));if(axis==="x")socket.rotation.z=Math.PI/2;else if(axis==="z")socket.rotation.x=Math.PI/2;}
+  }
   g.position.set(p.x??0,p.y??(craft.length*.6),p.z??0);g.rotation.set(p.rx??0,p.ry??0,p.rz??0);
   return g;
  }
@@ -295,8 +319,9 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   const landingControls=p.kind==="landing-leg"?"<button type='button' data-toggle-retract>"+(p.retracted?"EXTEND LANDING LEGS":"RETRACT LANDING LEGS")+"</button><small>Toggle between deployed and stowed positions.</small>":"";
   const shieldControls=p.kind==="heat-shield"?"<div class='tank-profile-controls'>"+profileControl("radius","SHIELD RADIUS",p.radius??.62,.2,1.8)+profileControl("thickness","SHIELD THICKNESS",p.thickness??.16,.04,.5)+"</div>":"";
   const roverControls=p.kind==="rover-wheel"?"<div class='tank-profile-controls'>"+profileControl("radius","WHEEL RADIUS",p.radius??.24,.1,.65)+"</div>":"";
+  const structuralControls=p.kind==="structural-beam"?"<div class='tank-profile-controls'>"+profileControl("structuralLength","BRACE BAYS",p.structuralLength??3,1,12)+"<small>Each bay adds one fixed-length braced section. Members keep their proportions; length changes by adding or removing complete bays.</small></div>":"";
   const solarControls=p.kind==="solar"?"<div class='tank-profile-controls'>"+profileControl("solarLength","ARRAY LENGTH",p.solarLength??2.4,.8,8)+"<label class='engine-stage-control'>ACTIVATION GROUP <select data-solar-group>"+[1,2,3,4,5,6,7,8,9,10].map(i=>"<option value='"+i+"' "+(Number(p.activationGroup??1)===i?"selected":"")+">GROUP "+i+"</option>").join("")+"</select></label><button type='button' data-toggle-solar>"+(p.solarDeployed===true?"RETRACT SOLAR ARRAY":"DEPLOY SOLAR ARRAY")+"</button><small>One folding solar panel. Assign it to a flight activation group to deploy or retract it in flight.</small></div>":"";
-  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+coneControls+landingControls+shieldControls+roverControls+solarControls+stageControl;
+  box.innerHTML="<b>"+(engine?.name.toUpperCase()??specPart.name.toUpperCase())+"</b><small>"+specPart.category+" / "+specPart.mass.toFixed(2)+" t / X "+(p.x??0).toFixed(2)+" · Y "+(p.y??0).toFixed(2)+" · Z "+(p.z??0).toFixed(2)+"</small><div class='vab-inspector-actions'><button type='button' data-inspector-tool='translate' class='"+(tool==="translate"?"active":"")+"'>MOVE</button><button type='button' data-inspector-tool='rotate' class='"+(tool==="rotate"?"active":"")+"'>ROTATE</button><button type='button' data-inspector-delete>DELETE PART</button></div>"+tankControls+coneControls+landingControls+shieldControls+roverControls+structuralControls+solarControls+stageControl;
   box.querySelectorAll<HTMLButtonElement>("[data-inspector-tool]").forEach(button=>button.onclick=()=>setTool(button.dataset.inspectorTool!));
   box.querySelector<HTMLButtonElement>("[data-inspector-delete]")!.onclick=()=>removePart(p.id!);
   const retractButton=box.querySelector<HTMLButtonElement>("[data-toggle-retract]");if(retractButton)retractButton.onclick=()=>{p.retracted=!p.retracted;redraw();record();};
@@ -334,7 +359,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false,activationGroup:1}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:0,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false,activationGroup:1}:{}),...(kind==="structural-beam"?{structuralLength:3}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:0,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
