@@ -123,7 +123,7 @@ describe("vehicle attachment system", () => {
 
   it("does not claim a flush snap when the part's contact face is misaligned", () => {
     const tank: BuildPart = { id: "tank", kind: "tank" };
-    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, ry: .37 };
+    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, rz: .37 };
     expect(findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing)).toBeNull();
   });
 
