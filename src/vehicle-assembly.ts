@@ -33,7 +33,7 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   // Solar panels extend from their hinge; rover tyres sit below their axle;
   // heat shields are rendered with their top face at local y=0.
   const centerX=kind==="solar"?.1+solarLength/2:0;
-  const centerY=kind==="rover-wheel"?(0.1-roverRadius)/2:kind==="heat-shield"?-shieldThickness/2:0;
+  const centerY=kind==="rover-wheel"?(0.1-roverRadius)/2:0;
   const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:baseX;
   const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?.34+roverRadius:kind==="heat-shield"?shieldThickness:sy;
   const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:sz;
