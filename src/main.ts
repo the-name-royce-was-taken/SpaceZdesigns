@@ -76,7 +76,7 @@ async function refreshWorlds(): Promise<void> {
             <div class="world-card-top"><span class="world-mode">${modeLabel}</span>${selected ? '<span class="active-tag">ACTIVE</span>' : ""}</div>
             <h3>${safeText(world.name)}</h3>
             <p>LAST UPDATED / ${formatDate(world.updatedAt)}</p>
-            <div class="world-stats"><span>LOCATION <b>${safeText(world.state.currentBody)}</b></span><span>SCIENCE <b>${world.state.science.toLocaleString()}</b></span><span>CREDITS <b>${world.state.credits.toLocaleString()}</b></span></div>
+            <div class="world-stats"><span>LOCATION <b>${safeText(world.state.currentBody)}</b></span><span>SCIENCE <b>${world.state.science.toLocaleString()}</b></span><span>CREDITS <b>${world.state.credits.toLocaleString()}</b></span>${world.mode==="career"?`<span>ACHIEVEMENTS <b>${(world.state.achievements??[]).length} / 18</b></span>`:""}</div>
           </div>
           <div class="world-card-actions">
             <button class="primary-button compact" data-action="load-world" data-id="${world.id}">SELECT WORLD</button>
