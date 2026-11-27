@@ -18,7 +18,13 @@ const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
 const ATTACHMENT_GRID_CUBE_SIZE=.16/1.5;
-const centeredOffsets=(halfExtent:number)=>{const steps=Math.floor((halfExtent+1e-8)/ATTACHMENT_GRID_CUBE_SIZE);return Array.from({length:steps*2+1},(_,i)=>(i-steps)*ATTACHMENT_GRID_CUBE_SIZE);};
+// Rebuild each face lattice from the current half-extents. Resizable parts
+// keep the grid centered at the origin and extend it toward the current
+// bounding-box edges whenever attachmentNodes is queried.
+const centeredOffsets=(halfExtent:number)=>{
+ const steps=Math.floor((Math.max(0,halfExtent)+1e-8)/ATTACHMENT_GRID_CUBE_SIZE);
+ return Array.from({length:steps*2+1},(_,i)=>(i-steps)*ATTACHMENT_GRID_CUBE_SIZE);
+};
 const isCenterSurfaceNode=(n:AttachmentNode)=>{const p=n.position,d=n.direction,dot=p[0]*d[0]+p[1]*d[1]+p[2]*d[2];return Math.hypot(p[0]-dot*d[0],p[1]-dot*d[1],p[2]-dot*d[2])<1e-6;};
 export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
  const top=Math.max(.08,Math.min(.9,part.topRadius??.44)),bottom=Math.max(.08,Math.min(.9,part.bottomRadius??.44)),height=Math.max(.25,Math.min(3,part.height??.96));

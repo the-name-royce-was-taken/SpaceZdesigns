@@ -333,4 +333,41 @@ describe("vehicle attachment system", () => {
     expect(attachmentNodes("fuel-line")).toHaveLength(0);
   });
 
+
+  it("rebuilds the centered surface lattice out to both edges when a structural beam is resized", () => {
+    const pitch=.16/1.5;
+    const short=attachmentNodes("structural-beam",{kind:"structural-beam",structuralLength:2})
+      .filter(n=>n.id.startsWith("surface-east-"));
+    const long=attachmentNodes("structural-beam",{kind:"structural-beam",structuralLength:12})
+      .filter(n=>n.id.startsWith("surface-east-"));
+    const shortY=[...new Set(short.map(n=>n.position[1]))].sort((a,b)=>a-b);
+    const longY=[...new Set(long.map(n=>n.position[1]))].sort((a,b)=>a-b);
+    expect(longY[0]).toBeCloseTo(-Math.floor(2.4/pitch)*pitch);
+    expect(longY.at(-1)).toBeCloseTo(-longY[0]);
+    expect(longY).toContain(0);
+    expect(longY.slice(1).every((v,i)=>Math.abs(v-longY[i]!-pitch)<1e-8)).toBe(true);
+    expect(longY.length).toBeGreaterThan(shortY.length);
+  });
+
+  it("distance-snaps to a surface on the extended side of a resized structural beam", () => {
+    const beam:BuildPart={id:"beam",kind:"structural-beam",structuralLength:12};
+    const battery:BuildPart={kind:"battery"};
+    const near=findNearestAttachmentPlacement([beam],"battery",[.5,1.0,0],.16,battery);
+    expect(near).not.toBeNull();
+    expect(near!.parentNode).toMatch(/^surface-east-/);
+    expect(near!.x).toBeCloseTo(.44);
+    expect(near!.y).toBeCloseTo(1.0,1);
+  });
+
+  it("surface-snaps against a tank after its radius and height are resized", () => {
+    const tank:BuildPart={id:"wide-tall-tank",kind:"tank",topRadius:.72,bottomRadius:.72,height:2.4};
+    const wing:BuildPart={kind:"wing"};
+    const near=findNearestAttachmentPlacement([tank],"wing",[1.6,.9,0],.16,wing);
+    expect(near).not.toBeNull();
+    expect(near!.parentNode).toMatch(/^surface-wall-/);
+    const node=attachmentNodes("tank",tank).find(n=>n.id===near!.parentNode)!;
+    expect(node.position[1]).toBeGreaterThan(.8);
+    expect(Math.hypot(node.position[0],node.position[2])).toBeCloseTo(.72);
+  });
+
 });
