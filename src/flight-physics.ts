@@ -6,7 +6,7 @@ export interface FlightState {
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
 export interface VehiclePhysics {
   dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number;
-  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; engines?:FlightEngine[];
+  referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; engines?:FlightEngine[];
 }
 const G0=9.80665, EARTH_MU=3.986004418e14, EARTH_RADIUS=6_371_000, SEA_LEVEL_DENSITY=1.225, SCALE_HEIGHT=8500;
 const FIXED_DT=1/120, MAX_SUBSTEPS=24;
@@ -51,7 +51,7 @@ export class FlightSimulator {
     s.vx+=(tx+dragX+liftX)/massKg*dt;
     s.vy+=(ty+dragY+liftY)/massKg*dt-gravity*dt;
     s.x+=s.vx*dt;s.altitude+=s.vy*dt;s.elapsed+=dt;
-    const controlTorque=input.pitch* Math.max(0,Math.min(1,Math.abs(input.throttle)+.25))*v.inertia*.9;
+    const controlTorque=input.pitch* Math.max(0,Math.min(1,Math.abs(input.throttle)+.25))*v.inertia*(.9+Math.max(0,v.reactionWheelTorque??0));
     const aeroTorque=-aoa*q*v.referenceArea*.12;
     s.angularVelocity+=(controlTorque+aeroTorque)/(v.inertia*massKg)*dt;
     s.angularVelocity*=Math.exp(-.55*dt);

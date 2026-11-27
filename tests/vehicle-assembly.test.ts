@@ -323,7 +323,7 @@ describe("vehicle attachment system", () => {
 
   it("provides distance-snap attachment nodes for every placeable part category", () => {
     const kinds=[
-      "capsule","tank","engine","separator","side-decoupler","separator-thruster",
+      "capsule","remote-control","reaction-wheel","tank","engine","separator","side-decoupler","separator-thruster",
       "fin","solar","wing","control","wheel","dock","battery","rcs","strut",
       "nose-cone","fairing","conical-fairing","interstage-fairing","clam-shell-fairing",
       "airbrake","strake","landing-leg","heat-shield","rover-wheel",
@@ -370,4 +370,11 @@ describe("vehicle attachment system", () => {
     expect(Math.hypot(node.position[0],node.position[2])).toBeCloseTo(.72);
   });
 
+ it("exposes attachment surfaces for the remote controller and reaction wheel",()=>{
+  for(const kind of ["remote-control","reaction-wheel"] as const){
+   const nodes=attachmentNodes(kind);
+   expect(nodes.some(n=>n.attachmentClass==="surface")).toBe(true);
+   expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(false);
+  }
+ });
 });

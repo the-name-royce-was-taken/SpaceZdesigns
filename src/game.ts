@@ -122,6 +122,15 @@ function makeRocket():THREE.Group{
    const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,(p.x??0),y-.12,p.z??0);tire.rotation.z=Math.PI/2;
    const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,(p.x??0),y-.12,p.z??0);rim.rotation.z=Math.PI/2;
    for(let i=0;i<16;i++){const a=i*Math.PI/8;const lug=add(new THREE.BoxGeometry(.2,.045,.045),rubber,p.x??0,y-.12+Math.cos(a)*(radius+.006),(p.z??0)+Math.sin(a)*(radius+.006));lug.rotation.x=a;}
+  }else if(p.kind==="remote-control"){
+   add(new THREE.BoxGeometry(.52,.3,.5),mat(0x607f91,.62),p.x??0,y,p.z??0);
+   const antenna=add(new THREE.CylinderGeometry(.012,.018,.28,8),mat(0x253b4b,.72),(p.x??0)+.17,y+.26,p.z??0);antenna.rotation.z=-.2;
+   add(new THREE.SphereGeometry(.045,12,8),mat(0x4bb6d4,.5),(p.x??0)+.2,y+.4,p.z??0);
+   add(new THREE.BoxGeometry(.32,.16,.035),mat(0x4bb6d4,.45),p.x??0,y+.04,(p.z??0)+.267);
+  }else if(p.kind==="reaction-wheel"){
+   add(new THREE.CylinderGeometry(.22,.22,.3,32),mat(0x9baab4,.78),p.x??0,y,p.z??0);
+   const rotor=add(new THREE.TorusGeometry(.17,.035,10,32),mat(0x344d5e,.82),p.x??0,y,p.z??0);rotor.rotation.x=Math.PI/2;
+   add(new THREE.CylinderGeometry(.09,.09,.34,20),mat(0xcbd5db,.8),p.x??0,y,p.z??0);
   }else if(p.kind==="wheel"){
    const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
    leg.rotation.z=-.22;
@@ -152,13 +161,13 @@ function launchpad(){
  const selectedEngine=craft.parts.find(p=>p.kind==="engine");
  const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
  const aeroCounts={cones:craft.parts.filter(p=>p.kind==="nose-cone").length,fairings:craft.parts.filter(p=>isFairingKind(p.kind)).length,wings:craft.parts.filter(p=>p.kind==="wing").length,fins:craft.parts.filter(p=>p.kind==="fin").length,controls:craft.parts.filter(p=>p.kind==="control").length,airbrakes:craft.parts.filter(p=>p.kind==="airbrake").length,strakes:craft.parts.filter(p=>p.kind==="strake").length};
- const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,engines:engineManifest};
+ const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,reactionWheelTorque:craft.parts.filter(p=>p.kind==="reaction-wheel").length*.9,engines:engineManifest};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
  if(savedFlight){sim=new FlightSimulator(savedFlight.vehicle);Object.assign(sim.state,structuredClone(savedFlight.state));range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Restored the most recently saved flight state from this world.";}
  let lastPersist=performance.now();
- $("#ignite",root).onclick=()=>{if(!craft.parts.some(p=>p.kind==="capsule")||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod and engine before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();persistFlight(Number(range.value)/100,Number(pitch.value));host.toast("Ignition. Fixed-step flight simulation started.");}};
+ $("#ignite",root).onclick=()=>{if((!craft.parts.some(p=>p.kind==="capsule")&&!craft.parts.some(p=>p.kind==="remote-control"))||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod or remote control module, plus an engine, before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();persistFlight(Number(range.value)/100,Number(pitch.value));host.toast("Ignition. Fixed-step flight simulation started.");}};
  $("#next-stage",root).onclick=()=>{if(!sim){host.toast("Launch the vehicle before activating later stages.","error");return;}if(!sim.activateNextStage()){host.toast("No later engine stage is assigned.","error");return;}$("#engine-stage-readout",root).textContent="STAGE "+sim.state.currentStage;host.toast("Stage "+sim.state.currentStage+" activated.");};
  const solarAssemblies=group.userData.solarAssemblies as {group:number;hinge:THREE.Group;deployed:boolean}[];
  root.querySelectorAll<HTMLButtonElement>("[data-activation-group]").forEach(button=>{const groupId=Number(button.dataset.activationGroup);button.onclick=()=>{const members=solarAssemblies.filter(panel=>panel.group===groupId);const deploy=members.some(panel=>!panel.deployed);members.forEach(panel=>{panel.deployed=deploy;panel.hinge.rotation.z=deploy?0:-Math.PI/2;});button.textContent=`GROUP ${groupId} · ${deploy?"RETRACT SOLAR ARRAYS":"DEPLOY SOLAR ARRAYS"}`;host.toast(`Activation group ${groupId}: solar arrays ${deploy?"deployed":"retracted"}.`);};});
