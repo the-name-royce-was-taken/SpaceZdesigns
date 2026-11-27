@@ -88,6 +88,17 @@ describe("vehicle attachment system", () => {
     }
   });
 
+  it("centers the solar array's mounting face on its rendered hinge", () => {
+    const solar = attachmentNodes("solar", { kind: "solar", solarLength: 2.4 });
+    const mount = solar.find(node => node.id === "surface-west-r4-c4");
+    expect(mount).toBeDefined();
+    expect(mount!.position[0]).toBeCloseTo(.1);
+    expect(mount!.position[1]).toBeCloseTo(0);
+    expect(mount!.position[2]).toBeCloseTo(0);
+    const longerSolar = attachmentNodes("solar", { kind: "solar", solarLength: 4.8 });
+    expect(longerSolar.find(node => node.id === "surface-west-r4-c4")!.position[0]).toBeCloseTo(.1);
+  });
+
   it("chooses the center row when a fuel tank attaches to a curved surface", () => {
     const parts: BuildPart[] = [
       { id: "tank", kind: "tank" },
