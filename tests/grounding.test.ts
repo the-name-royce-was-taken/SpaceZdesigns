@@ -8,14 +8,23 @@ describe("ground clearance", () => {
     expect(position.y).toBeCloseTo(0.45);
   });
 
-  it("moves an overlapping spawn left until clear, then leaves two extra units", () => {
+  it("moves an overlapping spawn left in 1.5-unit steps, then adds another 1.5 units", () => {
     const candidate = { minX: 1, maxX:2, minY: 0, maxY: 1, minZ: 0, maxZ: 1 };
     const obstacles = [{ minX: 0, maxX: 1.5, minY: 0, maxY: 1, minZ: 0, maxZ: 1 }];
-    const offset = leftwardClearanceOffset(candidate, obstacles, .1, 2);
-    expect(offset).toBeLessThan(-2);
+    const offset = leftwardClearanceOffset(candidate, obstacles);
+    expect(offset).toBe(-4.5);
     const moved = { ...candidate, minX: candidate.minX + offset, maxX: candidate.maxX + offset };
-    expect(obstacles.some(obstacle => moved.minX < obstacle.maxX && moved.maxX > obstacle.minX && moved.minY < obstacle.maxY && moved.maxY > obstacle.minY && moved.minZ < obstacle.maxZ && moved.maxZ > obstacle.minZ)).toBe(false);
-    expect(leftwardClearanceOffset(candidate, [{ ...obstacles[0]!, minY: 2, maxY: 3 }], .1, 2)).toBe(0);
+    expect(obstacles.some(obstacle => moved.minX <= obstacle.maxX && moved.maxX >= obstacle.minX && moved.minY <= obstacle.maxY && moved.maxY >= obstacle.minY && moved.minZ <= obstacle.maxZ && moved.maxZ >= obstacle.minZ)).toBe(false);
+    expect(leftwardClearanceOffset(candidate, [{ ...obstacles[0]!, minY: 2, maxY: 3 }])).toBe(0);
+  });
+
+  it("rechecks after the extra 1.5-unit gap and keeps moving if another part is there", () => {
+    const candidate = { minX: 0, maxX: 1, minY: 0, maxY: 1, minZ: 0, maxZ: 1 };
+    const obstacles = [
+      { minX: 0, maxX: 1, minY: 0, maxY: 1, minZ: 0, maxZ: 1 },
+      { minX: -3, maxX: -2, minY: 0, maxY: 1, minZ: 0, maxZ: 1 }
+    ];
+    expect(leftwardClearanceOffset(candidate, obstacles)).toBe(-4.5);
   });
 
   it("moves spawned parts down to the ground when floating and up when below it", () => {
