@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "./vehicle-assembly";
+import { groundClearanceOffset, translatePartsY } from "./grounding";
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number}[] = [
@@ -350,6 +351,15 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   const stageSelect=box.querySelector<HTMLSelectElement>("[data-engine-stage]");
   if(stageSelect)stageSelect.onchange=()=>{p.engineStage=Number(stageSelect.value);redraw();record();};
  }
+ function groundMinYForPart(part:BuildPart){
+  const group=makeMesh(part);
+  group.position.set(part.x??0,part.y??0,part.z??0);
+  group.rotation.set(part.rx??0,part.ry??0,part.rz??0);
+  group.updateMatrixWorld(true);
+  const minY=new THREE.Box3().setFromObject(group).min.y;
+  group.traverse(object=>{if(object instanceof THREE.Mesh){object.geometry.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>material.dispose());}});
+  return minY;
+ }
  function rememberSafePose(g:THREE.Group,p:BuildPart){g.userData.safePose={position:g.position.clone(),rotation:g.rotation.clone(),parentId:p.parentId,parentNode:p.parentNode,childNode:p.childNode};}
 
  function hasCollision(g:THREE.Group,p:BuildPart){craftGroup.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(g);for(const other of craftGroup.children){if(other===g)continue;const otherPart=craft.find(candidate=>candidate.id===other.userData.partId);if(!otherPart)continue;if(p.parentId===otherPart.id||otherPart.parentId===p.id)continue;if(bounds.intersectsBox(new THREE.Box3().setFromObject(other)))return true;}return false;}
@@ -388,6 +398,12 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    additions.push(part);count=1;
   }
   if(craft.length+additions.length>120){status.textContent="PART LIMIT / 120";return;}
+  const lowestSpawnPoint=Math.min(...additions.map(groundMinYForPart));
+  const spawnLift=groundClearanceOffset(lowestSpawnPoint);
+  if(spawnLift>0){
+   craft=translatePartsY(craft,new Set(craft.map(part=>part.id??"")),spawnLift);
+   for(const part of additions)part.y=(part.y??0)+spawnLift;
+  }
   craft.push(...additions);selectedId=additions[0]?.id??null;redraw();record();
   const issues=validateAssembly(craft);
   status.textContent=issues.length?"ASSEMBLY WARNING / CHECK CONNECTIONS":`${(kind==="engine"?engineDisplayName(additions[0]!):spec(kind).name).toUpperCase()} PLACED / AUTO-SNAPPED · ${additions.length}×`;
@@ -427,7 +443,24 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  host.querySelector("#vab-reset")!.addEventListener("click",()=>{camera.position.set(8,6,10);orbit.target.set(0,1,0);orbit.update();});
  function selectAllParts(){selected=null;selectedId=null;selectedIds=new Set(craft.map(p=>p.id!).filter(Boolean));selectionAnchorId=craft[0]?.id??null;if(selectedIds.size>1)refreshMultiSelection();else if(selectedIds.size===1){const id=[...selectedIds][0];select(craftGroup.children.find(g=>g.userData.partId===id) as THREE.Group??null);}else{releaseMultiSelectionTransform();transform.detach();}status.textContent=selectedIds.size+" PARTS SELECTED / CTRL+D TO DUPLICATE";}
  function duplicateSelection(){const ids=selectedIds.size?new Set(selectedIds):(selectedId?new Set([selectedId]):new Set<string>());if(!ids.size){status.textContent="SELECT PARTS BEFORE DUPLICATING";return;}const originals=craft.filter(p=>ids.has(p.id??"")&&p.kind!=="fuel-line");const lines=craft.filter(p=>ids.has(p.id??"")&&p.kind==="fuel-line"&&ids.has(p.fuelLineStartId??"")&&ids.has(p.fuelLineEndId??""));const count=originals.length+lines.length;if(!count){status.textContent="NO DUPLICATABLE PARTS SELECTED";return;}if(craft.length+count>120){status.textContent="PART LIMIT / 120";return;}const idMap=new Map<string,string>();for(const p of [...originals,...lines])idMap.set(p.id!,uid());const copies:BuildPart[]=[...originals,...lines].map(p=>{const copy:BuildPart={...p,id:idMap.get(p.id!)!,x:(p.x??0)+1.2};if(p.parentId){if(idMap.has(p.parentId))copy.parentId=idMap.get(p.parentId)!;else{delete copy.parentId;delete copy.parentNode;delete copy.childNode;}}if(p.kind==="fuel-line"){copy.fuelLineStartId=idMap.get(p.fuelLineStartId!)!;copy.fuelLineEndId=idMap.get(p.fuelLineEndId!)!;}return copy;});craft.push(...copies);redraw();selectedIds=new Set(copies.map(p=>p.id!));selectedId=null;selected=null;transform.detach();host.querySelectorAll<HTMLElement>(".vab-stack-row").forEach(row=>row.classList.toggle("selected",selectedIds.has(row.dataset.id??"")));inspect();record();status.textContent="DUPLICATED "+copies.length+" PART(S) / OFFSET TO THE RIGHT";}
- host.addEventListener("keydown",e=>{const target=e.target as HTMLElement|null;const typing=!!target&&((target.closest("input,textarea,select,[contenteditable='true']"))!==null);const modifier=e.ctrlKey||e.metaKey;if(modifier&&!typing){const key=e.key.toLowerCase();if(key==="a"||key==="d"){e.preventDefault();e.stopPropagation();if(key==="a")selectAllParts();else duplicateSelection();return;}if(key==="z"){e.preventDefault();e.stopPropagation();host.querySelector<HTMLButtonElement>("#vab-undo")!.click();return;}}if((e.key==="Escape"||e.key==="Backspace")&&fuelLineDrawing){e.preventDefault();e.stopPropagation();fuelLineDrawing=false;fuelLineStartId=null;fuelLinePreview.visible=false;fuelLinePreview.children.forEach(child=>(child as THREE.Mesh).geometry.dispose());fuelLinePreview.clear();status.textContent="FUEL PIPE PLACEMENT CANCELLED";return;}if(e.key==="Delete"||e.key==="Backspace"){if(selectedIds.size){for(const id of [...selectedIds])craft=craft.filter(p=>p.id!==id&&!(p.kind==="fuel-line"&&(p.fuelLineStartId===id||p.fuelLineEndId===id)));selectedIds.clear();selectedId=null;selected=null;transform.detach();redraw();record();}else if(selectedId)removePart(selectedId);}if(e.key.toLowerCase()==="w")setTool("translate");if(e.key.toLowerCase()==="e")setTool("rotate");if(e.key.toLowerCase()==="q")setTool("select");});
+ function lowerSelectionToGround(){
+  const ids=selectedIds.size?new Set(selectedIds):(selectedId?new Set([selectedId]):new Set<string>());
+  if(!ids.size){status.textContent="SELECT PARTS BEFORE LOWERING TO GROUND";return;}
+  releaseMultiSelectionTransform();
+  scene.updateMatrixWorld(true);
+  const bounds=new THREE.Box3();
+  for(const group of craftGroup.children){
+   if(ids.has(String(group.userData.partId)))bounds.union(new THREE.Box3().setFromObject(group));
+  }
+  if(bounds.isEmpty()){status.textContent="SELECTED PARTS HAVE NO VISIBLE BOUNDS";return;}
+  const drop=groundClearanceOffset(bounds.min.y);
+  if(drop<=1e-6){status.textContent="SELECTION ALREADY TOUCHES THE GROUND";return;}
+  craft=translatePartsY(craft,ids,-drop);
+  redraw();
+  record();
+  status.textContent=ids.size+" PART"+(ids.size===1?"":"S")+" LOWERED TO GROUND / STRUCTURE PRESERVED";
+ }
+ host.addEventListener("keydown",e=>{const target=e.target as HTMLElement|null;const typing=!!target&&((target.closest("input,textarea,select,[contenteditable='true']"))!==null);const modifier=e.ctrlKey||e.metaKey;if(!typing&&!modifier&&e.key.toLowerCase()==="d"){e.preventDefault();e.stopPropagation();lowerSelectionToGround();return;}if(modifier&&!typing){const key=e.key.toLowerCase();if(key==="a"||key==="d"){e.preventDefault();e.stopPropagation();if(key==="a")selectAllParts();else duplicateSelection();return;}if(key==="z"){e.preventDefault();e.stopPropagation();host.querySelector<HTMLButtonElement>("#vab-undo")!.click();return;}}if((e.key==="Escape"||e.key==="Backspace")&&fuelLineDrawing){e.preventDefault();e.stopPropagation();fuelLineDrawing=false;fuelLineStartId=null;fuelLinePreview.visible=false;fuelLinePreview.children.forEach(child=>(child as THREE.Mesh).geometry.dispose());fuelLinePreview.clear();status.textContent="FUEL PIPE PLACEMENT CANCELLED";return;}if(e.key==="Delete"||e.key==="Backspace"){if(selectedIds.size){for(const id of [...selectedIds])craft=craft.filter(p=>p.id!==id&&!(p.kind==="fuel-line"&&(p.fuelLineStartId===id||p.fuelLineEndId===id)));selectedIds.clear();selectedId=null;selected=null;transform.detach();redraw();record();}else if(selectedId)removePart(selectedId);}if(e.key.toLowerCase()==="w")setTool("translate");if(e.key.toLowerCase()==="e")setTool("rotate");if(e.key.toLowerCase()==="q")setTool("select");});
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
  const render=()=>{if(!alive)return;orbit.update();renderer.render(scene,camera);requestAnimationFrame(render);};
