@@ -14,6 +14,7 @@ import {
 } from "./worlds";
 import "./style.css";
 import { mountGame, renderGameScreen } from "./game";
+import { listBlueprints, replaceBlueprints } from "./blueprints";
 
 const $ = <T extends HTMLElement>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -114,8 +115,10 @@ async function activateWorld(id: string): Promise<void> {
   toast(`Selected world: ${selected.name}`);
 }
 
-function downloadArchive(world: WorldRecord): void {
-  const bytes = exportWorld(world);
+async function downloadArchive(world: WorldRecord): Promise<void> {
+  const blueprints = await listBlueprints();
+  const archiveWorld: WorldRecord = { ...world, state: { ...world.state, blueprints } };
+  const bytes = exportWorld(archiveWorld);
   const archiveBuffer = bytes.slice().buffer as ArrayBuffer;
   const blob = new Blob([archiveBuffer], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
@@ -183,11 +186,11 @@ async function handleAction(action: string, id?: string): Promise<void> {
       break;
     case "export-world": {
       const world = (await listWorlds()).find((item) => item.id === id);
-      if (world) downloadArchive(world);
+      if (world) await downloadArchive(world);
       break;
     }
     case "export-active-world":
-      if (activeWorld) downloadArchive(activeWorld);
+      if (activeWorld) await downloadArchive(activeWorld);
       else toast("Select a world before exporting.", "error");
       break;
     case "rename-world": {
@@ -278,6 +281,7 @@ $("#world-file-input").addEventListener("change", (event) => {
     const nameTaken = existing.some((world) => world.name.toLowerCase() === imported.name.toLowerCase());
     if (nameTaken) imported.name = `${imported.name} (Imported)`.slice(0, 40);
     await saveWorld(imported);
+    if (imported.state.blueprints !== undefined) await replaceBlueprints(imported.state.blueprints);
     await refreshWorlds();
     activeWorld = imported;
     setActiveWorldId(imported.id);
@@ -305,7 +309,7 @@ async function initialize(): Promise<void> {
     $("#storage-status").textContent = "UNAVAILABLE";
     toast("Local world storage could not be initialized. Check browser settings.", "error");
   }
-  mountGame({ getWorld: () => activeWorld, setWorld: (world) => { activeWorld = world; setActiveWorldId(world.id); updateActiveWorldCard(); void refreshWorlds(); }, toast });
+  mountGame({ getWorld: () => activeWorld, setWorld: async (world) => { activeWorld = world; setActiveWorldId(world.id); await saveWorld(world); updateActiveWorldCard(); await refreshWorlds(); }, toast });
   initializeScene();
 }
 
