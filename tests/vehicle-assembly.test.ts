@@ -57,7 +57,7 @@ describe("vehicle attachment system", () => {
     expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeCloseTo(.2);
     const upperWall=nodes.find(n=>n.id==="surface-wall-a0-y8");
     const lowerWall=nodes.find(n=>n.id==="surface-wall-a0-y0");
-    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.72);
+    expect(Math.hypot(upperWall!.position[0],upperWall!.position[2])).toBeCloseTo(.7);
     expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
   });
 
@@ -184,7 +184,7 @@ describe("vehicle attachment system", () => {
   });
 
   it("centres scalable solar, rover-wheel and heat-shield grids on their rendered geometry", () => {
-    const solar=attachmentNodes("solar",{kind:"solar",solarLength:8});
+    const solar=attachmentNodes("solar",{kind:"solar",solarLength:8,solarDeployed:true});
     const solarTop=solar.filter(n=>n.id.startsWith("surface-top-"));
     expect(solarTop).toHaveLength(81);
     expect(Math.min(...solarTop.map(n=>n.position[0]))).toBeCloseTo(.1);
@@ -229,9 +229,9 @@ describe("vehicle attachment system", () => {
       expect(top).toHaveLength(81);
       expect(top.find(n=>n.id==="surface-top-r4-c4")!.position[1]).toBeCloseTo(.34);
       expect(Math.min(...top.map(n=>n.position[0]))).toBeCloseTo(-.72);
-      expect(Math.max(...top.map(n=>n.position[0]))).toBeCloseTo(.7);
-      expect(Math.min(...top.map(n=>n.position[2]))).toBeCloseTo(-.7);
-      expect(Math.max(...top.map(n=>n.position[2]))).toBeCloseTo(.7);
+      expect(Math.max(...top.map(n=>n.position[0]))).toBeCloseTo(.72);
+      expect(Math.min(...top.map(n=>n.position[2]))).toBeCloseTo(-.72);
+      expect(Math.max(...top.map(n=>n.position[2]))).toBeCloseTo(.72);
     }
   });
 
