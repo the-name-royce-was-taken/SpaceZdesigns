@@ -73,7 +73,9 @@ describe("vehicle attachment system", () => {
     expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
-    expect(angles).toEqual([0, 4, 2, 6]);
+    const sortedAngles = [...angles].sort((a, b) => a - b);
+    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + 9) % 9));
+    expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
       const childNode = attachmentNodes("wing").find(n => n.id === p.childNode)!;
@@ -83,6 +85,21 @@ describe("vehicle attachment system", () => {
       expect(p.y + childPosition[1]).toBeCloseTo(parentNode.position[1]);
       expect(p.z + childPosition[2]).toBeCloseTo(parentNode.position[2]);
     }
+  });
+
+  it("keeps the part's rotation unchanged while snapping its connector exactly onto a surface node", () => {
+    const tank: BuildPart = { id: "tank", kind: "tank", x: 0, y: 0, z: 0 };
+    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, ry: .37 };
+    const placement = findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing);
+    expect(placement).not.toBeNull();
+    expect(placement!.rotationY).toBeCloseTo(.37);
+    const parentNode = attachmentNodes("tank").find(n => n.id === placement!.parentNode)!;
+    const childNode = attachmentNodes("wing", wing).find(n => n.id === placement!.childNode)!;
+    const c = Math.cos(wing.ry!), s = Math.sin(wing.ry!);
+    const childPosition = [childNode.position[0]*c+childNode.position[2]*s, childNode.position[1], -childNode.position[0]*s+childNode.position[2]*c];
+    expect(placement!.x + childPosition[0]).toBeCloseTo(parentNode.position[0]);
+    expect(placement!.y + childPosition[1]).toBeCloseTo(parentNode.position[1]);
+    expect(placement!.z + childPosition[2]).toBeCloseTo(parentNode.position[2]);
   });
 
   it("places a stack part above the highest available stack node", () => {

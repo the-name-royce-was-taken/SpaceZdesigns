@@ -281,7 +281,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false,activationGroup:1}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false,activationGroup:1}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:0,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
@@ -300,7 +300,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
   const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.8,part);
-  if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;part.ry=placement.rotationY;part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
+  if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
   else{delete part.parentId;delete part.parentNode;delete part.childNode;}
   g.position.set(part.x??0,part.y??0,part.z??0);g.rotation.set(part.rx??0,part.ry??0,part.rz??0);
   if(hasCollision(g,part)){Object.assign(part,previous);g.position.set(part.x??0,part.y??0,part.z??0);g.rotation.set(part.rx??0,part.ry??0,part.rz??0);return false;}
