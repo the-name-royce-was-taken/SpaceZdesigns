@@ -99,7 +99,9 @@ function validateWorld(value: unknown): value is WorldRecord {
     && Array.isArray(state.missions)
     && Array.isArray(state.research)
     && state.research.every((item) => typeof item === "string")
-    && (state.blueprints === undefined || Array.isArray(state.blueprints))\n    && (state.achievements === undefined || (Array.isArray(state.achievements) && state.achievements.every((item) => typeof item === "string")))\n    && (state.purchasedParts === undefined || (Array.isArray(state.purchasedParts) && state.purchasedParts.every((item) => typeof item === "string")));
+    && (state.blueprints === undefined || Array.isArray(state.blueprints))
+    && (state.achievements === undefined || (Array.isArray(state.achievements) && state.achievements.every((item) => typeof item === "string")))
+    && (state.purchasedParts === undefined || (Array.isArray(state.purchasedParts) && state.purchasedParts.every((item) => typeof item === "string")));
 }
 
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
