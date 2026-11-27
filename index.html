@@ -86,12 +86,12 @@
       </nav>
       <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
       <dialog id="new-world-dialog" class="modal">
-        <form method="dialog" id="new-world-form">
-          <div class="modal-topline"><span>NEW CAMPAIGN</span><button class="modal-close" value="cancel" aria-label="Close">×</button></div>
+        <form method="dialog" id="new-world-form" novalidate>
+          <div class="modal-topline"><span>NEW CAMPAIGN</span><button class="modal-close" type="button" data-action="close-new-world" aria-label="Close">×</button></div>
           <h2>INITIALIZE <em>WORLD</em></h2>
           <label class="field-label" for="world-name">WORLD NAME</label><input id="world-name" name="worldName" maxlength="40" required placeholder="e.g. First Light" />
           <label class="field-label" for="world-mode">GAME MODE</label><select id="world-mode" name="worldMode"><option value="sandbox">SANDBOX / UNRESTRICTED</option><option value="career">CAREER / RESEARCH & CONTRACTS</option></select>
-          <div class="modal-actions"><button class="secondary-button compact" value="cancel">CANCEL</button><button class="primary-button compact" id="create-world-submit" value="default">CREATE WORLD</button></div>
+          <div class="modal-actions"><button class="secondary-button compact" type="button" data-action="close-new-world">CANCEL</button><button class="primary-button compact" id="create-world-submit" type="submit" value="default">CREATE WORLD</button></div>
         </form>
       </dialog>
       <dialog id="confirm-dialog" class="modal">
