@@ -147,7 +147,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  }
  return null;
 }
-export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
+export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.16,childPart?:BuildPart):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
  let best:AttachmentPlacement|null=null,bestDistance=Infinity;
  for(const parent of parts){
