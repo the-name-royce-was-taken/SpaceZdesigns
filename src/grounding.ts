@@ -19,3 +19,9 @@ export function translatePartsY<T extends GroundablePart>(parts: T[], ids: Reado
   if (!Number.isFinite(offset) || offset === 0) return parts.map(part => ({ ...part }));
   return parts.map(part => ids.has(part.id ?? "") ? { ...part, y: (part.y ?? 0) + offset } : { ...part });
 }
+
+/** Places a part just beyond the right edge of the existing craft, with its bottom on y=0. */
+export function sideSpawnPosition(rightEdge: number, localMinX: number, localMinY: number, gap = 0.35): { x: number; y: number } {
+  if (![rightEdge, localMinX, localMinY, gap].every(Number.isFinite)) return { x: 0, y: 0 };
+  return { x: rightEdge + Math.max(0, gap) - localMinX, y: -localMinY };
+}
