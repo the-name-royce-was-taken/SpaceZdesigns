@@ -390,7 +390,7 @@ describe("vehicle attachment system", () => {
   for(const kind of ["remote-control","reaction-wheel"] as const){
    const nodes=attachmentNodes(kind);
    expect(nodes.some(n=>n.attachmentClass==="surface")).toBe(true);
-   expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(false);
+   expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(true);
   }
  });
 });
