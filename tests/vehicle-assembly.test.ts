@@ -92,6 +92,7 @@ describe("vehicle attachment system", () => {
     expect(new Set(angles).size).toBe(4);
     const sortedAngles = [...angles].sort((a, b) => a - b);
     const angleCount=new Set(attachmentNodes("tank").filter(n=>n.id.startsWith("surface-wall-")).map(n=>/^surface-wall-a(\d+)-/.exec(n.id)?.[1])).size;
+    const circularGaps=sortedAngles.map((angle,index)=>((sortedAngles[(index+1)%sortedAngles.length]!-angle+angleCount)%angleCount));
     expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
