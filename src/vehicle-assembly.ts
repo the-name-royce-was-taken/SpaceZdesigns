@@ -14,7 +14,7 @@ const node=(id:string,attachmentClass:AttachmentClass,position:readonly [number,
 const rotateY=(v:readonly [number,number,number],a:number):[number,number,number]=>{const c=Math.cos(a),s=Math.sin(a);return [v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c];};
 const rotatePart=(v:readonly [number,number,number],part:Pick<BuildPart,"rx"|"ry"|"rz">):[number,number,number]=>{const x=part.rx??0,y=part.ry??0,z=part.rz??0,cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);return [cy*cz*v[0]-cy*sz*v[1]+sy*v[2],(sx*sy*cz+cx*sz)*v[0]+(cx*cz-sx*sy*sz)*v[1]-sx*cy*v[2],(sx*sz-cx*sy*cz)*v[0]+(sx*cz+cx*sy*sz)*v[1]+cx*cy*v[2]];};
 const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length===3&&Math.abs(a[0]!+b[0]!)<1e-6&&Math.abs(a[1]!+b[1]!)<1e-6&&Math.abs(a[2]!+b[2]!)<1e-6;
-const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],"remote-control":[.55,.42,.55],"reaction-wheel":[.48,.42,.48],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3],"structural-beam":[.28,1.2,.28],"structural-angle":[.55,.55,.22],"structural-hub":[.48,.48,.48]};
+const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],"remote-control":[.56,.28,.56],"reaction-wheel":[.56,.28,.56],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3],"structural-beam":[.28,1.2,.28],"structural-angle":[.55,.55,.22],"structural-hub":[.48,.48,.48]};
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
 const ATTACHMENT_GRID_CUBE_SIZE=.16/1.5;
@@ -40,11 +40,11 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     const offsets=centeredOffsets(radius);
     addGrid(face,offsets,offsets,(x,z)=>[x,y,z],()=>[0,dy,0],(x,z)=>Math.hypot(x,z)<=radius+1e-8);
   };
-  if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)){
-    const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:.43;
-    const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:.49;
-    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:kind==="heat-shield"?(part?.thickness??.16)/2:hy;
-    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-(part?.thickness??.16)/2:-hy;
+  if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)||kind==="remote-control"||kind==="reaction-wheel"){
+    const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:(kind==="remote-control"||kind==="reaction-wheel")?Math.max(.08,Math.min(.9,part?.topRadius??.28)):.43;
+    const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:(kind==="remote-control"||kind==="reaction-wheel")?Math.max(.08,Math.min(.9,part?.bottomRadius??.28)):.49;
+    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:(kind==="remote-control"||kind==="reaction-wheel")?.14:kind==="heat-shield"?(part?.thickness??.16)/2:hy;
+    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:(kind==="remote-control"||kind==="reaction-wheel")?-.14:kind==="heat-shield"?-(part?.thickness??.16)/2:-hy;
     // Curved surfaces use the same fixed cube pitch as flat faces. The grid is
     // centered at the part origin and grows outward to within one cell of its bounds.
     const yOffsets=centeredOffsets(Math.max(Math.abs(yBottom),Math.abs(yTop))).filter(y=>y>=yBottom-1e-8&&y<=yTop+1e-8);
@@ -67,6 +67,7 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     else if(kind==="dock"){disk("top",.22,.13,1);disk("bottom",.28,-.11,-1);}
     else if(kind==="wheel"){disk("top",.2,.425,1);disk("bottom",.2,-.425,-1);}
     else if(kind==="engine")disk("top",.19,.31,1);
+    else if(kind==="remote-control"||kind==="reaction-wheel"){disk("top",top,yTop,1);disk("bottom",bottom,yBottom,-1);}
     else if(kind==="heat-shield"){disk("top",top,yTop,1);disk("bottom",bottom,yBottom,-1);}
     return out;
   }
@@ -90,6 +91,7 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="tank"){const h=Math.max(.25,Math.min(3,part?.height??.96))/2,r=Math.max(part?.topRadius??.44,part?.bottomRadius??.44);stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]),node("engine-mount-east","stack",[r+.46,-h,0],[0,-1,0]),node("engine-mount-west","stack",[-r-.46,-h,0],[0,-1,0]),node("engine-mount-north","stack",[0,-h,r+.46],[0,-1,0]),node("engine-mount-south","stack",[0,-h,-r-.46],[0,-1,0]));}
   if(kind==="nose-cone"||isFairingKind(kind))stack.push(node("stack-bottom","stack",[0,-Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2,0],[0,-1,0]));
   if(kind==="engine")stack.push(node("stack-top","stack",[0,.48,0],[0,1,0]));
+  if(kind==="remote-control"||kind==="reaction-wheel")stack.push(node("stack-top","stack",[0,.14,0],[0,1,0]),node("stack-bottom","stack",[0,-.14,0],[0,-1,0]));
   if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
