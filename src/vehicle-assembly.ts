@@ -87,7 +87,7 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
-  if(kind==="structural-beam"){const half=Math.max(1,Math.min(12,Math.round(part?.structuralLength??3)))*.2;stack.push(node("beam-end-top","stack",[0,half,0],[0,1,0]),node("beam-end-bottom","stack",[0,-half,0],[0,-1,0]));}
+  if(kind==="structural-beam"){const half=Math.max(1,Math.min(12,Math.round(part?.structuralLength??3)))*.2;stack.push(node("beam-end-top","stack",[0,half,0],[0,1,0]),node("beam-end-bottom","stack",[0,-half,0],[0,-1,0]),node("beam-side-east","stack",[.14,0,0],[1,0,0]),node("beam-side-west","stack",[-.14,0,0],[-1,0,0]),node("beam-side-north","stack",[0,0,.14],[0,0,1]),node("beam-side-south","stack",[0,0,-.14],[0,0,-1]));}
   if(kind==="structural-angle")stack.push(node("angle-end-up","stack",[0,.38,0],[0,1,0]),node("angle-end-right","stack",[.38,0,0],[1,0,0]));
   if(kind==="structural-hub")stack.push(node("hub-up","stack",[0,.22,0],[0,1,0]),node("hub-down","stack",[0,-.22,0],[0,-1,0]),node("hub-east","stack",[.22,0,0],[1,0,0]),node("hub-west","stack",[-.22,0,0],[-1,0,0]),node("hub-north","stack",[0,0,.22],[0,0,1]),node("hub-south","stack",[0,0,-.22],[0,0,-1]));
   return [...stack,...surfaceNodes(kind,part)];
