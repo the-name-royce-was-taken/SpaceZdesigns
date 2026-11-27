@@ -59,7 +59,7 @@ function hangar(){
      const bytes=exportBuildz(record.name,record.parts),blob=new Blob([bytes.slice().buffer as ArrayBuffer],{type:"application/zip"}),url=URL.createObjectURL(blob),anchor=document.createElement("a");
      anchor.href=url;anchor.download=`${record.name.replace(/[^a-z0-9-_ ]/gi,"").trim().replace(/\\s+/g,"-")||"SpaceZ-Blueprint"}.buildz`;document.body.append(anchor);anchor.click();anchor.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);host.toast(`Downloaded ${record.name}.buildz`);
     }else if(action==="load"){
-     craft={name:record.name,parts:structuredClone(record.parts)};($("#craft-name",root) as HTMLInputElement).value=craft.name;builder?.replaceParts(craft.parts);
+     const loadedCraft:Craft={name:record.name,parts:structuredClone(record.parts)};if(builder&&!builder.replaceParts(loadedCraft.parts))return;craft=loadedCraft;($("#craft-name",root) as HTMLInputElement).value=craft.name;
      const v=metrics();$("#build-mass",root).textContent=(v.mass+v.fuel*.001).toFixed(2)+" t";$("#build-fuel",root).textContent=v.fuel+" u";$("#build-thrust",root).textContent=v.thrust+" kN";$("#build-cost",root).textContent=v.cost.toLocaleString()+" cr";
      blueprintPanel.hidden=true;blueprintToggle.setAttribute("aria-expanded","false");host.toast(`Loaded blueprint: ${record.name}`);
     }else if(action==="overwrite"){
