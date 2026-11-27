@@ -91,7 +91,7 @@ describe("vehicle attachment system", () => {
   it("chooses the center row when a fuel tank attaches to a curved surface", () => {
     const parts: BuildPart[] = [
       { id: "tank", kind: "tank" },
-      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south"]
+      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", "surface-top-r4-c4", "surface-bottom-r4-c4"]
         .map((parentNode, index) => ({ id: "occupant-" + index, kind: "battery" as const, parentId: "tank", parentNode }))
     ];
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
