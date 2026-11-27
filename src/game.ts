@@ -223,9 +223,23 @@ function launchpad(){
  if(savedFlight){sim=new FlightSimulator(savedFlight.vehicle);Object.assign(sim.state,structuredClone(savedFlight.state));range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Restored the most recently saved flight state from this world.";}
  let lastPersist=performance.now();
  $("#ignite",root).onclick=()=>{if((!craft.parts.some(p=>p.kind==="capsule")&&!craft.parts.some(p=>p.kind==="remote-control"))||!craft.parts.some(p=>p.kind==="engine")){host.toast("Add a command pod or remote control module, plus an engine, before launch.","error");return}if(!sim){sim=new FlightSimulator(vehicle);sim.launch();lastFrame=performance.now();range.value=String(Math.max(70,Number(range.value)));updateLabels();persistFlight(Number(range.value)/100,Number(pitch.value));host.toast("Ignition. Fixed-step flight simulation started.");}};
- $("#next-stage",root).onclick=()=>{if(!sim){host.toast("Launch the vehicle before activating later stages.","error");return;}if(!sim.activateNextStage()){host.toast("No later engine stage is assigned.","error");return;}$("#engine-stage-readout",root).textContent="STAGE "+sim.state.currentStage;host.toast("Stage "+sim.state.currentStage+" activated.");};
- const solarAssemblies=group.userData.solarAssemblies as {group:number;hinge:THREE.Group;deployed:boolean}[];
- root.querySelectorAll<HTMLButtonElement>("[data-activation-group]").forEach(button=>{const groupId=Number(button.dataset.activationGroup);button.onclick=()=>{const members=solarAssemblies.filter(panel=>panel.group===groupId);const deploy=members.some(panel=>!panel.deployed);members.forEach(panel=>{panel.deployed=deploy;panel.hinge.rotation.z=deploy?0:-Math.PI/2;});button.textContent=`GROUP ${groupId} · ${deploy?"RETRACT SOLAR ARRAYS":"DEPLOY SOLAR ARRAYS"}`;host.toast(`Activation group ${groupId}: solar arrays ${deploy?"deployed":"retracted"}.`);};});
+ const activationParts=group.userData.activationParts as {group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[];
+ const solarAssemblies=group.userData.solarAssemblies as {group:number;partId:string;hinge:THREE.Group;deployed:boolean}[];
+ const performGroupActions=(groupId:number)=>{
+  activationParts.filter(part=>part.group===groupId).forEach(part=>{
+   if(part.kind==="engine")return;
+   if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
+   if(part.kind==="separator-thruster"&&part.plume){part.plume.visible=true;window.setTimeout(()=>{part.plume!.visible=false;},450);return;}
+   if(part.kind==="separator"||part.kind==="side-decoupler"||part.kind==="fairing"||part.kind==="conical-fairing"||part.kind==="interstage-fairing"||part.kind==="clam-shell-fairing"||part.kind==="heat-shield"){part.object.visible=false;return;}
+   if(part.kind==="landing-leg"||part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="dock"){part.object.visible=!part.object.visible;return;}
+   part.object.visible=false;
+  });
+  $("#engine-stage-readout",root).textContent="STAGE "+groupId;
+  host.toast("Activation group "+groupId+" activated.");
+ };
+ const activateFlightGroup=(groupId:number)=>{if(!sim){host.toast("Launch the vehicle before activating a group.","error");return;}if(!sim.activateStage(groupId)){host.toast("Activate groups in their listed order.","error");return;}performGroupActions(groupId);};
+ root.querySelectorAll<HTMLButtonElement>("[data-flight-activation]").forEach(button=>button.onclick=()=>activateFlightGroup(Number(button.dataset.flightActivation)));
+ $("#next-stage",root).onclick=()=>{if(!sim){host.toast("Launch the vehicle before activating later groups.","error");return;}if(!sim.activateNextStage()){host.toast("No later activation groups are assigned.");return;}performGroupActions(sim.state.currentStage);};
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;range.value="0";pitch.value="0";updateLabels();group.position.set(0,0,0);group.rotation.set(0,0,0);$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
  let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;
