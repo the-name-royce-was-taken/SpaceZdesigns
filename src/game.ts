@@ -17,6 +17,17 @@ let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>boolean}|null=nu
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
+const PLANET_TEXTURES:Record<string,string>={
+ Earth:"https://spaceengine.solarsystemscope.com/textures/download/2k_earth_daymap.jpg",
+ Luna:"https://spaceengine.solarsystemscope.com/textures/download/2k_moon.jpg",
+ Mars:"https://spaceengine.solarsystemscope.com/textures/download/2k_mars.jpg",
+ Jupiter:"https://spaceengine.solarsystemscope.com/textures/download/2k_jupiter.jpg",
+ Saturn:"https://spaceengine.solarsystemscope.com/textures/download/2k_saturn.jpg"
+};
+function applyPlanetTexture(mesh:THREE.Mesh,name:string,loader:THREE.TextureLoader){
+ const url=PLANET_TEXTURES[name];if(!url)return;
+ loader.load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;const material=mesh.material as THREE.MeshStandardMaterial;material.map=texture;material.color.set(0xffffff);material.needsUpdate=true;},undefined,()=>{/* Solid planet colour remains as an offline-safe fallback. */});
+}
 function metrics(){const entries=craft.parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
 async function save(){const w=world();if(!w)throw new Error("Select a world before saving a vehicle.");const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);const savedCraft=structuredClone(craft);savedCraft.parts=normalizeActivationAssignments(savedCraft.parts);list.unshift(savedCraft);w.state.craft=list;w.updatedAt=new Date().toISOString();await host.setWorld(w)}
 function persistFlight(throttle:number,pitch:number){const w=world();if(!w||!sim)return;const saves=(w.state.missions??[]).filter((entry)=>!(entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"));saves.push({kind:"spacez-flight-save",craftName:craft.name,state:structuredClone(sim.state),vehicle:structuredClone(sim.vehicle),throttle,pitch,savedAt:new Date().toISOString()} satisfies SavedFlight);w.state.missions=saves;w.updatedAt=new Date().toISOString();void host.setWorld(w).catch(error=>host.toast(error instanceof Error?error.message:"Could not save flight progress.","error"))}
@@ -237,7 +248,7 @@ function launchpad(){
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x050d18);scene.fog=new THREE.Fog(0x050d18,100,420);
  const camera=new THREE.PerspectiveCamera(48,canvas.clientWidth/canvas.clientHeight,.05,900);camera.position.set(10,13,24);
  scene.add(new THREE.HemisphereLight(0xd9efff,0x26313b,1.5));const sun=new THREE.DirectionalLight(0xffefcf,2.6);sun.position.set(-18,28,22);scene.add(sun);
- const earthRadius=6.371,earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,64,32),new THREE.MeshStandardMaterial({color:0x4e9bd0,roughness:.92,flatShading:true}));scene.add(earth);
+ const earthRadius=6.371,earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,64,32),new THREE.MeshStandardMaterial({color:0x4e9bd0,roughness:.92,flatShading:true}));scene.add(earth);const planetTextureLoader=new THREE.TextureLoader();planetTextureLoader.setCrossOrigin("anonymous");applyPlanetTexture(earth,"Earth",planetTextureLoader);
  const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.025,48,24),new THREE.MeshBasicMaterial({color:0x68b9e8,transparent:true,opacity:.09,side:THREE.BackSide}));scene.add(atmosphere);
  const pad=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.035,8),new THREE.MeshStandardMaterial({color:0x737f86,flatShading:true}));pad.position.set(0,earthRadius,0);scene.add(pad);
  for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(.025,.55,.025),new THREE.MeshStandardMaterial({color:0xa6b5bd}));tower.position.set(Math.cos(i*Math.PI/2)*.11,earthRadius+.27,Math.sin(i*Math.PI/2)*.11);scene.add(tower);}
@@ -300,9 +311,9 @@ function launchpad(){
 function tracking(){
  disposeTrackingScene();const root=$("#tracking-content"),w=world();const saved=(w?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save");
  const flightState=sim?.state??saved?.state??null;const prediction=flightState?predictOrbit(flightState):null;
- root.innerHTML=`<div class="tracking-3d-shell"><div class="tracking-3d-top"><button class="text-button" data-action="return-world">← WORLD SPACE CENTER</button><span class="panel-kicker">TRACKING STATION / 3D CELESTIAL ATLAS</span><span class="live-tag">LIVE ORBIT VIEW</span></div><div class="tracking-3d-stage"><canvas id="system-canvas" aria-label="Interactive three dimensional solar system map"></canvas><div class="tracking-map-label">SOL SYSTEM / NOT TO SCALE</div><div class="tracking-map-help">DRAG TO ROTATE · SCROLL TO ZOOM · SELECT A PLANET</div></div><aside class="tracking-3d-sidebar"><div class="tracking-sidebar-head"><span class="panel-kicker">CELESTIAL BODIES</span><b>8 OBJECTS</b></div><div class="body-grid">${bodies.map(b=>`<button class="body-card ${target===b[0]?"selected":""}" data-body="${b[0]}"><i class="body-dot" style="--body-color:${b[4]}"></i><span><b>${b[0]}</b><small>${b[1]}</small></span><i>↗</i></button>`).join("")}</div><div id="body-detail" class="body-detail"></div><div class="orbit-prediction" id="orbit-prediction"></div></aside></div>`;
+ root.innerHTML=`<div class="tracking-3d-shell"><div class="tracking-3d-top"><button class="text-button" data-action="return-world">← WORLD SPACE CENTER</button><span class="panel-kicker">TRACKING STATION / 3D CELESTIAL ATLAS</span><span class="live-tag">LIVE ORBIT VIEW</span></div><div class="tracking-3d-stage"><canvas id="system-canvas" aria-label="Interactive three dimensional solar system map"></canvas><div class="tracking-map-label">SOL SYSTEM / NOT TO SCALE</div><div class="tracking-map-help">DRAG TO ROTATE · SCROLL TO ZOOM · SELECT A PLANET · MAPS: SOLAR SYSTEM SCOPE / CC BY 4.0</div></div><aside class="tracking-3d-sidebar"><div class="tracking-sidebar-head"><span class="panel-kicker">CELESTIAL BODIES</span><b>8 OBJECTS</b></div><div class="body-grid">${bodies.map(b=>`<button class="body-card ${target===b[0]?"selected":""}" data-body="${b[0]}"><i class="body-dot" style="--body-color:${b[4]}"></i><span><b>${b[0]}</b><small>${b[1]}</small></span><i>↗</i></button>`).join("")}</div><div id="body-detail" class="body-detail"></div><div class="orbit-prediction" id="orbit-prediction"></div></aside></div>`;
  const canvas=$("#system-canvas",root) as HTMLCanvasElement,renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});trackingRenderer=renderer;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
- const scene=new THREE.Scene();scene.background=new THREE.Color(0x030a13);scene.fog=new THREE.Fog(0x030a13,90,180);
+ const scene=new THREE.Scene();scene.background=new THREE.Color(0x030a13);scene.fog=new THREE.Fog(0x030a13,90,180);const planetTextureLoader=new THREE.TextureLoader();planetTextureLoader.setCrossOrigin("anonymous");
  const camera=new THREE.PerspectiveCamera(46,canvas.clientWidth/canvas.clientHeight,.1,400);camera.position.set(0,34,58);
  scene.add(new THREE.AmbientLight(0xffffff,1.25));const sunLight=new THREE.PointLight(0xffe0a2,180,180);sunLight.position.set(0,0,0);scene.add(sunLight);
  const sun=new THREE.Mesh(new THREE.SphereGeometry(1.8,32,20),new THREE.MeshBasicMaterial({color:0xffc56e}));scene.add(sun);
@@ -314,8 +325,9 @@ function tracking(){
   const orbit=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(orbitPoints),new THREE.LineBasicMaterial({color:0x29445b,transparent:true,opacity:.7}));system.add(orbit);
   const angle=[0,.9,2.2,3.3,4.1,5.0,5.6,0.3][i]!,position=new THREE.Vector3(Math.cos(angle)*radius,0,Math.sin(angle)*radius);
   if(body[0]==="Luna"||body[0]==="Phobos"||body[0]==="Europa"||body[0]==="Titan"){const parent=body[0]==="Luna"?0:body[0]==="Phobos"?2:body[0]==="Europa"?4:6;const parentAngle=[0,.9,2.2,3.3,4.1,5.0,5.6,0.3][parent]!;const parentRadius=orbitalRadii[parent]!;position.set(Math.cos(parentAngle)*parentRadius+Math.cos(angle*2)*1.2,.1,Math.sin(parentAngle)*parentRadius+Math.sin(angle*2)*1.2);}
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(size,32,20),new THREE.MeshStandardMaterial({color,roughness:.88,flatShading:true}));mesh.position.copy(position);mesh.userData.body=body[0];system.add(mesh);planetMeshes.set(body[0],mesh);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(size,32,20),new THREE.MeshStandardMaterial({color,roughness:.88,flatShading:true}));mesh.position.copy(position);mesh.userData.body=body[0];system.add(mesh);planetMeshes.set(body[0],mesh);applyPlanetTexture(mesh,body[0],planetTextureLoader);
  });
+ const saturnMesh=planetMeshes.get("Saturn");if(saturnMesh){const rings=new THREE.Mesh(new THREE.RingGeometry(1.55,2.2,72),new THREE.MeshStandardMaterial({color:0xc8b58b,side:THREE.DoubleSide,transparent:true,opacity:.78,roughness:1}));rings.rotation.x=-Math.PI/2;rings.position.copy(saturnMesh.position);system.add(rings);}
  const earthMesh=planetMeshes.get("Earth")!;
  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let dragging=false,lastX=0,lastY=0,rotX=-.35,rotY=.18,distance=58;
  const updateCamera=()=>{camera.position.set(Math.sin(rotY)*Math.cos(rotX)*distance,Math.sin(rotX)*distance,Math.cos(rotY)*Math.cos(rotX)*distance);camera.lookAt(0,0,0);};updateCamera();
