@@ -204,10 +204,10 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     // Gridded electrostatic thruster: broad emitter face, ceramic insulator and cathode details.
     add(new THREE.CylinderGeometry(.255,.255,.36,12,2,false),dark,new THREE.Vector3(0,.16,0));
     add(new THREE.CylinderGeometry(.29,.29,.07,12),steel,new THREE.Vector3(0,.355,0));
-    add(new THREE.CylinderGeometry(.235,.255,.09,12),new THREE.MeshStandardMaterial({color:0x527b91,metalness:.55,roughness:.4}),new THREE.Vector3(0,-.065,0));
+    add(new THREE.CylinderGeometry(.235,.255,.09,12),new THREE.MeshStandardMaterial({color:0x527b91,metalness:.55,roughness:.4}),new THREE.Vector3(0,-.06,0));
     add(new THREE.CylinderGeometry(.285,.285,.045,12),steel,new THREE.Vector3(0,-.13,0));
     add(new THREE.CylinderGeometry(.235,.235,.012,12),new THREE.MeshStandardMaterial({color:0x4d9bc0,metalness:.65,roughness:.28}),new THREE.Vector3(0,-.15,0));
-    for(const radius of [.12,.19,.25])band(radius,-.17,.008,gold);
+    for(const radius of [.12,.19,.25])band(radius,-.15,.008,gold);
     for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*.205,z=Math.sin(a)*.205;add(new THREE.CylinderGeometry(.018,.018,.09,6),gold,new THREE.Vector3(x,.22,z));}
     for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.31,z=Math.sin(a)*.31;add(new THREE.CylinderGeometry(.025,.025,.16,6),steel,new THREE.Vector3(x,.12,z));}
     }else if(type==="hydrolox"){
@@ -215,7 +215,8 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     add(new THREE.CylinderGeometry(.225,.225,.07,12),steel,new THREE.Vector3(0,.425,0));
     add(new THREE.CylinderGeometry(.145,.135,.22,10,2,false),chamber,new THREE.Vector3(0,.29,0));
     add(new THREE.CylinderGeometry(.12,.105,.13,10),steel,new THREE.Vector3(0,.11,0));
-    add(new THREE.CylinderGeometry(.105,.105,.16,10),dark,new THREE.Vector3(0,-.08,0));
+    add(new THREE.CylinderGeometry(.13,.12,.08,10),steel,new THREE.Vector3(0,.16,0));
+    add(new THREE.CylinderGeometry(.105,.105,.16,10),dark,new THREE.Vector3(0,-.055,0));
     for(const side of [-1,1]){
      const pump=add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));pump.rotateZ(side*.28);
      add(new THREE.CylinderGeometry(.105,.075,.075,8),gold,new THREE.Vector3(side*.205,.17,0));
@@ -242,7 +243,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     for(let i=0;i<4;i++){const a=i*Math.PI/2;const brace=add(new THREE.BoxGeometry(.025,.16,.025),steel,new THREE.Vector3(Math.cos(a)*.205,.34,Math.sin(a)*.205));brace.rotation.z=-Math.cos(a)*.16;brace.rotation.x=Math.sin(a)*.16;}
    }else{
     // Conventional pump-fed liquid engine: injector head, exposed support struts and smooth bell nozzle.
-    add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.425,0));
     add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.30,0));
     add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
     add(new THREE.CylinderGeometry(.12,.12,.16,12),dark,new THREE.Vector3(0,-.08,0));
