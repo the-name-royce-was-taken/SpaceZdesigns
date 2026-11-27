@@ -36,7 +36,7 @@ export class FlightSimulator {
   }
   const massKg=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000);
   const dragX=speed>0?-drag*s.vx/speed:0,dragY=speed>0?-drag*s.vy/speed:0,liftX=speed>0?-lift*s.vy/speed:0,liftY=speed>0?lift*s.vx/speed:0;
-  s.vx+=(tx+rcsFx+dragX+liftX)/massKg*dt;s.vy+=(ty+rcsFy+dragY+liftY)/massKg*dt-gravity*dt;s.x+=s.vx*dt;s.altitude+=s.vy*dt;s.elapsed+=dt;
+  const tangentialAcceleration=-(s.vy*s.vx/r)+(tx+rcsFx+dragX+liftX)/massKg;const radialAcceleration=(s.vx*s.vx/r)-gravity+(ty+rcsFy+dragY+liftY)/massKg;s.vx+=tangentialAcceleration*dt;s.vy+=radialAcceleration*dt;s.x+=s.vx*dt;s.altitude+=s.vy*dt;s.elapsed+=dt;
   const pitch=Math.max(-1,Math.min(1,input.pitch));if(rcsEnabled&&(rcsX!==0||rcsY!==0||pitch!==0)){const rcsUse=Math.min(1,Math.hypot(rcsX,rcsY)+Math.abs(pitch)*.35),activeForce=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,activeForce/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),activeWheels=activeCount(v.reactionWheelStages,wheelCount),wheelScale=wheelCount?activeWheels/wheelCount:0;
   const surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),activeSurfaces=activeCount(v.controlSurfaceStages,surfaceCount),surfaceScale=surfaceCount?activeSurfaces/surfaceCount:0;
