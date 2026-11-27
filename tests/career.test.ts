@@ -3,7 +3,7 @@ import { getNewCareerAchievements } from "../src/career";
 
 describe("career achievement progression", () => {
   it("awards the launch and altitude milestones once", () => {
-    const launch = getNewCareerAchievements({ altitude: 0, vx: 0, vy: 0, maxQ: 0 }, [], "launch");
+    const launch = getNewCareerAchievements({ altitude: 2, vx: 0, vy: 1, maxQ: 0 }, [], "launch");
     expect(launch.map(item => item.id)).toEqual(["first-launch"]);
     const ascent = getNewCareerAchievements({ altitude: 120_000, vx: 0, vy: 900, maxQ: 31_000 }, ["first-launch"]);
     expect(ascent.map(item => item.id)).toEqual([
