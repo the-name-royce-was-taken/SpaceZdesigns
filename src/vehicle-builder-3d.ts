@@ -202,7 +202,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     ]);
     for(const radius of [.11,.17,.22])band(radius,-.194,.008,gold);
     for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*.205,z=Math.sin(a)*.205;add(new THREE.CylinderGeometry(.014,.014,.045,6),gold,new THREE.Vector3(x,-.155,z));}
-    for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.305,z=Math.sin(a)*.305;add(new THREE.CylinderGeometry(.022,.022,.16,8),steel,new THREE.Vector3(x,.12,z));}
+    for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.277,z=Math.sin(a)*.277;add(new THREE.CylinderGeometry(.022,.022,.16,8),steel,new THREE.Vector3(x,.12,z));}
    }else if(type==="hydrolox"){
     // A single thin-wall cryogenic chamber, throat and high-expansion vacuum bell.
     continuousCore([
@@ -249,6 +249,9 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.175,.34,Math.sin(angle)*.175));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
     pipe([new THREE.Vector3(.16,.36,0),new THREE.Vector3(.25,.25,.02),new THREE.Vector3(.22,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
    }
+   // Scale engine families to believable proportions relative to the 0.9 m tank body.
+   const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
+   g.scale.setScalar(engineScale[type]);
   }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
   else if(p.kind==="side-decoupler"){const metal=new THREE.MeshStandardMaterial({color:0xe0bd70,metalness:.55,roughness:.4});add(new THREE.BoxGeometry(.72,.24,.3),metal);add(new THREE.BoxGeometry(.12,.34,.38),new THREE.MeshStandardMaterial({color:0x5d7483,metalness:.65}),new THREE.Vector3(.28,0,0));add(new THREE.BoxGeometry(.12,.34,.38),metal,new THREE.Vector3(-.28,0,0));}
@@ -270,7 +273,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   }
   else if(p.kind==="dock"){const steel=new THREE.MeshStandardMaterial({color:0xb9c7d0,roughness:.3,metalness:.78});add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),steel);const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),new THREE.MeshStandardMaterial({color:0x5b768b,metalness:.72}),new THREE.Vector3(0,.13,0));dockRing.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.14,.14,.05,32),new THREE.MeshStandardMaterial({color:0x243d50,metalness:.45}),new THREE.Vector3(0,.15,0));}
   else if(p.kind==="battery"){add(new THREE.BoxGeometry(.58,.32,.58),new THREE.MeshStandardMaterial({color:0x879b78,roughness:.56,metalness:.25}));for(let x=-1;x<=1;x++)add(new THREE.BoxGeometry(.035,.34,.62),new THREE.MeshStandardMaterial({color:0x354b5c,metalness:.5}),new THREE.Vector3(x*.18,0,0));}
-  else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const x=i%2?-.707:.707,z=i<2?-.707:.707;const direction=new THREE.Vector3(x,0,z).normalize();const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,12,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);nozzle.position.set(direction.x*.265,0,direction.z*.265);}}
+  else if(p.kind==="rcs"){add(new THREE.BoxGeometry(.34,.24,.34),new THREE.MeshStandardMaterial({color:0x8799a7,roughness:.38,metalness:.62}));for(let i=0;i<4;i++){const x=i%2?-.707:.707,z=i<2?-.707:.707;const direction=new THREE.Vector3(x,0,z).normalize();const nozzle=add(new THREE.CylinderGeometry(.055,.095,.2,12,2,false),new THREE.MeshStandardMaterial({color:0x647b8b,metalness:.72,roughness:.32}));nozzle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);nozzle.position.set(direction.x*.265,0,direction.z*.265);}g.scale.setScalar(.5);}
   else if(p.kind==="strut"){add(new THREE.BoxGeometry(.1,1,.1));}
   g.position.set(p.x??0,p.y??(craft.length*.6),p.z??0);g.rotation.set(p.rx??0,p.ry??0,p.rz??0);
   return g;
