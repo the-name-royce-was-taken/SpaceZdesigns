@@ -46,4 +46,15 @@ describe("flight activation groups", () => {
     expect(reordered.find(part => part.id === "engine")?.engineStage).toBe(2);
     expect(reordered.find(part => part.id === "leg")?.activationGroup).toBe(2);
   });
+
+  it("reconstructs the same activation sequence after a craft is saved and loaded again", () => {
+    const assigned = assignActivationGroup(parts, new Set(["engine", "separator"]), 1);
+    const withLaterActions = assignActivationGroup(assigned, new Set(["solar", "leg"]), 2);
+    const reordered = reorderActivationGroups(withLaterActions, [2, 1]);
+    const reloaded = JSON.parse(JSON.stringify(reordered)) as BuildPart[];
+    expect(listActivationGroups(reloaded)).toEqual([1, 2]);
+    expect(reloaded.filter(part => partActivationGroup(part) === 1).map(part => part.id).sort()).toEqual(["leg", "solar"]);
+    expect(reloaded.filter(part => partActivationGroup(part) === 2).map(part => part.id).sort()).toEqual(["engine", "separator"]);
+    expect(reloaded.find(part => part.id === "engine")?.engineStage).toBe(2);
+  });
 });
