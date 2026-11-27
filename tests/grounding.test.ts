@@ -30,7 +30,8 @@ describe("ground clearance", () => {
   it("can lift the whole craft together to keep a newly attached part above ground", () => {
     const craft = [{ id: "root", y: -0.2 }, { id: "child", y: 0.4, parentId: "root" }];
     const lifted = translatePartsY(craft, new Set(craft.map(part => part.id)), groundClearanceOffset(-0.35));
-    expect(lifted.map(part => part.y)).toEqual([0.15, 0.75]);
+    expect(lifted[0]!.y).toBeCloseTo(0.15);
+    expect(lifted[1]!.y).toBeCloseTo(0.75);
     expect(lifted[1]!.parentId).toBe("root");
   });
 });
