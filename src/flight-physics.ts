@@ -20,6 +20,7 @@ export class FlightSimulator {
   reset(){Object.assign(this.state,{x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:this.vehicle.fuelTonnes,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0});this.accumulator=0;}
   activateNextStage(){const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(stage=>stage>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
   activateStage(stage:number){if(!Number.isInteger(stage)||stage<=this.state.currentStage)return false;const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(value=>value>this.state.currentStage).sort((a,b)=>a-b)[0];if(next!==stage)return false;this.state.currentStage=stage;return true;}
+  applyImpulse(deltaVx:number,deltaVy:number){if(this.state.landed||this.state.crashed||!Number.isFinite(deltaVx)||!Number.isFinite(deltaVy))return;this.state.vx+=deltaVx;this.state.vy+=deltaVy;}
   step(frameDt:number,input:FlightInputs){
     if(this.state.landed||this.state.crashed)return;
     this.accumulator+=Math.min(Math.max(frameDt,0),.1);
