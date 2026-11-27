@@ -226,6 +226,8 @@ function launchpad(){
  const activationParts=group.userData.activationParts as {group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[];
  const solarAssemblies=group.userData.solarAssemblies as {group:number;partId:string;hinge:THREE.Group;deployed:boolean}[];
  const performGroupActions=(groupId:number)=>{
+  const separationParts=craft.parts.filter(part=>part.kind==="separator-thruster"&&partActivationGroup(part)===groupId);
+  if(separationParts.length){const impulse=separationParts.reduce((sum,part)=>sum+Math.sign(part.x??1)*.65,0);sim?.applyImpulse(impulse||separationParts.length*.65,0);}
   activationParts.filter(part=>part.group===groupId).forEach(part=>{
    if(part.kind==="engine")return;
    if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
