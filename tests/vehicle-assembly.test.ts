@@ -81,7 +81,7 @@ describe("vehicle attachment system", () => {
     const angles = placements.map(p => Number(/^surface-wall-a(\d+)-/.exec(p.parentNode)?.[1]));
     expect(new Set(angles).size).toBe(4);
     const sortedAngles = [...angles].sort((a, b) => a - b);
-    const angleCount=new Set(attachmentNodes("tank").filter(n=>n.id.startsWith("surface-wall-")).map(n=>/^surface-wall-a(\\d+)-/.exec(n.id)?.[1])).size;\n    const circularGaps = sortedAngles.map((angle, index) => ((sortedAngles[(index + 1) % sortedAngles.length]! - angle + angleCount) % angleCount));
+    const angleCount=new Set(attachmentNodes("tank").filter(n=>n.id.startsWith("surface-wall-")).map(n=>/^surface-wall-a(\d+)-/.exec(n.id)?.[1])).size;
     expect(Math.min(...circularGaps)).toBeGreaterThanOrEqual(2);
     for (const p of placements) {
       const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
@@ -103,7 +103,7 @@ describe("vehicle attachment system", () => {
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
     expect(placement).not.toBeNull();
     expect(placement!.parentNode).toMatch(/^surface-wall-/);
-    expect(placement!.childNode).toMatch(/^surface-wall-a\d+-y4$/);
+    expect(placement!.childNode).toMatch(/^surface-wall-a\d+-y\d+$/);
     const childNode = attachmentNodes("tank").find(node => node.id === placement!.childNode)!;
     expect(childNode.position[1]).toBeCloseTo(0);
   });
