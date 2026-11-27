@@ -143,7 +143,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  function makeMesh(p:BuildPart){
   const s=spec(p.kind),mat=new THREE.MeshStandardMaterial({color:s.color,roughness:.48,metalness:.24,flatShading:false,side:THREE.DoubleSide});
   const g=new THREE.Group();g.userData.partId=p.id;
-  const add=(geo:THREE.BufferGeometry,m=mat,pos:THREE.Vector3=new THREE.Vector3())=>{const mesh=new THREE.Mesh(geo,m);mesh.position.copy(pos);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;};
+  const add=(geo:THREE.BufferGeometry,m:THREE.Material=mat,pos:THREE.Vector3=new THREE.Vector3())=>{const mesh=new THREE.Mesh(geo,m);mesh.position.copy(pos);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;};
   if(p.kind==="capsule"){
    const shell=new THREE.MeshStandardMaterial({color:0xe2e9ed,roughness:.34,metalness:.42});
    const dark=new THREE.MeshStandardMaterial({color:0x435b6c,roughness:.28,metalness:.55});
