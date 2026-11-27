@@ -26,7 +26,7 @@ const centeredOffsets=(halfExtent:number)=>{
  return Array.from({length:steps*2+1},(_,i)=>(i-steps)*ATTACHMENT_GRID_CUBE_SIZE);
 };
 const isCenterSurfaceNode=(n:AttachmentNode)=>{const p=n.position,d=n.direction,dot=p[0]*d[0]+p[1]*d[1]+p[2]*d[2];return Math.hypot(p[0]-dot*d[0],p[1]-dot*d[1],p[2]-dot*d[2])<1e-6;};
-export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
+export function groundClearanceOffset(minY:number,groundY=0):number{return Math.max(0,groundY-minY);}\nexport function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
  const top=Math.max(.08,Math.min(.9,part.topRadius??.44)),bottom=Math.max(.08,Math.min(.9,part.bottomRadius??.44)),height=Math.max(.25,Math.min(3,part.height??.96));
  const volume=Math.PI*height*(top*top+top*bottom+bottom*bottom)/3,reference=Math.PI*.96*.44*.44;
  return 120*volume/reference;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "../src/vehicle-assembly";
+import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, groundClearanceOffset, tankFuelCapacity, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
-describe("vehicle attachment system", () => {
+describe("groundClearanceOffset",()=>{it("raises parts when bounds are below ground",()=>{expect(groundClearanceOffset(-2)).toBe(2);expect(groundClearanceOffset(-.25)).toBe(.25);});it("does not raise parts already at or above ground",()=>{expect(groundClearanceOffset(0)).toBe(0);expect(groundClearanceOffset(3)).toBe(0);});});\n\ndescribe("vehicle attachment system", () => {
   it("places a tank on a capsule's upper stack node", () => {
     const parts: BuildPart[] = [{ id: "pod", kind: "capsule", x: 0, y: 2, z: 0 }];
     const placement = findAttachmentPlacement(parts, "pod", "tank");
