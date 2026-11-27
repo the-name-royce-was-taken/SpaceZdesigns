@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignActivationGroup, isActivationCapable, listActivationGroups, partActivationGroup, reorderActivationGroups } from "../src/activation";
+import { assignActivationGroup, isActivationCapable, listActivationGroups, normalizeActivationAssignments, partActivationGroup, reorderActivationGroups } from "../src/activation";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
 describe("flight activation groups", () => {
@@ -45,6 +45,16 @@ describe("flight activation groups", () => {
     expect(reordered.find(part => part.id === "engine")?.activationGroup).toBe(2);
     expect(reordered.find(part => part.id === "engine")?.engineStage).toBe(2);
     expect(reordered.find(part => part.id === "leg")?.activationGroup).toBe(2);
+  });
+
+  it("normalizes legacy engine stages into persistent group membership", () => {
+    const normalized = normalizeActivationAssignments([
+      { id: "engine", kind: "engine", engineStage: 3 },
+      { id: "solar", kind: "solar", activationGroup: 1 }
+    ]);
+    expect(normalized.find(part => part.id === "engine")?.activationGroup).toBe(3);
+    expect(normalized.find(part => part.id === "engine")?.engineStage).toBe(3);
+    expect(listActivationGroups(normalized)).toEqual([1, 3]);
   });
 
   it("reconstructs the same activation sequence after a craft is saved and loaded again", () => {
