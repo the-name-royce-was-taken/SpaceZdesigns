@@ -116,7 +116,7 @@ function makeRocket():THREE.Group{
    const radius=p.radius??.24,rubber=mat(0x26343d,.02),hub=mat(0x9aa8ad,.7);
    const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,(p.x??0),y-.12,p.z??0);tire.rotation.z=Math.PI/2;
    const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,(p.x??0),y-.12,p.z??0);rim.rotation.z=Math.PI/2;
-   for(let i=0;i<12;i++){const a=i*Math.PI/6,tread=add(new THREE.BoxGeometry(.035,.035,.2),hub,(p.x??0)+Math.cos(a)*radius,y-.12+Math.sin(a)*radius,p.z??0);}
+   for(let i=0;i<12;i++){const a=i*Math.PI/6;add(new THREE.BoxGeometry(.035,.035,.2),hub,(p.x??0)+Math.cos(a)*radius,y-.12+Math.sin(a)*radius,p.z??0);}
   }else if(p.kind==="wheel"){
    const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
    leg.rotation.z=-.22;
