@@ -7,7 +7,7 @@ describe("career achievement progression", () => {
     expect(launch.map(item => item.id)).toEqual(["first-launch"]);
     const ascent = getNewCareerAchievements({ altitude: 120_000, vx: 0, vy: 900, maxQ: 31_000 }, ["first-launch"]);
     expect(ascent.map(item => item.id)).toEqual([
-      "altitude-1km", "altitude-10km", "altitude-50km", "space-100km", "speed-1kms", "max-q"
+      "altitude-1km", "altitude-10km", "altitude-50km", "space-100km", "max-q"
     ]);
     expect(getNewCareerAchievements({ altitude: 120_000, vx: 0, vy: 900, maxQ: 31_000 }, ["first-launch", ...ascent.map(item => item.id)])).toEqual([]);
   });
