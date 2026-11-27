@@ -89,10 +89,10 @@ describe("vehicle attachment system", () => {
 
   it("keeps the part's rotation unchanged while snapping its connector exactly onto a surface node", () => {
     const tank: BuildPart = { id: "tank", kind: "tank", x: 0, y: 0, z: 0 };
-    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, ry: .37 };
+    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, ry: Math.PI / 9 };
     const placement = findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing);
     expect(placement).not.toBeNull();
-    expect(placement!.rotationY).toBeCloseTo(.37);
+    expect(placement!.rotationY).toBeCloseTo(Math.PI / 9);
     const parentNode = attachmentNodes("tank").find(n => n.id === placement!.parentNode)!;
     const childNode = attachmentNodes("wing", wing).find(n => n.id === placement!.childNode)!;
     const c = Math.cos(wing.ry!), s = Math.sin(wing.ry!);
@@ -100,6 +100,31 @@ describe("vehicle attachment system", () => {
     expect(placement!.x + childPosition[0]).toBeCloseTo(parentNode.position[0]);
     expect(placement!.y + childPosition[1]).toBeCloseTo(parentNode.position[1]);
     expect(placement!.z + childPosition[2]).toBeCloseTo(parentNode.position[2]);
+  });
+
+  it("uses full XYZ part rotations when aligning flush surface contacts", () => {
+    const rotation = { rx: .21, ry: .34, rz: -.16 };
+    const tank: BuildPart = { id: "tank", kind: "tank", x: .2, y: .1, z: -.3, ...rotation };
+    const wing: BuildPart = { id: "wing", kind: "wing", x: .7, y: .1, z: -.3, ...rotation };
+    const placement = findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], 1, wing);
+    expect(placement).not.toBeNull();
+    expect(placement!.rotationY).toBeCloseTo(rotation.ry);
+    const parentNode = attachmentNodes("tank", tank).find(n => n.id === placement!.parentNode)!;
+    const childNode = attachmentNodes("wing", wing).find(n => n.id === placement!.childNode)!;
+    const rotate = (v: readonly [number, number, number]) => {
+      const x=rotation.rx,y=rotation.ry,z=rotation.rz,cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);
+      return [cy*cz*v[0]-cy*sz*v[1]+sy*v[2],(sx*sy*cz+cx*sz)*v[0]+(cx*cz-sx*sy*sz)*v[1]-sx*cy*v[2],(sx*sz-cx*sy*cz)*v[0]+(sx*cz+cx*sy*sz)*v[1]+cx*cy*v[2]];
+    };
+    const parentOffset=rotate(parentNode.position),childOffset=rotate(childNode.position);
+    expect(placement!.x+childOffset[0]).toBeCloseTo(tank.x!+parentOffset[0]);
+    expect(placement!.y+childOffset[1]).toBeCloseTo(tank.y!+parentOffset[1]);
+    expect(placement!.z+childOffset[2]).toBeCloseTo(tank.z!+parentOffset[2]);
+  });
+
+  it("does not claim a flush snap when the part's contact face is misaligned", () => {
+    const tank: BuildPart = { id: "tank", kind: "tank" };
+    const wing: BuildPart = { id: "wing", kind: "wing", x: .42, y: 0, z: .18, rz: .37 };
+    expect(findNearestAttachmentPlacement([tank], "wing", [wing.x!, wing.y!, wing.z!], .8, wing)).toBeNull();
   });
 
   it("places a stack part above the highest available stack node", () => {
