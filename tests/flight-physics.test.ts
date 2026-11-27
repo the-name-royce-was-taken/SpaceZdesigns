@@ -34,6 +34,8 @@ describe("fixed-step flight solver",()=>{
   expect(sim.activateNextStage()).toBe(false);
  });
  it("applies separation impulses to an active flight without changing grounded state",()=>{const sim=new FlightSimulator(vehicle);sim.launch();sim.applyImpulse(1.5,-.25);expect(sim.state.vx).toBeCloseTo(1.5);expect(sim.state.vy).toBeCloseTo(-.25);sim.reset();sim.applyImpulse(5,5);expect(sim.state.vx).toBe(0);expect(sim.state.vy).toBe(0);});
+ it("uses RCS translation only when fitted and consumes its propellant",()=>{const rcs:VehiclePhysics={...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[0]};const sim=new FlightSimulator(rcs);sim.launch();sim.state.altitude=1000;sim.step(1/120,{throttle:0,pitch:0,translateX:1});expect(sim.state.vx).toBeGreaterThan(0);expect(sim.state.rcsFuelTonnes).toBeLessThan(.02);const inactive=new FlightSimulator({...rcs,rcsStages:[2]});inactive.launch();inactive.state.altitude=1000;inactive.step(1/120,{throttle:0,pitch:0,translateX:1});expect(inactive.state.vx).toBe(0);});
+ it("rotates only with an enabled reaction wheel or RCS attitude system",()=>{const baseline=new FlightSimulator(vehicle),wheel=new FlightSimulator({...vehicle,reactionWheelTorque:3.8,reactionWheelStages:[0]});baseline.launch();wheel.launch();baseline.step(1/120,{throttle:0,pitch:1});wheel.step(1/120,{throttle:0,pitch:1});expect(wheel.state.angularVelocity).toBeGreaterThan(baseline.state.angularVelocity);});
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
