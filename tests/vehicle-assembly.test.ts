@@ -51,6 +51,16 @@ describe("vehicle attachment system", () => {
     expect(nodes.filter(n=>n.id.startsWith("surface-bottom-")).length).toBeGreaterThan(1);
   });
 
+  it("uses the same centered cube pitch on flat part faces", () => {
+    const east=attachmentNodes("wing").filter(n=>n.id.startsWith("surface-east-"));
+    const zLevels=[...new Set(east.map(n=>n.position[2]))].sort((a,b)=>a-b);
+    expect(east.every(n=>Math.abs(n.position[0]-.85)<1e-8&&Math.abs(n.position[1])<1e-8)).toBe(true);
+    expect(zLevels).toContain(0);
+    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.16)<1e-8)).toBe(true);
+    expect(Math.max(...zLevels)).toBeLessThanOrEqual(.55);
+    expect(.55-Math.max(...zLevels)).toBeLessThan(.16);
+  });
+
   it("shapes tank snap nodes to its top and bottom radius settings", () => {
     const nodes=attachmentNodes("tank",{kind:"tank",topRadius:.7,bottomRadius:.2});
     const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
