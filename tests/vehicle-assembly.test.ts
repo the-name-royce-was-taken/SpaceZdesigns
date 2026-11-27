@@ -315,7 +315,9 @@ describe("vehicle attachment system", () => {
     const near=findNearestAttachmentPlacement([beam],"structural-hub",[exact!.x,exact!.y+.1,exact!.z],.16,hub);
     expect(near).not.toBeNull();
     expect(near!.parentId).toBe("long-beam");
-    expect(near!.parentNode).toBe("beam-end-top");
+    const snappedNode=attachmentNodes("structural-beam",beam).find(node=>node.id===near!.parentNode)!;
+    expect(snappedNode.position[1]).toBeGreaterThan(2.3);
+    expect(Math.hypot((beam.x??0)-near!.x,(beam.y??0)-near!.y,(beam.z??0)-near!.z)).toBeGreaterThan(2.36);
     expect(Math.hypot(near!.x-exact!.x,near!.y-exact!.y-.1,near!.z-exact!.z)).toBeLessThanOrEqual(.16);
   });
 
