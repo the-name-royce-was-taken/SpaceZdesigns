@@ -50,7 +50,7 @@ function hangar(){
    const action=button.dataset.blueprintAction;
    try{
     if(action==="download"){
-     const bytes=exportBuildz(record.name,record.parts),blob=new Blob([bytes],{type:"application/zip"}),url=URL.createObjectURL(blob),anchor=document.createElement("a");
+     const bytes=exportBuildz(record.name,record.parts),blob=new Blob([bytes.slice().buffer as ArrayBuffer],{type:"application/zip"}),url=URL.createObjectURL(blob),anchor=document.createElement("a");
      anchor.href=url;anchor.download=`${record.name.replace(/[^a-z0-9-_ ]/gi,"").trim().replace(/\\s+/g,"-")||"SpaceZ-Blueprint"}.buildz`;document.body.append(anchor);anchor.click();anchor.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);host.toast(`Downloaded ${record.name}.buildz`);
     }else if(action==="load"){
      craft={name:record.name,parts:structuredClone(record.parts)};($("#craft-name",root) as HTMLInputElement).value=craft.name;builder?.replaceParts(craft.parts);
