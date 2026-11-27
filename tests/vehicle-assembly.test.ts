@@ -277,4 +277,34 @@ describe("vehicle attachment system", () => {
   it("does not reject legacy craft without hierarchy data", () => {
     expect(validateAssembly([{ kind: "capsule" }, { kind: "tank" }, { kind: "engine" }])).toEqual([]);
   });
+  it("gives modular braced beams fixed-pitch end sockets at their selected bay count", () => {
+    const short=attachmentNodes("structural-beam",{kind:"structural-beam",structuralLength:2});
+    const long=attachmentNodes("structural-beam",{kind:"structural-beam",structuralLength:6});
+    expect(short.find(n=>n.id==="beam-end-top")?.position[1]).toBeCloseTo(.4);
+    expect(long.find(n=>n.id==="beam-end-top")?.position[1]).toBeCloseTo(1.2);
+    expect(long.find(n=>n.id==="beam-end-bottom")?.position[1]).toBeCloseTo(-1.2);
+    expect(long.some(n=>n.id==="beam-side-east")).toBe(true);
+  });
+
+  it("connects beams at a right angle using the connector's perpendicular sockets", () => {
+    const parts: BuildPart[] = [{id:"angle",kind:"structural-angle"}];
+    const first=findAttachmentPlacement(parts,"angle","structural-beam");
+    expect(first?.parentNode).toBe("angle-end-up");
+    const second=findAttachmentPlacement(parts,"angle","structural-beam",0,["angle-end-up"]);
+    expect(second?.parentNode).toBe("angle-end-right");
+    expect(second?.childNode).toBe("beam-side-west");
+  });
+
+  it("provides six independent beam sockets on the all-sides structural hub", () => {
+    const parts: BuildPart[] = [{id:"hub",kind:"structural-hub"}];
+    const used:string[]=[];
+    for(let i=0;i<6;i++){
+      const placement=findAttachmentPlacement(parts,"hub","structural-beam",0,used);
+      expect(placement).not.toBeNull();
+      used.push(placement!.parentNode);
+    }
+    expect(new Set(used).size).toBe(6);
+    expect(used).toEqual(expect.arrayContaining(["hub-up","hub-down","hub-east","hub-west","hub-north","hub-south"]));
+  });
+
 });

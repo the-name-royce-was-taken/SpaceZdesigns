@@ -14,7 +14,7 @@ const node=(id:string,attachmentClass:AttachmentClass,position:readonly [number,
 const rotateY=(v:readonly [number,number,number],a:number):[number,number,number]=>{const c=Math.cos(a),s=Math.sin(a);return [v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c];};
 const rotatePart=(v:readonly [number,number,number],part:Pick<BuildPart,"rx"|"ry"|"rz">):[number,number,number]=>{const x=part.rx??0,y=part.ry??0,z=part.rz??0,cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);return [cy*cz*v[0]-cy*sz*v[1]+sy*v[2],(sx*sy*cz+cx*sz)*v[0]+(cx*cz-sx*sy*sz)*v[1]-sx*cy*v[2],(sx*sz-cx*sy*cz)*v[0]+(sx*cz+cx*sy*sz)*v[1]+cx*cy*v[2]];};
 const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length===3&&Math.abs(a[0]!+b[0]!)<1e-6&&Math.abs(a[1]!+b[1]!)<1e-6&&Math.abs(a[2]!+b[2]!)<1e-6;
-const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3]};
+const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3],"structural-beam":[.28,1.2,.28],"structural-angle":[.55,.55,.22],"structural-hub":[.48,.48,.48]};
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
 const ATTACHMENT_GRID_CUBE_SIZE=.16/1.5;
@@ -26,7 +26,7 @@ export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|
  return 120*volume/reference;
 }
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
-  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
+  const [baseX,baseY,sz]=dims[kind],sy=kind==="structural-beam"?Math.max(1,Math.min(12,Math.round(part?.structuralLength??3)))*.4:baseY,sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,uValues:number[],vValues:number[],point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<vValues.length;row++)for(let col=0;col<uValues.length;col++){const u=uValues[col]!,v=vValues[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
   };
@@ -87,6 +87,9 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
+  if(kind==="structural-beam"){const half=Math.max(1,Math.min(12,Math.round(part?.structuralLength??3)))*.2;stack.push(node("beam-end-top","stack",[0,half,0],[0,1,0]),node("beam-end-bottom","stack",[0,-half,0],[0,-1,0]),node("beam-side-east","stack",[.14,0,0],[1,0,0]),node("beam-side-west","stack",[-.14,0,0],[-1,0,0]),node("beam-side-north","stack",[0,0,.14],[0,0,1]),node("beam-side-south","stack",[0,0,-.14],[0,0,-1]));}
+  if(kind==="structural-angle")stack.push(node("angle-end-up","stack",[0,.38,0],[0,1,0]),node("angle-end-right","stack",[.38,0,0],[1,0,0]));
+  if(kind==="structural-hub")stack.push(node("hub-up","stack",[0,.22,0],[0,1,0]),node("hub-down","stack",[0,-.22,0],[0,-1,0]),node("hub-east","stack",[.22,0,0],[1,0,0]),node("hub-west","stack",[-.22,0,0],[-1,0,0]),node("hub-north","stack",[0,0,.22],[0,0,1]),node("hub-south","stack",[0,0,-.22],[0,0,-1]));
   return [...stack,...surfaceNodes(kind,part)];
 }
 export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:string,childKind:PartKind,rotationY=0,reservedParentNodes:readonly string[]=[],childPart?:BuildPart):AttachmentPlacement|null{
