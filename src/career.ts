@@ -10,7 +10,7 @@ export interface CareerAchievement {
 export const CAREER_STARTING_CREDITS = 750_000;
 
 export const CAREER_ACHIEVEMENTS: CareerAchievement[] = [
-  { id: "first-launch", name: "First Flight", description: "Launch your first rocket.", reward: 5_000 },
+  { id: "first-launch", name: "First Flight", description: "Achieve your first liftoff.", reward: 5_000 },
   { id: "altitude-1km", name: "Off the Ground", description: "Reach 1 km above the launch site.", reward: 2_500 },
   { id: "altitude-10km", name: "Stratospheric", description: "Reach 10 km altitude.", reward: 5_000 },
   { id: "altitude-50km", name: "Edge of Space", description: "Reach 50 km altitude.", reward: 10_000 },
@@ -21,7 +21,7 @@ export const CAREER_ACHIEVEMENTS: CareerAchievement[] = [
   { id: "deep-space", name: "Deep Space", description: "Travel 10,000 km above the surface.", reward: 100_000 },
   { id: "speed-1kms", name: "Supersonic", description: "Reach 1,000 m/s.", reward: 10_000 },
   { id: "speed-3kms", name: "Hypersonic", description: "Reach 3,000 m/s.", reward: 25_000 },
-  { id: "max-q", name: "Maximum Pressure", description: "Survive the peak aerodynamic pressure region.", reward: 10_000 },
+  { id: "max-q", name: "Maximum Pressure", description: "Experience at least 30 kPa of dynamic pressure.", reward: 10_000 },
   { id: "first-stage", name: "Staging", description: "Activate a later flight group for the first time.", reward: 2_500 },
   { id: "orbit", name: "Orbital Insertion", description: "Reach 100 km altitude with at least 7,500 m/s horizontal speed.", reward: 125_000 },
   { id: "escape-velocity", name: "Breaking Free", description: "Exceed Earth's escape velocity above the atmosphere.", reward: 200_000 },
@@ -41,7 +41,7 @@ export function getNewCareerAchievements(
   const speed = Math.hypot(state.vx, state.vy);
   const reachedSpace = has("space-100km") || state.altitude >= 100_000;
   const candidates = new Set<string>();
-  if (event === "launch") candidates.add("first-launch");
+  if (state.altitude > 1) candidates.add("first-launch");
   if (event === "stage") candidates.add("first-stage");
   if (state.altitude >= 1_000) candidates.add("altitude-1km");
   if (state.altitude >= 10_000) candidates.add("altitude-10km");
