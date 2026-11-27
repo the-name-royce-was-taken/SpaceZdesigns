@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { groundClearanceOffset, groundDropDistance, sideSpawnPosition, translatePartsY } from "../src/grounding";
 
-describe("ground clearance", () => {\n  it("spawns a new part beside the craft and rests its local bottom on the ground", () => {\n    const position = sideSpawnPosition(3.2, -0.6, -0.45);\n    expect(position.x).toBeCloseTo(4.15);\n    expect(position.y).toBeCloseTo(0.45);\n  });\n
+describe("ground clearance", () => {\n  it("spawns a new part beside the craft and rests its local bottom on the ground", () => {\n    const position = sideSpawnPosition(3.2, -0.6, -0.45);
+    expect(position.x).toBeCloseTo(4.15);
+    expect(position.y).toBeCloseTo(0.45);\n  });\n
   it("raises a part whose lowest point is below the ground plane", () => {
     expect(groundClearanceOffset(-0.42)).toBeCloseTo(0.42);
   });
