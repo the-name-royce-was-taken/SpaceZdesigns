@@ -51,6 +51,14 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+function transactionDone(tx: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error ?? new Error("Blueprint database transaction was aborted."));
+    tx.onerror = () => reject(tx.error ?? new Error("Blueprint database transaction failed."));
+  });
+}
+
 function cleanName(name: string): string {
   const value = name.trim().slice(0, 48);
   if (!value) throw new Error("Blueprint name cannot be empty.");
@@ -86,7 +94,9 @@ export async function listBlueprints(): Promise<BlueprintRecord[]> {
   const db = await database();
   try {
     const tx = db.transaction(STORE, "readonly");
+    const done = transactionDone(tx);
     const records = await requestResult(tx.objectStore(STORE).getAll()) as BlueprintRecord[];
+    await done;
     return records.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } finally {
     db.close();
@@ -97,6 +107,7 @@ export async function saveBlueprint(name: string, parts: BuildPart[], id?: strin
   const db = await database();
   try {
     const tx = db.transaction(STORE, "readwrite");
+    const done = transactionDone(tx);
     const store = tx.objectStore(STORE);
     const existing = id ? await requestResult(store.get(id)) as BlueprintRecord | undefined : undefined;
     const now = new Date().toISOString();
@@ -108,6 +119,7 @@ export async function saveBlueprint(name: string, parts: BuildPart[], id?: strin
       updatedAt: now
     };
     await requestResult(store.put(record));
+    await done;
     return record;
   } finally {
     db.close();
@@ -118,12 +130,14 @@ export async function renameBlueprint(id: string, name: string): Promise<Bluepri
   const db = await database();
   try {
     const tx = db.transaction(STORE, "readwrite");
+    const done = transactionDone(tx);
     const store = tx.objectStore(STORE);
     const record = await requestResult(store.get(id)) as BlueprintRecord | undefined;
     if (!record) throw new Error("Blueprint not found.");
     record.name = cleanName(name);
     record.updatedAt = new Date().toISOString();
     await requestResult(store.put(record));
+    await done;
     return record;
   } finally {
     db.close();
@@ -134,7 +148,9 @@ export async function deleteBlueprint(id: string): Promise<void> {
   const db = await database();
   try {
     const tx = db.transaction(STORE, "readwrite");
+    const done = transactionDone(tx);
     await requestResult(tx.objectStore(STORE).delete(id));
+    await done;
   } finally {
     db.close();
   }
