@@ -135,8 +135,8 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
    const placement:AttachmentPlacement={x:(parent.x??0)+parentPosition[0]-childPosition[0],y:(parent.y??0)+parentPosition[1]-childPosition[1],z:(parent.z??0)+parentPosition[2]-childPosition[2],parentId:parent.id!,parentNode:candidate.id,childNode:chosen.id,rotationY:0};
    let score=normalScore;
    if(candidate.attachmentClass==="stack")score-=10000;
-   const wall=/^surface-wall-a(\d+)-y4$/.exec(candidate.id);
-   if(wall&&usedWallAngles.length){const angle=Number(wall[1]);const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));score-=separation*100;}
+   const wall=/^surface-wall-a(\d+)-y\d+$/.exec(candidate.id);
+   if(wall&&usedWallAngles.length){const angle=Number(wall[1]),angleCount=nodes.reduce((max,n)=>{const match=/^surface-wall-a(\d+)-y\d+$/.exec(n.id);return match?Math.max(max,Number(match[1])+1):max;},0);const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,angleCount-delta);}));score-=separation*100;}
    if(score<bestScore){bestScore=score;best=placement;}
   }
   if(best)return best;
