@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, tankFuelCapacity, validateAssembly } from "../src/vehicle-assembly";
+import { attachmentNodes, canAttach, findAttachmentPlacement, findAvailableAttachmentPlacement, findNearestAttachmentPlacement, groundClearanceOffset, tankFuelCapacity, validateAssembly } from "../src/vehicle-assembly";
 import type { BuildPart } from "../src/vehicle-builder-3d";
+
+describe("groundClearanceOffset",()=>{it("raises parts when bounds are below ground",()=>{expect(groundClearanceOffset(-2)).toBe(2);expect(groundClearanceOffset(-.25)).toBe(.25);});it("does not raise parts already at or above ground",()=>{expect(groundClearanceOffset(0)).toBe(0);expect(groundClearanceOffset(3)).toBe(0);});});
 
 describe("vehicle attachment system", () => {
   it("places a tank on a capsule's upper stack node", () => {
