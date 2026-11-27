@@ -1,3 +1,4 @@
+import { validateBlueprintRecords, type BlueprintRecord } from "./blueprints";
 import { strToU8, unzipSync, zipSync } from "fflate";
 
 export type GameMode = "sandbox" | "career";
@@ -12,6 +13,7 @@ export interface WorldState {
   craft: unknown[];
   missions: unknown[];
   research: string[];
+  blueprints?: BlueprintRecord[];
 }
 
 export interface WorldRecord {
@@ -41,7 +43,7 @@ const DATABASE_VERSION = 1;
 const STORE_NAME = "worlds";
 const MAX_ARCHIVE_BYTES = 25 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES = 80 * 1024 * 1024;
-const ALLOWED_FILES = new Set(["world/manifest.json", "world/world.json"]);
+const ALLOWED_FILES = new Set(["world/manifest.json", "world/world.json", "world/blueprints.json"]);
 const GAME_VERSION = "0.1.0";
 
 function makeId(): string {
@@ -91,7 +93,8 @@ function validateWorld(value: unknown): value is WorldRecord {
     && Array.isArray(state.craft)
     && Array.isArray(state.missions)
     && Array.isArray(state.research)
-    && state.research.every((item) => typeof item === "string");
+    && state.research.every((item) => typeof item === "string")
+    && (state.blueprints === undefined || Array.isArray(state.blueprints));
 }
 
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -190,6 +193,9 @@ export async function renameWorld(id: string, name: string): Promise<WorldRecord
 
 export function exportWorld(world: WorldRecord): Uint8Array {
   if (!validateWorld(world)) throw new Error("Cannot export invalid world data.");
+  const blueprints = validateBlueprintRecords(world.state.blueprints ?? []);
+  const worldData: WorldRecord = { ...world, state: { ...world.state, blueprints } };
+  const files = ["world/world.json", "world/blueprints.json"];
   const manifest: WorldManifest = {
     format: "spacez-world",
     formatVersion: 1,
@@ -198,11 +204,12 @@ export function exportWorld(world: WorldRecord): Uint8Array {
     worldName: world.name,
     mode: world.mode,
     exportedAt: new Date().toISOString(),
-    files: ["world/world.json"]
+    files
   };
   return zipSync({
     "world/manifest.json": strToU8(JSON.stringify(manifest, null, 2)),
-    "world/world.json": strToU8(JSON.stringify(world, null, 2))
+    "world/world.json": strToU8(JSON.stringify(worldData, null, 2)),
+    "world/blueprints.json": strToU8(JSON.stringify(blueprints, null, 2))
   }, { level: 6 });
 }
 
@@ -236,7 +243,8 @@ export function importWorld(archive: Uint8Array): WorldRecord {
   }
 
   const paths = Object.keys(entries);
-  if (entryCount !== ALLOWED_FILES.size || paths.length !== ALLOWED_FILES.size || paths.some((path) => !ALLOWED_FILES.has(path))) {
+  if (entryCount < 2 || entryCount > 3 || paths.length !== entryCount || paths.some((path) => !ALLOWED_FILES.has(path))
+    || !paths.includes("world/manifest.json") || !paths.includes("world/world.json")) {
     throw new Error("The archive contains unexpected or missing files. Import was cancelled.");
   }
 
@@ -257,7 +265,9 @@ export function importWorld(archive: Uint8Array): WorldRecord {
     || !Number.isFinite(Date.parse(manifest.exportedAt))) {
     throw new Error("This .spaze format version is not supported by this game build.");
   }
-  if (!Array.isArray(manifest.files) || manifest.files.length !== 1 || manifest.files[0] !== "world/world.json") {
+  const expectedFiles = paths.filter(path => path !== "world/manifest.json").sort();
+  if (!Array.isArray(manifest.files) || manifest.files.length !== expectedFiles.length
+    || [...manifest.files].sort().some((path, index) => path !== expectedFiles[index])) {
     throw new Error("The archive manifest is incomplete or contains unexpected files.");
   }
   if (!validateWorld(world)) {
@@ -265,6 +275,15 @@ export function importWorld(archive: Uint8Array): WorldRecord {
   }
   if (manifest.worldId !== world.id || world.name !== manifest.worldName || world.mode !== manifest.mode) {
     throw new Error("The archive manifest does not match its world data.");
+  }
+  if ("world/blueprints.json" in entries) {
+    let blueprints: unknown;
+    try {
+      blueprints = JSON.parse(new TextDecoder().decode(entries["world/blueprints.json"]));
+    } catch {
+      throw new Error("The world archive contains invalid blueprint JSON.");
+    }
+    world.state.blueprints = validateBlueprintRecords(blueprints);
   }
 
   return {
