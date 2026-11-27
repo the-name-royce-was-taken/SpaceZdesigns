@@ -157,6 +157,20 @@ describe("vehicle attachment system", () => {
     expect(placements.filter(placement => placement.parentNode.startsWith("engine-mount-"))).toHaveLength(4);
   });
 
+
+  it("keeps the normal magnetic snap catch distance at 0.8 units", () => {
+    const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
+    const exact = findAttachmentPlacement(parts, "tank", "wing")!;
+    const withinDefaultRange = findNearestAttachmentPlacement(
+      parts, "wing", [exact.x + .5, exact.y, exact.z]
+    );
+    expect(withinDefaultRange).not.toBeNull();
+    const samePositionWithTighterRange = findNearestAttachmentPlacement(
+      parts, "wing", [exact.x + .5, exact.y, exact.z], .001
+    );
+    expect(samePositionWithTighterRange).toBeNull();
+  });
+
   it("magnetically finds the nearest compatible connector without a grid", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
     const exact = findAttachmentPlacement(parts, "tank", "wing")!;
