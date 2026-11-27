@@ -32,11 +32,11 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   // Grid bounds follow the rendered geometry, including off-centre/scalable parts.
   const centerX=kind==="solar"?.1+solarLength/2:0;
   const roverMinY=-.12-roverRadius,roverMaxY=Math.max(.22,-.12+roverRadius);
-  const landingMinY=-.825,landingMaxY=.34;
+  const landingMinY=-.92,landingMaxY=.34;
   const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:kind==="wheel"||kind==="landing-leg"?(landingMinY+landingMaxY)/2:0;
-  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.4:baseX;
+  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.44:baseX;
   const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:kind==="wheel"||kind==="landing-leg"?landingMaxY-landingMinY:sy;
-  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.4:sz;
+  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.44:sz;
   const hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:effectiveY/2,hz=effectiveZ/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
