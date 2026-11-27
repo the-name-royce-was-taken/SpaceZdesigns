@@ -105,8 +105,8 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  const occupied=occupiedNodes(parts),parents=[...parts].filter(p=>p.id).sort((a,b)=>a.id===preferredParentId?-1:b.id===preferredParentId?1:!anchor?(b.y??0)-(a.y??0):Math.hypot((a.x??0)-anchor[0],(a.y??0)-anchor[1],(a.z??0)-anchor[2])-Math.hypot((b.x??0)-anchor[0],(b.y??0)-anchor[1],(b.z??0)-anchor[2]));
  for(const parent of parents){
   const nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
-  const usedWallAngles=used.map(id=>/^surface-wall-a(\\d+)-y\\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
-  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||/^surface-wall-a\\d+-y4$/.test(n.id)||/^surface-(?:east|west|north|south|top|bottom)-r4-c4$/.test(n.id));
+  const usedWallAngles=used.map(id=>/^surface-wall-a(\d+)-y\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
+  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||/^surface-wall-a\d+-y4$/.test(n.id)||/^surface-(?:east|west|north|south|top|bottom)-r4-c4$/.test(n.id));
   let best:AttachmentPlacement|null=null,bestScore=Infinity;
   for(const candidate of candidates){
    if(used.includes(candidate.id))continue;
@@ -124,7 +124,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
    const placement:AttachmentPlacement={x:(parent.x??0)+parentPosition[0]-childPosition[0],y:(parent.y??0)+parentPosition[1]-childPosition[1],z:(parent.z??0)+parentPosition[2]-childPosition[2],parentId:parent.id!,parentNode:candidate.id,childNode:chosen.id,rotationY:0};
    let score=normalScore;
    if(candidate.attachmentClass==="stack")score-=10000;
-   const wall=/^surface-wall-a(\\d+)-y4$/.exec(candidate.id);
+   const wall=/^surface-wall-a(\d+)-y4$/.exec(candidate.id);
    if(wall&&usedWallAngles.length){const angle=Number(wall[1]);const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));score-=separation*100;}
    if(score<bestScore){bestScore=score;best=placement;}
   }
