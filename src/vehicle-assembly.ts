@@ -103,7 +103,29 @@ export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:stri
 function occupiedNodes(parts:readonly BuildPart[]){const map=new Map<string,string[]>();for(const p of parts)if(p.parentId&&p.parentNode){const list=map.get(p.parentId)??[];list.push(p.parentNode);map.set(p.parentId,list);}return map;}
 export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,preferredParentId?:string,anchor?:readonly [number,number,number]):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),parents=[...parts].filter(p=>p.id).sort((a,b)=>a.id===preferredParentId?-1:b.id===preferredParentId?1:!anchor?(b.y??0)-(a.y??0):Math.hypot((a.x??0)-anchor[0],(a.y??0)-anchor[1],(a.z??0)-anchor[2])-Math.hypot((b.x??0)-anchor[0],(b.y??0)-anchor[1],(b.z??0)-anchor[2]));
- for(const parent of parents)for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){const placement=findAttachmentPlacement(parts,parent.id!,childKind,rotation,occupied.get(parent.id!)??[]);if(placement)return placement;}return null;
+ let best:AttachmentPlacement|null=null,bestScore=Infinity;
+ for(let parentIndex=0;parentIndex<parents.length;parentIndex++){
+  const parent=parents[parentIndex]!,nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
+  const usedWallAngles=used.map(id=>/^surface-wall-a(\\d+)-y\\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
+  for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
+   for(const candidate of nodes){
+    if(used.includes(candidate.id))continue;
+    const reserved=[...used,...nodes.filter(n=>n.id!==candidate.id).map(n=>n.id)];
+    const placement=findAttachmentPlacement(parts,parent.id!,childKind,rotation,reserved);
+    if(!placement||placement.parentNode!==candidate.id)continue;
+    let score=parentIndex*100000;
+    if(candidate.attachmentClass==="stack")score-=10000;
+    const wall=/^surface-wall-a(\\d+)-y\\d+$/.exec(candidate.id);
+    if(wall&&usedWallAngles.length){
+     const angle=Number(wall[1]);
+     const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));
+     score-=separation*100;
+    }
+    if(score<bestScore){bestScore=score;best=placement;}
+   }
+  }
+ }
+ return best;
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
