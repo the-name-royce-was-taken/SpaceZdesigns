@@ -150,6 +150,73 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const safetyYellow=new THREE.MeshStandardMaterial({color:0xe3b64d,roughness:.8,metalness:.12});
  hangarBox(.16,.025,36,-8.9,.012,-1,safetyYellow);hangarBox(.16,.025,36,8.9,.012,-1,safetyYellow);
  for(let z=-17;z<=15;z+=3){hangarBox(1.2,.018,.09,0,.014,z,hangarEdge);}
+ // Workshop clutter: maintenance benches, tool storage, spare hardware and corner equipment.
+ const hangarTool=new THREE.MeshStandardMaterial({color:0x31566a,roughness:.62,metalness:.58});
+ const hangarRubber=new THREE.MeshStandardMaterial({color:0x202a30,roughness:.94,metalness:.04});
+ const hangarWood=new THREE.MeshStandardMaterial({color:0x705b42,roughness:.9,metalness:.02});
+ const hangarOrange=new THREE.MeshStandardMaterial({color:0xc47738,roughness:.72,metalness:.28});
+ const hangarCable=new THREE.MeshStandardMaterial({color:0x343b40,roughness:.82,metalness:.42});
+ const hangarBrass=new THREE.MeshStandardMaterial({color:0xb18b4c,roughness:.48,metalness:.72});
+ const hangarCylinder=(radius:number,length:number,x:number,y:number,z:number,material:THREE.Material,axis:"x"|"y"|"z"="y")=>{const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,length,12),material);if(axis==="x")mesh.rotation.z=Math.PI/2;else if(axis==="z")mesh.rotation.x=Math.PI/2;mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;hangar.add(mesh);return mesh;};
+ const hangarRope=(points:THREE.Vector3[],radius:number,material:THREE.Material)=>{const curve=new THREE.CatmullRomCurve3(points);const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(24,points.length*12),radius,6,false),material);mesh.castShadow=true;hangar.add(mesh);return mesh;};
+ // Side-wall tool benches and cabinets, kept outside the vehicle assembly footprint.
+ for(const side of [-1,1]){
+  const x=side*9.55;
+  hangarBox(1.55,1.05,2.6,x,.58,7.4,hangarSteel);
+  hangarBox(1.62,.09,2.68,x,1.13,7.4,hangarEdge);
+  for(let z=6.55;z<=8.25;z+=.85){hangarBox(1.42,.025,.035,x,1.18,z,hangarBrass);}
+  hangarBox(.82,1.65,.72,side*9.48,.88,3.1,hangarTool);
+  hangarBox(.9,.08,.8,side*9.48,1.72,3.1,hangarEdge);
+  for(let y=.42;y<=1.35;y+=.3)hangarBox(.72,.035,.035,side*9.48,y,3.48,hangarBrass);
+  // Wall-mounted pipe racks, reels and a ladder at each service bay.
+  hangarBox(.12,2.4,.12,side*10.05,1.35,-4.8,hangarEdge);
+  hangarBox(.12,2.4,.12,side*9.62,1.35,-4.8,hangarEdge);
+  for(let y=.35;y<=2.35;y+=.4)hangarBox(.52,.055,.07,side*9.84,y,-4.8,hangarTool);
+  hangarCylinder(.42,.22,side*9.55,2.25,-9.1,hangarCable,"x");
+  hangarCylinder(.29,.24,side*9.55,2.25,-9.1,hangarOrange,"x");
+  hangarCylinder(.075,.62,side*9.55,2.25,-9.1,hangarCable,"x");
+  // Low stacked shipping cases and spare tyre assemblies in the rear corners.
+  hangarBox(1.25,.72,1.05,side*8.95,.38,-17.1,hangarWood);
+  hangarBox(1.05,.58,.88,side*9.15,1.02,-17.15,hangarOrange);
+  hangarBox(1.32,.06,1.12,side*8.95,.76,-17.1,hangarEdge);
+  hangarCylinder(.42,.2,side*9.35,.23,-13.1,hangarRubber,"x");
+  hangarCylinder(.25,.22,side*9.35,.23,-13.1,hangarEdge,"x");
+  // A few wall conduit runs and brackets.
+  hangarRope([new THREE.Vector3(side*10.22,4.8,-18),new THREE.Vector3(side*10.22,4.8,-10),new THREE.Vector3(side*10.22,4.5,-6)],.035,hangarCable);
+  for(let z=-16;z<=-8;z+=2)hangarBox(.18,.16,.12,side*10.18,4.8,z,hangarBrass);
+ }
+ // Scattered floor-side maintenance gear: hose reels, tool chests and secured crates.
+ hangarBox(1.45,.95,1.05,-8.75,.48,12.2,hangarOrange);
+ hangarBox(1.52,.09,1.12,-8.75,.99,12.2,hangarEdge);
+ hangarBox(1.2,.035,.04,-8.75,1.04,12.2,hangarCable);
+ hangarBox(1.25,.68,.95,8.9,.34,12.6,hangarWood);
+ hangarBox(1.3,.07,1,8.9,.72,12.6,hangarEdge);
+ hangarCylinder(.48,.22,-8.85,.5,9.1,hangarCable,"x");
+ hangarCylinder(.3,.24,-8.85,.5,9.1,hangarOrange,"x");
+ hangarCylinder(.1,.28,-8.85,.5,9.1,hangarBrass,"x");
+ hangarBox(.72,.88,.62,8.9,.44,-8.8,hangarTool);
+ hangarBox(.78,.07,.68,8.9,.91,-8.8,hangarEdge);
+ hangarBox(.05,.08,.035,8.9,.78,-8.46,hangarBrass);
+ // Overhead service crane: trolley, twin sheaves, hanging steel cables and a hook block.
+ const craneY=14.72,craneZ=-5.5;
+ hangarBox(2.25,.24,.72,-1.7,craneY,craneZ,hangarSteel);
+ hangarBox(1.35,.14,.82,-1.7,craneY-.2,craneZ,hangarOrange);
+ for(const x of [-2.35,-1.05]){
+  hangarCylinder(.34,.2,x,craneY-.52,craneZ,hangarCable,"z");
+  hangarCylinder(.23,.22,x,craneY-.52,craneZ,hangarBrass,"z");
+  hangarRope([new THREE.Vector3(x,craneY-.62,craneZ),new THREE.Vector3(x,10.25,craneZ)],.035,hangarCable);
+ }
+ hangarBox(1.72,.2,.42,-1.7,10.12,craneZ,hangarOrange);
+ hangarBox(1.35,.16,.28,-1.7,9.94,craneZ,hangarSteel);
+ hangarCylinder(.1,.62,-1.7,9.55,craneZ,hangarCable);
+ hangarRope([new THREE.Vector3(-1.7,9.27,craneZ),new THREE.Vector3(-1.7,9.02,craneZ+.08),new THREE.Vector3(-1.7,8.92,craneZ+.26),new THREE.Vector3(-1.7,9.08,craneZ+.38)],.045,hangarBrass);
+ // Two slack overhead utility runs, supported by ceiling pulleys and cable saddles.
+ hangarRope([new THREE.Vector3(-8.4,14.85,-14),new THREE.Vector3(-5.2,14.35,-12),new THREE.Vector3(-1.8,14.2,-10),new THREE.Vector3(2.4,14.45,-8),new THREE.Vector3(7.9,14.85,-6)],.045,hangarCable);
+ hangarRope([new THREE.Vector3(-8.1,14.55,9),new THREE.Vector3(-4.5,14.1,7),new THREE.Vector3(0,14.0,5),new THREE.Vector3(4.1,14.3,3),new THREE.Vector3(8.1,14.65,1)],.028,hangarBrass);
+ for(const [x,z] of [[-5.2,-12],[-1.8,-10],[2.4,-8],[-4.5,7],[0,5],[4.1,3]] as [number,number][]){
+  hangarCylinder(.13,.22,x,15.0,z,hangarSteel);
+  hangarCylinder(.085,.25,x,14.86,z,hangarBrass);
+ }
  const camera=new THREE.PerspectiveCamera(42,canvas.clientWidth/canvas.clientHeight,.1,500);camera.position.set(8,6,10);
  const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,1,0);orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.minDistance=3.5;orbit.maxDistance=23.5;orbit.minPolarAngle=.08;orbit.maxPolarAngle=Math.PI/2-.035;
  scene.add(new THREE.HemisphereLight(0xc5e6ff,0x263448,2));
