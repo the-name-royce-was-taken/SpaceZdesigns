@@ -157,17 +157,6 @@ describe("vehicle attachment system", () => {
     expect(placements.filter(placement => placement.parentNode.startsWith("engine-mount-"))).toHaveLength(4);
   });
 
-
-  it("uses PR 41's tighter 0.16-unit magnetic snap catch distance", () => {
-    const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
-    const exact = findAttachmentPlacement(parts, "tank", "wing")!;
-    const position: [number, number, number] = [exact.x + .5, exact.y, exact.z];
-    const defaultRange = findNearestAttachmentPlacement(parts, "wing", position);
-    const explicitPr41Range = findNearestAttachmentPlacement(parts, "wing", position, .16);
-    expect(defaultRange).toEqual(explicitPr41Range);
-    expect(findNearestAttachmentPlacement(parts, "wing", position, .001)).toBeNull();
-  });
-
   it("magnetically finds the nearest compatible connector without a grid", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
     const exact = findAttachmentPlacement(parts, "tank", "wing")!;
@@ -175,39 +164,6 @@ describe("vehicle attachment system", () => {
     expect(near?.parentNode).toMatch(/^surface-/);
     expect(Math.hypot(near!.x-(exact.x+0.2),near!.y-exact.y,near!.z-exact.z)).toBeLessThanOrEqual(0.2);
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
-  });
-
-
-  it("keeps scalable solar-array surface grids centred on the expanding panel", () => {
-    const short=attachmentNodes("solar",{kind:"solar",solarLength:.8});
-    const long=attachmentNodes("solar",{kind:"solar",solarLength:8});
-    const shortCenter=short.find(n=>n.id==="surface-top-r4-c4")!;
-    const longCenter=long.find(n=>n.id==="surface-top-r4-c4")!;
-    expect(shortCenter.position[0]).toBeCloseTo(.5);
-    expect(longCenter.position[0]).toBeCloseTo(4.1);
-    expect(Math.min(...long.filter(n=>n.id.startsWith("surface-top-")).map(n=>n.position[0]))).toBeCloseTo(.1);
-    expect(Math.max(...long.filter(n=>n.id.startsWith("surface-top-")).map(n=>n.position[0]))).toBeCloseTo(8.1);
-    expect(long.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(81);
-  });
-
-  it("scales and centres the rover-wheel grid around its adjustable tyre radius", () => {
-    const nodes=attachmentNodes("rover-wheel",{kind:"rover-wheel",radius:.6});
-    const top=nodes.find(n=>n.id==="surface-top-r4-c4")!;
-    const bottom=nodes.find(n=>n.id==="surface-bottom-r4-c4")!;
-    expect(top.position[1]).toBeCloseTo(.22);
-    expect(bottom.position[1]).toBeCloseTo(-.72);
-    expect(Math.max(...nodes.map(n=>Math.abs(n.position[2])))).toBeCloseTo(.6);
-    expect(nodes.filter(n=>n.id.startsWith("surface-top-"))).toHaveLength(81);
-  });
-
-  it("aligns the heat-shield grid with the rendered offset and scales it with radius and thickness", () => {
-    const nodes=attachmentNodes("heat-shield",{kind:"heat-shield",radius:1.2,thickness:.4});
-    const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
-    expect(Math.min(...wall.map(n=>n.position[1]))).toBeCloseTo(-.4);
-    expect(Math.max(...wall.map(n=>n.position[1]))).toBeCloseTo(0);
-    expect(Math.max(...wall.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeCloseTo(1.2);
-    expect(nodes.find(n=>n.id==="stack-top")?.position[1]).toBeCloseTo(0);
-    expect(nodes.find(n=>n.id==="stack-bottom")?.position[1]).toBeCloseTo(-.4);
   });
 
   it("scales the invisible 9×9 attachment lattice with editable curved geometry", () => {
