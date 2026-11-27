@@ -50,3 +50,19 @@ export function reorderActivationGroups<T extends BuildPart>(parts: readonly T[]
     return next;
   });
 }
+
+/** Canonicalizes persisted memberships so group numbers carry the sequence and engine stages cannot drift. */
+export function normalizeActivationAssignments<T extends BuildPart>(parts: readonly T[]): T[] {
+  return parts.map(part => {
+    const next = { ...part };
+    const group = partActivationGroup(part);
+    if (group === undefined) {
+      delete next.activationGroup;
+      if (next.kind === "engine" && next.engineStage !== undefined) next.engineStage = 0;
+    } else {
+      next.activationGroup = group;
+      if (next.kind === "engine") next.engineStage = group;
+    }
+    return next;
+  });
+}

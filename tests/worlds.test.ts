@@ -17,13 +17,23 @@ const sampleWorld: WorldRecord = {
     science: 42,
     reputation: 0,
     playTimeSeconds: 3600,
-    craft: [],
+    craft: [{ name: "Heavy Lifter", parts: [
+        { id: "pod-1", kind: "capsule", x: 0, y: 1, z: 0 },
+        { id: "separator-1", kind: "separator", x: 0, y: 0.5, z: 0, activationGroup: 1 },
+        { id: "engine-1", kind: "engine", x: 0, y: 0, z: 0, activationGroup: 2, engineStage: 2 },
+        { id: "solar-1", kind: "solar", x: 1, y: 1, z: 0, activationGroup: 3 }
+      ] }],
     missions: [],
     research: [],
     blueprints: [{
       id: "bp-001",
       name: "Heavy Lifter",
-      parts: [{ id: "pod-1", kind: "capsule", x: 0, y: 1, z: 0 }],
+      parts: [
+        { id: "pod-1", kind: "capsule", x: 0, y: 1, z: 0 },
+        { id: "separator-1", kind: "separator", x: 0, y: 0.5, z: 0, activationGroup: 1 },
+        { id: "engine-1", kind: "engine", x: 0, y: 0, z: 0, activationGroup: 2, engineStage: 2 },
+        { id: "solar-1", kind: "solar", x: 1, y: 1, z: 0, activationGroup: 3 }
+      ],
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-02T00:00:00.000Z"
     }]
@@ -39,12 +49,16 @@ describe(".spaze world archives", () => {
     expect(imported.state.science).toBe(42);
     expect(imported.state.currentBody).toBe("Earth");
     expect(imported.state.blueprints).toEqual(sampleWorld.state.blueprints);
+    expect(imported.state.craft).toEqual(sampleWorld.state.craft);
   });
 
   it("stores blueprint records as a separate file inside the .spaze ZIP", () => {
     const files = unzipSync(exportWorld(sampleWorld));
     expect(Object.keys(files).sort()).toEqual(["world/blueprints.json", "world/manifest.json", "world/world.json"]);
     expect(JSON.parse(new TextDecoder().decode(files["world/blueprints.json"]))).toEqual(sampleWorld.state.blueprints);
+    const worldData = JSON.parse(new TextDecoder().decode(files["world/world.json"]));
+    expect(worldData.state.craft).toEqual(sampleWorld.state.craft);
+    expect(worldData.state.craft[0].parts.filter((part: { activationGroup?: number }) => part.activationGroup).map((part: { activationGroup: number }) => part.activationGroup)).toEqual([1, 2, 3]);
   });
 
   it("still imports legacy .spaze files that do not contain a blueprint file", () => {
