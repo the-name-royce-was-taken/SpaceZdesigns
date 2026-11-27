@@ -41,7 +41,7 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-(part?.thickness??.16)/2:-hy;
     // Curved surfaces use the same fixed cube pitch as flat faces. The grid is
     // centered at the part origin and grows outward to within one cell of its bounds.
-    const yOffsets=centeredOffsets(Math.max(Math.abs(yBottom),Math.abs(yTop)));
+    const yOffsets=centeredOffsets(Math.max(Math.abs(yBottom),Math.abs(yTop))).filter(y=>y>=yBottom-1e-8&&y<=yTop+1e-8);
     const maxRadius=Math.max(top,bottom),angleCount=Math.max(8,Math.ceil(2*Math.PI*maxRadius/ATTACHMENT_GRID_CUBE_SIZE));
     for(let a=0;a<angleCount;a++)for(let row=0;row<yOffsets.length;row++){
       const angle=2*Math.PI*a/angleCount,y=yOffsets[row]!;
@@ -114,7 +114,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  for(const parent of parents){
   const nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
   const usedWallAngles=used.map(id=>/^surface-wall-a(\d+)-y\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
-  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||/^surface-wall-a\d+-y4$/.test(n.id)||/^surface-(?:east|west|north|south|top|bottom)-r4-c4$/.test(n.id));
+  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||(n.attachmentClass==="surface"&&isCenterSurfaceNode(n)));
   let best:AttachmentPlacement|null=null,bestScore=Infinity;
   for(const candidate of candidates){
    if(used.includes(candidate.id))continue;
