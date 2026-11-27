@@ -299,7 +299,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
-  const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.8,part);
+  const placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.16,part);
   if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
   else{delete part.parentId;delete part.parentNode;delete part.childNode;}
   g.position.set(part.x??0,part.y??0,part.z??0);g.rotation.set(part.rx??0,part.ry??0,part.rz??0);

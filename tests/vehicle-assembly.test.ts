@@ -158,17 +158,14 @@ describe("vehicle attachment system", () => {
   });
 
 
-  it("keeps the normal magnetic snap catch distance at 0.8 units", () => {
+  it("uses PR 41's tighter 0.16-unit magnetic snap catch distance", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
     const exact = findAttachmentPlacement(parts, "tank", "wing")!;
-    const withinDefaultRange = findNearestAttachmentPlacement(
-      parts, "wing", [exact.x + .5, exact.y, exact.z]
-    );
-    expect(withinDefaultRange).not.toBeNull();
-    const samePositionWithTighterRange = findNearestAttachmentPlacement(
-      parts, "wing", [exact.x + .5, exact.y, exact.z], .001
-    );
-    expect(samePositionWithTighterRange).toBeNull();
+    const position: [number, number, number] = [exact.x + .5, exact.y, exact.z];
+    const defaultRange = findNearestAttachmentPlacement(parts, "wing", position);
+    const explicitPr41Range = findNearestAttachmentPlacement(parts, "wing", position, .16);
+    expect(defaultRange).toEqual(explicitPr41Range);
+    expect(findNearestAttachmentPlacement(parts, "wing", position, .001)).toBeNull();
   });
 
   it("magnetically finds the nearest compatible connector without a grid", () => {
