@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
 import { mountVehicleBuilder, partCatalog, engineVariants, isFairingKind, defaultFairingHeight, type BuildPart } from "./vehicle-builder-3d";
 import { tankFuelCapacity } from "./vehicle-assembly";
+import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
 import { FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 const bodies=[["Earth","HOME WORLD",6371,9.81,"#4e9bd0",0,"Blue oceans, familiar atmosphere, and the launch site."],["Luna","MOON",1737,1.62,"#b8b9c2",384400,"A nearby airless world with low gravity and ancient craters."],["Mars","TERRESTRIAL",3389,3.71,"#c87855",225000000,"A cold desert world with a thin atmosphere."],["Phobos","MARTIAN MOON",11,.0057,"#9a806d",9376,"A small, irregular moon orbiting close to Mars."],["Jupiter","GAS GIANT",69911,24.79,"#d5ae83",778000000,"A giant world with immense storms."],["Europa","ICY MOON",1561,1.31,"#d9d4c2",628000000,"An ice-covered moon and a compelling science destination."],["Saturn","GAS GIANT",58232,10.44,"#d8bd86",1427000000,"A ringed giant surrounded by an extraordinary moon system."],["Titan","ICY MOON",2575,1.35,"#c58d53",1430000000,"A hazy moon with lakes of liquid hydrocarbons."]] as const;
 type Craft={name:string;parts:BuildPart[]};
@@ -9,7 +10,7 @@ type SavedFlight={kind:"spacez-flight-save";craftName:string;state:FlightState;v
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>void;toast:(m:string,k?:"success"|"error")=>void}
 const starterParts=():BuildPart[]=>[{kind:"capsule",x:0,y:1.885,z:0},{kind:"tank",x:0,y:.96,z:0,topRadius:.44,bottomRadius:.44,height:.96},{kind:"engine",x:0,y:0,z:0}];
 let host:Host,craft:Craft={name:"Pioneer I",parts:starterParts()},target="Earth";
-let builder:{dispose:()=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
+let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
@@ -31,6 +32,46 @@ function hangar(){
  const saveCurrentDesign=()=>{craft.name=($("#craft-name",root) as HTMLInputElement).value.trim().slice(0,32)||"Untitled Vehicle";save();};
  $("#save-design",root).onclick=()=>{saveCurrentDesign();host.toast("Vehicle saved to this world.")};
  $("#save-launch",root).onclick=()=>{saveCurrentDesign();host.toast("Vehicle saved. Preparing launch.");nav("continue")};
+
+ const blueprintPanel=$("#vab-blueprints-panel",root),blueprintList=$("#vab-blueprints-list",root),blueprintToggle=$("#vab-blueprints-toggle",root) as HTMLButtonElement;
+ const refreshBlueprints=async()=>{
+  const records=await listBlueprints();
+  blueprintList.innerHTML=records.length?records.map(record=>`<article class="vab-blueprint-row" data-blueprint-id="${esc(record.id)}"><div class="vab-blueprint-name" data-blueprint-name title="Double-click to rename">${esc(record.name)}</div><div class="vab-blueprint-actions"><button type="button" data-blueprint-action="download">DOWNLOAD</button><button type="button" data-blueprint-action="load">LOAD</button><button type="button" data-blueprint-action="overwrite">OVERWRITE</button><button type="button" data-blueprint-action="delete" class="danger">DELETE</button></div></article>`).join(""):`<div class="vab-blueprints-empty"><b>NO BLUEPRINTS SAVED</b><span>Use “New blueprint” to save this craft in this browser.</span></div>`;
+  blueprintList.querySelectorAll<HTMLElement>("[data-blueprint-name]").forEach(label=>label.addEventListener("dblclick",()=>{
+   const row=label.closest<HTMLElement>("[data-blueprint-id]");const id=row?.dataset.blueprintId;if(!id)return;
+   const input=document.createElement("input");input.className="vab-blueprint-rename";input.maxLength=48;input.value=label.textContent??"";label.replaceWith(input);input.focus();input.select();
+   let finished=false;const finish=async(save:boolean)=>{if(finished)return;finished=true;try{if(save&&input.value.trim())await renameBlueprint(id,input.value);await refreshBlueprints();}catch(error){host.toast(error instanceof Error?error.message:"Could not rename blueprint.","error");await refreshBlueprints();}};
+   input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();void finish(true);}if(event.key==="Escape")void finish(false);});
+   input.addEventListener("blur",()=>void finish(true));
+  }));
+  blueprintList.querySelectorAll<HTMLButtonElement>("[data-blueprint-action]").forEach(button=>button.addEventListener("click",async()=>{
+   const row=button.closest<HTMLElement>("[data-blueprint-id]");const id=row?.dataset.blueprintId;if(!id)return;
+   const record=records.find(item=>item.id===id);if(!record)return;
+   const action=button.dataset.blueprintAction;
+   try{
+    if(action==="download"){
+     const bytes=exportBuildz(record.name,record.parts),blob=new Blob([bytes],{type:"application/zip"}),url=URL.createObjectURL(blob),anchor=document.createElement("a");
+     anchor.href=url;anchor.download=`${record.name.replace(/[^a-z0-9-_ ]/gi,"").trim().replace(/\\s+/g,"-")||"SpaceZ-Blueprint"}.buildz`;document.body.append(anchor);anchor.click();anchor.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);host.toast(`Downloaded ${record.name}.buildz`);
+    }else if(action==="load"){
+     craft={name:record.name,parts:structuredClone(record.parts)};($("#craft-name",root) as HTMLInputElement).value=craft.name;builder?.replaceParts(craft.parts);
+     const v=metrics();$("#build-mass",root).textContent=(v.mass+v.fuel*.001).toFixed(2)+" t";$("#build-fuel",root).textContent=v.fuel+" u";$("#build-thrust",root).textContent=v.thrust+" kN";$("#build-cost",root).textContent=v.cost.toLocaleString()+" cr";
+     blueprintPanel.hidden=true;blueprintToggle.setAttribute("aria-expanded","false");host.toast(`Loaded blueprint: ${record.name}`);
+    }else if(action==="overwrite"){
+     await saveBlueprint(record.name,craft.parts,record.id);await refreshBlueprints();host.toast(`Overwrote ${record.name}`);
+    }else if(action==="delete"){
+     if(!window.confirm(`Delete blueprint “${record.name}”? This cannot be undone.`))return;
+     await deleteBlueprint(record.id);await refreshBlueprints();host.toast(`Deleted ${record.name}`);
+    }
+   }catch(error){host.toast(error instanceof Error?error.message:"Blueprint action failed.","error");}
+  }));
+ };
+ blueprintToggle.onclick=()=>{blueprintPanel.hidden=!blueprintPanel.hidden;blueprintToggle.setAttribute("aria-expanded",String(!blueprintPanel.hidden));if(!blueprintPanel.hidden)void refreshBlueprints().catch(error=>host.toast(error instanceof Error?error.message:"Could not read blueprints.","error"));};
+ $("#vab-blueprints-close",root).onclick=()=>{blueprintPanel.hidden=true;blueprintToggle.setAttribute("aria-expanded","false");};
+ $("#vab-blueprint-add",root).onclick=async()=>{
+  const name=window.prompt("Name this blueprint:",craft.name);if(name===null)return;
+  try{const record=await saveBlueprint(name,craft.parts);await refreshBlueprints();host.toast(`Saved blueprint: ${record.name}`);}
+  catch(error){host.toast(error instanceof Error?error.message:"Could not save blueprint.","error");}
+ };
 }
 function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
 function makeRocket():THREE.Group{
