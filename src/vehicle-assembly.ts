@@ -166,7 +166,7 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
     const delta:[number,number,number]=[x-position[0],y-position[1],z-position[2]];
     const axisIndex=axis==="X"?0:axis==="Y"?1:axis==="Z"?2:-1;
     const offAxisDistance=axisIndex<0?0:Math.hypot(...delta.filter((_,index)=>index!==axisIndex));
-    const distance=axisIndex<0?Math.hypot(...delta):Math.abs(delta[axisIndex]!);
+    const distance=axisIndex<0?Math.hypot(...delta):Math.abs(delta[axisIndex as 0|1|2]!);
     const normalPenalty=p.attachmentClass==="surface"?1+(pd[0]*cd[0]+pd[1]*cd[1]+pd[2]*cd[2]):0;
     const score=distance+normalPenalty*.02;
     if(distance<=maxDistance&&(axisIndex<0||offAxisDistance<=ATTACHMENT_GRID_CUBE_SIZE/2)&&score<bestDistance){bestDistance=score;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
