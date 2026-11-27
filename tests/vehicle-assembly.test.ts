@@ -37,16 +37,16 @@ describe("vehicle attachment system", () => {
   });
 
 
-  it("builds a centered attachment lattice with a fixed 0.16-unit cube pitch", () => {
+  it("builds a centered attachment lattice with a fixed 0.08-unit cube pitch", () => {
     const nodes=attachmentNodes("tank");
     const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
     expect(wall.length).toBeGreaterThan(81);
     expect(new Set(wall.map(n=>n.position[1])).size).toBeGreaterThan(1);
     const levels=[...new Set(wall.map(n=>n.position[1]))].sort((a,b)=>a-b);
-    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.16)<1e-8)).toBe(true);
+    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.08)<1e-8)).toBe(true);
     expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBeGreaterThan(9);
     expect(wall.some(n=>Math.abs(n.position[1])<1e-8)).toBe(true);
-    expect(wall.every(n=>Math.abs(n.position[1]/.16-Math.round(n.position[1]/.16))<1e-8)).toBe(true);
+    expect(wall.every(n=>Math.abs(n.position[1]/.08-Math.round(n.position[1]/.08))<1e-8)).toBe(true);
     expect(nodes.filter(n=>n.id.startsWith("surface-top-")).length).toBeGreaterThan(1);
     expect(nodes.filter(n=>n.id.startsWith("surface-bottom-")).length).toBeGreaterThan(1);
   });
@@ -56,9 +56,9 @@ describe("vehicle attachment system", () => {
     const zLevels=[...new Set(east.map(n=>n.position[2]))].sort((a,b)=>a-b);
     expect(east.every(n=>Math.abs(n.position[0]-.85)<1e-8&&Math.abs(n.position[1])<1e-8)).toBe(true);
     expect(zLevels).toContain(0);
-    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.16)<1e-8)).toBe(true);
+    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.08)<1e-8)).toBe(true);
     expect(Math.max(...zLevels)).toBeLessThanOrEqual(.55);
-    expect(.55-Math.max(...zLevels)).toBeLessThan(.16);
+    expect(.55-Math.max(...zLevels)).toBeLessThan(.08);
   });
 
   it("shapes tank snap nodes to its top and bottom radius settings", () => {
@@ -106,9 +106,11 @@ describe("vehicle attachment system", () => {
   });
 
   it("chooses the center row when a fuel tank attaches to a curved surface", () => {
+    const centerTop=attachmentNodes("tank").find(n=>n.id.startsWith("surface-top-")&&Math.abs(n.position[0])<1e-8&&Math.abs(n.position[2])<1e-8)!;
+    const centerBottom=attachmentNodes("tank").find(n=>n.id.startsWith("surface-bottom-")&&Math.abs(n.position[0])<1e-8&&Math.abs(n.position[2])<1e-8)!;
     const parts: BuildPart[] = [
       { id: "tank", kind: "tank" },
-      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", "surface-top-r2-c2", "surface-bottom-r2-c2"]
+      ...["stack-top", "stack-bottom", "engine-mount-east", "engine-mount-west", "engine-mount-north", "engine-mount-south", centerTop.id, centerBottom.id]
         .map((parentNode, index) => ({ id: "occupant-" + index, kind: "battery" as const, parentId: "tank", parentNode }))
     ];
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
@@ -203,9 +205,9 @@ describe("vehicle attachment system", () => {
     const tankWall = tank.filter(n=>n.id.startsWith("surface-wall-"));
     expect(tankWall.length).toBeGreaterThan(81);
     expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeLessThan(-1.0);
-    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(-1.2);
+    expect(Math.min(...tankWall.map(n=>n.position[1]))).toBeGreaterThanOrEqual(-1.2);
     expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeGreaterThan(1.0);
-    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeLessThan(1.2);
+    expect(Math.max(...tankWall.map(n=>n.position[1]))).toBeLessThanOrEqual(1.2);
     expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]>best.position[1]?n:best).position.filter((_,i)=>i!==1))-.72)).toBeLessThan(.08);
     expect(Math.abs(Math.hypot(...tankWall.filter(n=>n.id.startsWith("surface-wall-a0-")).reduce((best,n)=>n.position[1]<best.position[1]?n:best).position.filter((_,i)=>i!==1))-.28)).toBeLessThan(.08);
     for (const kind of ["fairing","conical-fairing","interstage-fairing","clam-shell-fairing"] as const) {

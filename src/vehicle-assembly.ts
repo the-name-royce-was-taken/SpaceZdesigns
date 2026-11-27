@@ -17,7 +17,7 @@ const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length
 const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3]};
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
-const ATTACHMENT_GRID_CUBE_SIZE=.16;
+const ATTACHMENT_GRID_CUBE_SIZE=.08;
 const centeredOffsets=(halfExtent:number)=>{const steps=Math.floor((halfExtent+1e-8)/ATTACHMENT_GRID_CUBE_SIZE);return Array.from({length:steps*2+1},(_,i)=>(i-steps)*ATTACHMENT_GRID_CUBE_SIZE);};
 const isCenterSurfaceNode=(n:AttachmentNode)=>{const p=n.position,d=n.direction,dot=p[0]*d[0]+p[1]*d[1]+p[2]*d[2];return Math.hypot(p[0]-dot*d[0],p[1]-dot*d[1],p[2]-dot*d[2])<1e-6;};
 export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|"height">):number{
