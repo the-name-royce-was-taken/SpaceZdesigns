@@ -50,11 +50,12 @@ describe("ground clearance", () => {
     expect(parts[0]!.y).toBe(1.2);
   });
 
-  it("can lift the whole craft together to keep a newly attached part above ground", () => {
-    const craft = [{ id: "root", y: -0.2 }, { id: "child", y: 0.4, parentId: "root" }];
-    const lifted = translatePartsY(craft, new Set(craft.map(part => part.id)), groundClearanceOffset(-0.35));
-    expect(lifted[0]!.y).toBeCloseTo(0.15);
-    expect(lifted[1]!.y).toBeCloseTo(0.75);
-    expect(lifted[1]!.parentId).toBe("root");
+  it("applies spawn clearance to new parts without changing the existing craft", () => {
+    const existingCraft = [{ id: "grounded", y: 0 }, { id: "upper", y: 2, parentId: "grounded" }];
+    const additions = [{ id: "new-part", y: -0.35 }];
+    const lift = groundClearanceOffset(-0.35);
+    const correctedAdditions = translatePartsY(additions, new Set(["new-part"]), lift);
+    expect(correctedAdditions[0]!.y).toBeCloseTo(0);
+    expect(existingCraft.map(part => part.y)).toEqual([0, 2]);
   });
 });
