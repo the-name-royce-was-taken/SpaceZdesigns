@@ -12,6 +12,22 @@ describe("vehicle attachment system", () => {
     expect(placement?.y).toBeCloseTo(3.23);
   });
 
+  it("builds both controller modules as short cylinders with independently resizable end radii", () => {
+    for (const kind of ["remote-control","reaction-wheel"] as const) {
+      const part:BuildPart={kind,topRadius:.4,bottomRadius:.22};
+      const nodes=attachmentNodes(kind,part);
+      const top=nodes.filter(n=>n.id.startsWith("surface-top-"));
+      const bottom=nodes.filter(n=>n.id.startsWith("surface-bottom-"));
+      const wall=nodes.filter(n=>n.id.startsWith("surface-wall-"));
+      expect(nodes.find(n=>n.id==="stack-top")?.position[1]).toBeCloseTo(.14);
+      expect(nodes.find(n=>n.id==="stack-bottom")?.position[1]).toBeCloseTo(-.14);
+      expect(Math.max(...top.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.4+1e-8);
+      expect(Math.max(...bottom.map(n=>Math.hypot(n.position[0],n.position[2])))).toBeLessThanOrEqual(.22+1e-8);
+      expect(wall.length).toBeGreaterThan(0);
+      expect(Math.max(...wall.map(n=>Math.abs(n.position[1])))).toBeLessThanOrEqual(.14+1e-8);
+    }
+  });
+
   it("places an engine below a tank", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank", x: 0, y: 1, z: 0 }];
     const placement = findAttachmentPlacement(parts, "tank", "engine");
@@ -374,7 +390,7 @@ describe("vehicle attachment system", () => {
   for(const kind of ["remote-control","reaction-wheel"] as const){
    const nodes=attachmentNodes(kind);
    expect(nodes.some(n=>n.attachmentClass==="surface")).toBe(true);
-   expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(false);
+   expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(true);
   }
  });
 });

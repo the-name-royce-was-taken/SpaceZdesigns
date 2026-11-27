@@ -122,15 +122,13 @@ function makeRocket():THREE.Group{
    const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,(p.x??0),y-.12,p.z??0);tire.rotation.z=Math.PI/2;
    const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,(p.x??0),y-.12,p.z??0);rim.rotation.z=Math.PI/2;
    for(let i=0;i<16;i++){const a=i*Math.PI/8;const lug=add(new THREE.BoxGeometry(.2,.045,.045),rubber,p.x??0,y-.12+Math.cos(a)*(radius+.006),(p.z??0)+Math.sin(a)*(radius+.006));lug.rotation.x=a;}
-  }else if(p.kind==="remote-control"){
-   add(new THREE.BoxGeometry(.52,.3,.5),mat(0x607f91,.62),p.x??0,y,p.z??0);
-   const antenna=add(new THREE.CylinderGeometry(.012,.018,.28,8),mat(0x253b4b,.72),(p.x??0)+.17,y+.26,p.z??0);antenna.rotation.z=-.2;
-   add(new THREE.SphereGeometry(.045,12,8),mat(0x4bb6d4,.5),(p.x??0)+.2,y+.4,p.z??0);
-   add(new THREE.BoxGeometry(.32,.16,.035),mat(0x4bb6d4,.45),p.x??0,y+.04,(p.z??0)+.267);
-  }else if(p.kind==="reaction-wheel"){
-   add(new THREE.CylinderGeometry(.22,.22,.3,32),mat(0x9baab4,.78),p.x??0,y,p.z??0);
-   const rotor=add(new THREE.TorusGeometry(.17,.035,10,32),mat(0x344d5e,.82),p.x??0,y,p.z??0);rotor.rotation.x=Math.PI/2;
-   add(new THREE.CylinderGeometry(.09,.09,.34,20),mat(0xcbd5db,.8),p.x??0,y,p.z??0);
+  }else if(p.kind==="remote-control"||p.kind==="reaction-wheel"){
+   const top=p.topRadius??.28,bottom=p.bottomRadius??.28,height=.28,half=height/2;
+   const shell=mat(p.kind==="remote-control"?0x718fa0:0x9baab4,.68),trim=mat(p.kind==="remote-control"?0x29495b:0x344d5e,.8),detail=mat(p.kind==="remote-control"?0x4bb6d4:0xcbd5db,.55);
+   add(new THREE.CylinderGeometry(top,bottom,height,32,4,false),shell,p.x??0,y,p.z??0);
+   for(const [offset,radius] of [[-half,bottom],[half,top]] as const){const rim=add(new THREE.TorusGeometry(radius,.014,8,32),trim,p.x??0,y+offset,p.z??0);rim.rotation.x=Math.PI/2;}
+   if(p.kind==="remote-control"){add(new THREE.CylinderGeometry(top*.22,top*.22,.018,16),detail,p.x??0,y+half+.009,p.z??0);for(let i=0;i<3;i++)add(new THREE.SphereGeometry(.018,8,6),mat([0x58d6ad,0xe7bd62,0x70aee0][i],.7),(p.x??0)+(i-1)*top*.32,y,(p.z??0)+bottom+.008);}
+   else{add(new THREE.CylinderGeometry(Math.min(top,bottom)*.34,Math.min(top,bottom)*.34,.035,20),detail,p.x??0,y+half+.018,p.z??0);const ring=add(new THREE.TorusGeometry(Math.min(top,bottom)*.58,.018,8,32),trim,p.x??0,y+half+.02,p.z??0);ring.rotation.x=Math.PI/2;}
   }else if(p.kind==="wheel"){
    const leg=add(new THREE.CylinderGeometry(.055,.07,.72,16),mat(0x8999a5,.55),(p.x??0)+.12,y,(p.z??0));
    leg.rotation.z=-.22;
