@@ -20,6 +20,19 @@ describe("fixed-step flight solver",()=>{
   baseline.launch();assisted.launch();baseline.step(1/120,input);assisted.step(1/120,input);
   expect(assisted.state.angularVelocity).toBeGreaterThan(baseline.state.angularVelocity);
  });
+ it("sequences all activation groups, including groups without engines",()=>{
+  const staged:VehiclePhysics={...vehicle,engines:[{stage:0,thrustKN:40,ispSeconds:300},{stage:3,thrustKN:80,ispSeconds:300}],activationGroups:[1,2,3]};
+  const sim=new FlightSimulator(staged);sim.launch();
+  expect(sim.activateStage(2)).toBe(false);
+  expect(sim.activateNextStage()).toBe(true);
+  expect(sim.state.currentStage).toBe(1);
+  expect(sim.activateStage(3)).toBe(false);
+  expect(sim.activateNextStage()).toBe(true);
+  expect(sim.state.currentStage).toBe(2);
+  expect(sim.activateNextStage()).toBe(true);
+  expect(sim.state.currentStage).toBe(3);
+  expect(sim.activateNextStage()).toBe(false);
+ });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
