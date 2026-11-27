@@ -61,17 +61,28 @@ describe("vehicle attachment system", () => {
     expect(Math.hypot(lowerWall!.position[0],lowerWall!.position[2])).toBeCloseTo(.2);
   });
 
-  it("automatically finds the next free attachment node", () => {
+  it("automatically finds a flush surface node and spreads replicated parts around the surface", () => {
     const parts: BuildPart[] = [{ id: "tank", kind: "tank" }];
-    const first = findAvailableAttachmentPlacement(parts, "wing", "tank");
-    expect(first).not.toBeNull();
-    parts.push({ id: "wing-a", kind: "wing", parentId: first!.parentId, parentNode: first!.parentNode, childNode: first!.childNode, x: first!.x, y: first!.y, z: first!.z });
-    const second = findAvailableAttachmentPlacement(parts, "wing", "tank");
-    expect(second).not.toBeNull();
-    expect(second?.parentNode).not.toBe(first?.parentNode);
-    // The 3×3 surface layout intentionally fills neighbouring sections on
-    // the same face before moving to another face.
-    expect(Number.isFinite(second?.rotationY)).toBe(true);
+    const placements = [];
+    for (let i = 0; i < 4; i++) {
+      const placement = findAvailableAttachmentPlacement(parts, "wing", "tank");
+      expect(placement).not.toBeNull();
+      placements.push(placement!);
+      parts.push({ id: "wing-" + i, kind: "wing", parentId: placement!.parentId, parentNode: placement!.parentNode, childNode: placement!.childNode, x: placement!.x, y: placement!.y, z: placement!.z, ry: placement!.rotationY });
+    }
+    expect(placements.every(p => p.parentNode.startsWith("surface-wall-"))).toBe(true);
+    const angles = placements.map(p => Number(/^surface-wall-a(\\d+)-/.exec(p.parentNode)?.[1]));
+    expect(new Set(angles).size).toBe(4);
+    expect(angles).toEqual([0, 4, 2, 6]);
+    for (const p of placements) {
+      const parentNode = attachmentNodes("tank").find(n => n.id === p.parentNode)!;
+      const childNode = attachmentNodes("wing").find(n => n.id === p.childNode)!;
+      const c = Math.cos(p.rotationY), s = Math.sin(p.rotationY);
+      const childPosition = [childNode.position[0]*c+childNode.position[2]*s, childNode.position[1], -childNode.position[0]*s+childNode.position[2]*c];
+      expect(p.x + childPosition[0]).toBeCloseTo(parentNode.position[0]);
+      expect(p.y + childPosition[1]).toBeCloseTo(parentNode.position[1]);
+      expect(p.z + childPosition[2]).toBeCloseTo(parentNode.position[2]);
+    }
   });
 
   it("places a stack part above the highest available stack node", () => {
