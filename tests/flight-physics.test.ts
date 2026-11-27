@@ -33,6 +33,7 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.currentStage).toBe(3);
   expect(sim.activateNextStage()).toBe(false);
  });
+ it("applies separation impulses to an active flight without changing grounded state",()=>{const sim=new FlightSimulator(vehicle);sim.launch();sim.applyImpulse(1.5,-.25);expect(sim.state.vx).toBeCloseTo(1.5);expect(sim.state.vy).toBeCloseTo(-.25);sim.reset();sim.applyImpulse(5,5);expect(sim.state.vx).toBe(0);expect(sim.state.vy).toBe(0);});
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
