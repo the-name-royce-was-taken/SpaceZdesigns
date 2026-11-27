@@ -177,18 +177,10 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="engine"){
    const type=p.engineType??"liquid";
    const steel=new THREE.MeshStandardMaterial({color:0x9aa8ae,roughness:.34,metalness:.82});
-   const hotMetal=new THREE.MeshStandardMaterial({color:0x665b52,roughness:.42,metalness:.78});
-   const chamber=new THREE.MeshStandardMaterial({color:0xb77b4c,roughness:.4,metalness:.72});
-   const dark=new THREE.MeshStandardMaterial({color:0x263744,roughness:.48,metalness:.72});
    const gold=new THREE.MeshStandardMaterial({color:0xc49a55,roughness:.38,metalness:.76});
    const bellMaterial=new THREE.MeshStandardMaterial({color:0x8e9da4,roughness:.3,metalness:.84,side:THREE.DoubleSide});
    const band=(radius:number,y:number,tube=.014,material=steel)=>{const ring=add(new THREE.TorusGeometry(radius,tube,5,12),material,new THREE.Vector3(0,y,0));ring.rotation.x=Math.PI/2;return ring;};
    const pipe=(points:THREE.Vector3[],radius=.018,material=gold)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,radius,5,false),material);
-   const bell=(exit:number,depth:number,wall=.018)=>{
-    const profile=[new THREE.Vector2(.105,-.14),new THREE.Vector2(.12,-.22),new THREE.Vector2(exit*.48,-depth*.52),new THREE.Vector2(exit*.88,-depth*.88),new THREE.Vector2(exit,-depth),new THREE.Vector2(exit-wall,-depth+.012),new THREE.Vector2(exit*.82,-depth*.84),new THREE.Vector2(exit*.42,-depth*.48),new THREE.Vector2(.09,-.21),new THREE.Vector2(.09,-.14)];
-    add(new THREE.LatheGeometry(profile,12),bellMaterial);
-    band(exit,-depth,.016,steel);
-   };
    const continuousCore=(profile:THREE.Vector2[])=>add(new THREE.LatheGeometry(profile,12),bellMaterial);
    if(type==="solid"){
     // One closed pressure-case/nozzle shell: the domed head, case and throat are a single surface.
