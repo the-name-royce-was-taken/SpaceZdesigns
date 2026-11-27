@@ -177,6 +177,7 @@ export function importBuildz(bytes: Uint8Array): { name: string; parts: BuildPar
     throw new Error("This is not a valid .buildz ZIP archive.");
   }
   const entries = Object.keys(files);
+  if (entries.length === 0) throw new Error("This is not a valid .buildz ZIP archive.");
   if (entries.length !== 1 || entries[0] !== "blueprint.json") throw new Error("The .buildz archive must contain one blueprint.json file.");
   const payload = files["blueprint.json"]!;
   if (payload.byteLength > MAX_JSON_BYTES) throw new Error("The blueprint data is too large.");
