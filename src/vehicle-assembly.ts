@@ -24,7 +24,18 @@ export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|
  return 120*volume/reference;
 }
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
-  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
+  const [baseX,sy,sz]=dims[kind];
+  const solarLength=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX;
+  const roverRadius=kind==="rover-wheel"?Math.max(.1,Math.min(.65,part?.radius??.24)):0;
+  const shieldRadius=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):0;
+  const shieldThickness=kind==="heat-shield"?Math.max(.04,Math.min(.5,part?.thickness??.16)):.16;
+  // Grid bounds follow the rendered geometry, including off-centre/scalable parts.
+  const centerX=kind==="solar"?.1+solarLength/2:0;
+  const centerY=kind==="rover-wheel"?(0.1-roverRadius)/2:kind==="heat-shield"?-shieldThickness/2:0;
+  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:baseX;
+  const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?.34+roverRadius:kind==="heat-shield"?shieldThickness:sy;
+  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:sz;
+  const hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:effectiveY/2,hz=effectiveZ/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
   };
@@ -34,8 +45,8 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="tank"||kind==="engine"||kind==="separator"||kind==="dock"||kind==="wheel"||kind==="heat-shield"||kind==="capsule"||kind==="nose-cone"||isFairingKind(kind)){
     const top=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"?Math.max(.08,Math.min(.9,part?.topRadius??.44)):kind==="interstage-fairing"?Math.max(.08,Math.min(.9,part?.bottomRadius??.44))*.78:(kind==="nose-cone"||isFairingKind(kind))?.02:kind==="engine"?.19:kind==="separator"?.5:kind==="dock"?.22:kind==="wheel"?.2:.43;
     const bottom=kind==="heat-shield"?Math.max(.2,Math.min(1.8,part?.radius??.62)):kind==="tank"||kind==="nose-cone"||isFairingKind(kind)?Math.max(.08,Math.min(.9,part?.bottomRadius??.44)):kind==="engine"?.43:kind==="separator"?.5:kind==="dock"?.28:kind==="wheel"?.2:.49;
-    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:kind==="heat-shield"?(part?.thickness??.16)/2:hy;
-    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-(part?.thickness??.16)/2:-hy;
+    const yTop=kind==="capsule"?.23:kind==="engine"?.31:kind==="dock"?.13:kind==="wheel"?.425:kind==="heat-shield"?0:hy;
+    const yBottom=kind==="capsule"?-.445:kind==="engine"?-.35:kind==="dock"?-.11:kind==="wheel"?-.425:kind==="heat-shield"?-shieldThickness:-hy;
     // Curved side grids sit on the circular/conical silhouette, never on the
     // empty corners of a rectangular bounding box.
     for(let a=0;a<9;a++)for(let row=0;row<9;row++){
@@ -60,12 +71,12 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   }
   // Box-like parts use a 9×9 grid on each real outer face.
   const faces=[
-    {id:"east",p:(u:number,v:number):[number,number,number]=>[hx,u*hy,v*hz],d:[1,0,0] as const},
-    {id:"west",p:(u:number,v:number):[number,number,number]=>[-hx,u*hy,v*hz],d:[-1,0,0] as const},
-    {id:"north",p:(u:number,v:number):[number,number,number]=>[u*hx,v*hy,hz],d:[0,0,1] as const},
-    {id:"south",p:(u:number,v:number):[number,number,number]=>[u*hx,v*hy,-hz],d:[0,0,-1] as const},
-    {id:"top",p:(u:number,v:number):[number,number,number]=>[u*hx,hy,v*hz],d:[0,1,0] as const},
-    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[u*hx,-hy,v*hz],d:[0,-1,0] as const}
+    {id:"east",p:(u:number,v:number):[number,number,number]=>[centerX+hx,centerY+u*hy,v*hz],d:[1,0,0] as const},
+    {id:"west",p:(u:number,v:number):[number,number,number]=>[centerX-hx,centerY+u*hy,v*hz],d:[-1,0,0] as const},
+    {id:"north",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,hz],d:[0,0,1] as const},
+    {id:"south",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+v*hy,-hz],d:[0,0,-1] as const},
+    {id:"top",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY+hy,v*hz],d:[0,1,0] as const},
+    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY-hy,v*hz],d:[0,-1,0] as const}
   ];
   for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
   return out;
@@ -77,7 +88,7 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="tank"){const h=Math.max(.25,Math.min(3,part?.height??.96))/2,r=Math.max(part?.topRadius??.44,part?.bottomRadius??.44);stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]),node("engine-mount-east","stack",[r+.46,-h,0],[0,-1,0]),node("engine-mount-west","stack",[-r-.46,-h,0],[0,-1,0]),node("engine-mount-north","stack",[0,-h,r+.46],[0,-1,0]),node("engine-mount-south","stack",[0,-h,-r-.46],[0,-1,0]));}
   if(kind==="nose-cone"||isFairingKind(kind))stack.push(node("stack-bottom","stack",[0,-Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2,0],[0,-1,0]));
   if(kind==="engine")stack.push(node("stack-top","stack",[0,.48,0],[0,1,0]));
-  if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
+  if(kind==="heat-shield"){const thickness=Math.max(.04,Math.min(.5,part?.thickness??.16));stack.push(node("stack-top","stack",[0,0,0],[0,1,0]),node("stack-bottom","stack",[0,-thickness,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
   return [...stack,...surfaceNodes(kind,part)];
