@@ -218,7 +218,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     add(new THREE.CylinderGeometry(.12,.105,.13,10),steel,new THREE.Vector3(0,.105,0));
     add(new THREE.CylinderGeometry(.105,.105,.12,10),dark,new THREE.Vector3(0,-.02,0));
     for(const side of [-1,1]){
-     const pump=add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));pump.rotation.z=side*.28;
+     add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));pump.rotation.z=side*.28;
      add(new THREE.CylinderGeometry(.105,.075,.075,8),gold,new THREE.Vector3(side*.205,.17,0));
      pipe([new THREE.Vector3(side*.2,.38,0),new THREE.Vector3(side*.32,.29,0),new THREE.Vector3(side*.29,.12,0),new THREE.Vector3(side*.13,.04,0)],.014,gold);
     }
@@ -232,7 +232,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
     add(new THREE.CylinderGeometry(.12,.12,.16,12),dark,new THREE.Vector3(0,-.08,0));
     for(const side of [-1,1]){
-     const pump=add(new THREE.CylinderGeometry(.07,.09,.2,8),gold,new THREE.Vector3(side*.22,.27,0));pump.rotation.z=side*.24;
+     add(new THREE.CylinderGeometry(.07,.09,.2,8),gold,new THREE.Vector3(side*.22,.27,0));pump.rotation.z=side*.24;
      add(new THREE.CylinderGeometry(.105,.08,.075,8),steel,new THREE.Vector3(side*.22,.13,0));
      pipe([new THREE.Vector3(side*.2,.4,0),new THREE.Vector3(side*.31,.31,0),new THREE.Vector3(side*.31,.08,0),new THREE.Vector3(side*.13,-.02,0)],.016,gold);
     }
@@ -249,7 +249,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     bell(.375,.68,.018);
     band(.14,-.19,.018,steel);
     for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.34,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
-    const pump=add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
+    add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
     pipe([new THREE.Vector3(.18,.36,0),new THREE.Vector3(.29,.25,.02),new THREE.Vector3(.25,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
    }
   }
