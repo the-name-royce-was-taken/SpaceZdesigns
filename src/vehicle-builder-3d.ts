@@ -206,17 +206,16 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     add(new THREE.CylinderGeometry(.29,.29,.07,12),steel,new THREE.Vector3(0,.355,0));
     add(new THREE.CylinderGeometry(.235,.255,.09,12),new THREE.MeshStandardMaterial({color:0x527b91,metalness:.55,roughness:.4}),new THREE.Vector3(0,-.065,0));
     add(new THREE.CylinderGeometry(.285,.285,.045,12),steel,new THREE.Vector3(0,-.13,0));
-    add(new THREE.CylinderGeometry(.235,.235,.012,12),new THREE.MeshStandardMaterial({color:0x4d9bc0,metalness:.65,roughness:.28}),new THREE.Vector3(0,-.16,0));
+    add(new THREE.CylinderGeometry(.235,.235,.012,12),new THREE.MeshStandardMaterial({color:0x4d9bc0,metalness:.65,roughness:.28}),new THREE.Vector3(0,-.15,0));
     for(const radius of [.12,.19,.25])band(radius,-.17,.008,gold);
     for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*.205,z=Math.sin(a)*.205;add(new THREE.CylinderGeometry(.018,.018,.09,6),gold,new THREE.Vector3(x,.22,z));}
     for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.31,z=Math.sin(a)*.31;add(new THREE.CylinderGeometry(.025,.025,.16,6),steel,new THREE.Vector3(x,.12,z));}
-    add(new THREE.SphereGeometry(.035,6,5),gold,new THREE.Vector3(.29,-.02,0));
-   }else if(type==="hydrolox"){
+    }else if(type==="hydrolox"){
     // High-expansion cryogenic engine: narrow injector head and a long, wide vacuum bell.
-    add(new THREE.CylinderGeometry(.225,.225,.07,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.225,.225,.07,12),steel,new THREE.Vector3(0,.425,0));
     add(new THREE.CylinderGeometry(.145,.135,.22,10,2,false),chamber,new THREE.Vector3(0,.29,0));
-    add(new THREE.CylinderGeometry(.12,.105,.13,10),steel,new THREE.Vector3(0,.105,0));
-    add(new THREE.CylinderGeometry(.105,.105,.12,10),dark,new THREE.Vector3(0,-.02,0));
+    add(new THREE.CylinderGeometry(.12,.105,.13,10),steel,new THREE.Vector3(0,.11,0));
+    add(new THREE.CylinderGeometry(.105,.105,.16,10),dark,new THREE.Vector3(0,-.08,0));
     for(const side of [-1,1]){
      const pump=add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));pump.rotateZ(side*.28);
      add(new THREE.CylinderGeometry(.105,.075,.075,8),gold,new THREE.Vector3(side*.205,.17,0));
@@ -227,9 +226,10 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     band(.13,-.16,.016,gold);
    }else if(type==="methalox"){
     // Compact full-flow-style assembly: stout chamber, twin pump pods and dense regen plumbing.
-    add(new THREE.CylinderGeometry(.235,.235,.075,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.235,.235,.075,12),steel,new THREE.Vector3(0,.425,0));
     add(new THREE.CylinderGeometry(.17,.16,.2,12,2,false),chamber,new THREE.Vector3(0,.3,0));
     add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
+    add(new THREE.CylinderGeometry(.16,.145,.12,12),steel,new THREE.Vector3(0,.15,0));
     add(new THREE.CylinderGeometry(.12,.12,.16,12),dark,new THREE.Vector3(0,-.08,0));
     for(const side of [-1,1]){
      const pump=add(new THREE.CylinderGeometry(.07,.09,.2,8),gold,new THREE.Vector3(side*.22,.27,0));pump.rotateZ(side*.24);
@@ -249,8 +249,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     bell(.375,.68,.018);
     band(.14,-.19,.018,steel);
     for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.34,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
-    add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
-    pipe([new THREE.Vector3(.18,.36,0),new THREE.Vector3(.29,.25,.02),new THREE.Vector3(.25,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
+     pipe([new THREE.Vector3(.18,.36,0),new THREE.Vector3(.29,.25,.02),new THREE.Vector3(.25,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
    }
   }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
