@@ -32,10 +32,11 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   // Grid bounds follow the rendered geometry, including off-centre/scalable parts.
   const centerX=kind==="solar"?.1+solarLength/2:0;
   const roverMinY=-.12-roverRadius,roverMaxY=Math.max(.22,-.12+roverRadius);
-  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:0;
-  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:baseX;
-  const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:sy;
-  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:sz;
+  const landingMinY=-.825,landingMaxY=.34;
+  const centerY=kind==="rover-wheel"?(roverMinY+roverMaxY)/2:kind==="heat-shield"?-shieldThickness/2:kind==="wheel"||kind==="landing-leg"?(landingMinY+landingMaxY)/2:0;
+  const sx=kind==="solar"?solarLength:kind==="rover-wheel"?.62:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.4:baseX;
+  const effectiveY=kind==="solar"?.035:kind==="rover-wheel"?roverMaxY-roverMinY:kind==="heat-shield"?shieldThickness:kind==="wheel"||kind==="landing-leg"?landingMaxY-landingMinY:sy;
+  const effectiveZ=kind==="solar"?.72:kind==="rover-wheel"?roverRadius*2:kind==="heat-shield"?shieldRadius*2:kind==="wheel"||kind==="landing-leg"?1.4:sz;
   const hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:effectiveY/2,hz=effectiveZ/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
@@ -80,6 +81,17 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
     {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,centerY-hy,v*hz],d:[0,-1,0] as const}
   ];
   for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
+  // The solar panel folds around its hinge when stowed. Keep its attachment
+  // lattice on the visible panel by applying the same local hinge rotation.
+  if(kind==="solar"&&part?.solarDeployed!==true){
+    const angle=-Math.PI/2,c=Math.cos(angle),s=Math.sin(angle),hingeX=.1;
+    for(const attachment of out){
+      const [x,y,z]=attachment.position,dx=x-hingeX;
+      const [nx,ny,nz]=attachment.direction;
+      (attachment as {position:readonly [number,number,number]}).position=[hingeX+c*dx-s*y,s*dx+c*y,z];
+      (attachment as {direction:readonly [number,number,number]}).direction=[c*nx-s*ny,s*nx+c*ny,nz];
+    }
+  }
   return out;
 }
 export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
