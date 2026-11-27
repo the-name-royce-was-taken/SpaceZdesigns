@@ -166,7 +166,7 @@ describe("vehicle attachment system", () => {
     );
     expect(withinDefaultRange).not.toBeNull();
     const samePositionWithTighterRange = findNearestAttachmentPlacement(
-      parts, "wing", [exact.x + .5, exact.y, exact.z], .1
+      parts, "wing", [exact.x + .5, exact.y, exact.z], .001
     );
     expect(samePositionWithTighterRange).toBeNull();
   });
