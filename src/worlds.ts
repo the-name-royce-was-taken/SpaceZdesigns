@@ -64,7 +64,9 @@ function defaultState(mode: GameMode): WorldState {
     playTimeSeconds: 0,
     craft: [],
     missions: [],
-    research: []
+    research: [],
+    achievements: [],
+    purchasedParts: []
   };
 }
 
