@@ -338,7 +338,7 @@ function tracking(){
  const orbitGroup=new THREE.Group();orbitGroup.position.copy(earthMesh.position);system.add(orbitGroup);
  if(prediction?.valid){
   const earthRadiusKm=6371,peri=prediction.periapsisAltitude??0,e=prediction.eccentricity??0;
-  const points=prediction.escaped?Array.from({length:100},(_,i)=>{const t=(i/99-.5)*5;return new THREE.Vector3(t*.55,Math.max(0,t*t*.12+.12),0);}):(()=>{const apo=prediction.apoapsisAltitude??peri,a=(peri+apo)/2+earthRadiusKm;return Array.from({length:220},(_,i)=>{const angle=i/220*Math.PI*2,r=a*(1-e*e)/(1+e*Math.cos(angle));return new THREE.Vector3(Math.cos(angle)*.72*r/earthRadiusKm,Math.sin(angle)*.72*r/earthRadiusKm,0);});})();
+  const points=prediction.escaped?Array.from({length:100},(_,i)=>{const t=(i/99-.5)*5;return new THREE.Vector3(t*.55,0,Math.max(0,t*t*.12+.12));}):(()=>{const apo=prediction.apoapsisAltitude??peri,a=(peri+apo)/2+earthRadiusKm;return Array.from({length:220},(_,i)=>{const angle=i/220*Math.PI*2,r=a*(1-e*e)/(1+e*Math.cos(angle));return new THREE.Vector3(Math.cos(angle)*.72*r/earthRadiusKm,0,Math.sin(angle)*.72*r/earthRadiusKm);});})();
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0x65e2ff,transparent:true,opacity:.95}));orbitGroup.add(line);
  }
  selectBody(target);
