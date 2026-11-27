@@ -135,7 +135,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
- let best:AttachmentPlacement|null=null,bestDistance=maxDistance;
+ let best:AttachmentPlacement|null=null,bestDistance=Infinity;
  for(const parent of parts){
   if(!parent.id)continue;
   const parentDistance=Math.hypot((parent.x??0)-position[0],(parent.y??0)-position[1],(parent.z??0)-position[2]);
@@ -146,15 +146,17 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
    const pd=rotatePart(p.direction,parent),po=rotatePart(p.position,parent);
    for(const c of cn){
     if(p.attachmentClass!==c.attachmentClass)continue;
-    // A true flush surface connection requires opposing contact normals.
-    // If the current orientation is wrong, leave the part unsnapped rather
-    // than hiding a gap by aligning two unrelated connector points.
     const cd=rotatePart(c.direction,childPart??{});
-    if(!opposite(pd,cd))continue;
+    // Stack joints must face one another. Surface snapping keeps the existing
+    // 9x9 attachment lattice and ranks the closest available contact normals,
+    // rather than rejecting the other grid points and breaking surface snaps.
+    if(p.attachmentClass==="stack"&&!opposite(pd,cd))continue;
     const co=rotatePart(c.position,childPart??{});
     const x=(parent.x??0)+po[0]-co[0],y=(parent.y??0)+po[1]-co[1],z=(parent.z??0)+po[2]-co[2];
     const distance=Math.hypot(x-position[0],y-position[1],z-position[2]);
-    if(distance<bestDistance){bestDistance=distance;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
+    const normalPenalty=p.attachmentClass==="surface"?1+(pd[0]*cd[0]+pd[1]*cd[1]+pd[2]*cd[2]):0;
+    const score=distance+normalPenalty*.02;
+    if(distance<=maxDistance&&score<bestDistance){bestDistance=score;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
    }
   }
  }
