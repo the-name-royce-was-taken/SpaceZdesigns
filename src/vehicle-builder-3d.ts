@@ -174,31 +174,84 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   }
   else if(p.kind==="strake"){const metal=new THREE.MeshStandardMaterial({color:0x7898ad,metalness:.45,roughness:.4});add(new THREE.BoxGeometry(.12,.8,.42),metal);}
   else if(p.kind==="engine"){
-   const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
-   const steel=new THREE.MeshStandardMaterial({color:0x8c9ba4,roughness:.3,metalness:.82});
-   const chamber=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.38,metalness:.68});
-   const bell=new THREE.MeshStandardMaterial({color:variant.accent,roughness:.32,metalness:.72,side:THREE.DoubleSide});
-   const dark=new THREE.MeshStandardMaterial({color:0x263744,roughness:.45,metalness:.68});
-   // Mounting flange and compact combustion chamber sit above the nozzle.
-   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.44,0));
-   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.30,0));
-   add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
-   // Bridge the throat and chamber transitions so no open seams show through.
-   add(new THREE.CylinderGeometry(.12,.12,.16,12),steel,new THREE.Vector3(0,-.08,0));
-   add(new THREE.CylinderGeometry(.16,.145,.12,12),chamber,new THREE.Vector3(0,.16,0));
-   // Thin-walled, bell-shaped converging/diverging nozzle; no solid plug below it.
-   const nozzleProfile=[
-    new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
-    new THREE.Vector2(.27,-.49),new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),
-    new THREE.Vector2(.345,-.67),new THREE.Vector2(.26,-.48),new THREE.Vector2(.18,-.33),
-    new THREE.Vector2(.115,-.22),new THREE.Vector2(.105,-.16)
-   ];
-   add(new THREE.LatheGeometry(nozzleProfile,12),bell);
-   const throatBand=add(new THREE.TorusGeometry(.14,.018,6,12),steel,new THREE.Vector3(0,-.19,0));throatBand.rotation.x=Math.PI/2;
-   const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,new THREE.Vector3(0,-.67,0));exitLip.rotation.x=Math.PI/2;
-   // Four exposed support struts make the chamber-to-mount transition readable at low poly.
-   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.34,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
-   add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
+   const type=p.engineType??"liquid";
+   const steel=new THREE.MeshStandardMaterial({color:0x9aa8ae,roughness:.34,metalness:.82});
+   const hotMetal=new THREE.MeshStandardMaterial({color:0x665b52,roughness:.42,metalness:.78});
+   const chamber=new THREE.MeshStandardMaterial({color:0xb77b4c,roughness:.4,metalness:.72});
+   const dark=new THREE.MeshStandardMaterial({color:0x263744,roughness:.48,metalness:.72});
+   const gold=new THREE.MeshStandardMaterial({color:0xc49a55,roughness:.38,metalness:.76});
+   const bellMaterial=new THREE.MeshStandardMaterial({color:0x8e9da4,roughness:.3,metalness:.84,side:THREE.DoubleSide});
+   const band=(radius:number,y:number,tube=.014,material=steel)=>{const ring=add(new THREE.TorusGeometry(radius,tube,5,12),material,new THREE.Vector3(0,y,0));ring.rotation.x=Math.PI/2;return ring;};
+   const pipe=(points:THREE.Vector3[],radius=.018,material=gold)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,radius,5,false),material);
+   const bell=(exit:number,depth:number,wall=.018)=>{
+    const profile=[new THREE.Vector2(.105,-.14),new THREE.Vector2(.12,-.22),new THREE.Vector2(exit*.48,-depth*.52),new THREE.Vector2(exit*.88,-depth*.88),new THREE.Vector2(exit,-depth),new THREE.Vector2(exit-wall,-depth+.012),new THREE.Vector2(exit*.82,-depth*.84),new THREE.Vector2(exit*.42,-depth*.48),new THREE.Vector2(.09,-.21),new THREE.Vector2(.09,-.14)];
+    add(new THREE.LatheGeometry(profile,12),bellMaterial);
+    band(exit,-depth,.016,steel);
+   };
+   if(type==="solid"){
+    // A solid motor is a single pressure-case tube with domed head, aft skirt and a short nozzle.
+    add(new THREE.CylinderGeometry(.245,.245,.49,10,3,false),hotMetal,new THREE.Vector3(0,.12,0));
+    add(new THREE.SphereGeometry(.245,10,6,0,Math.PI*2,0,Math.PI/2),hotMetal,new THREE.Vector3(0,.365,0));
+    add(new THREE.CylinderGeometry(.27,.27,.055,10),steel,new THREE.Vector3(0,.31,0));
+    for(const y of [-.08,.23])band(.248,y,.022,steel);
+    add(new THREE.CylinderGeometry(.23,.19,.13,10,1,true),steel,new THREE.Vector3(0,-.19,0));
+    const nozzleProfile=[new THREE.Vector2(.14,-.22),new THREE.Vector2(.17,-.31),new THREE.Vector2(.25,-.48),new THREE.Vector2(.27,-.51),new THREE.Vector2(.235,-.49),new THREE.Vector2(.15,-.31),new THREE.Vector2(.12,-.22)];
+    add(new THREE.LatheGeometry(nozzleProfile,10),hotMetal);
+    band(.26,-.49,.02,gold);
+    add(new THREE.CylinderGeometry(.075,.11,.08,10),dark,new THREE.Vector3(0,-.12,0));
+    add(new THREE.CylinderGeometry(.07,.07,.035,10),gold,new THREE.Vector3(0,.425,0));
+   }else if(type==="ion"){
+    // Gridded electrostatic thruster: broad emitter face, ceramic insulator and cathode details.
+    add(new THREE.CylinderGeometry(.255,.255,.36,12,2,false),dark,new THREE.Vector3(0,.16,0));
+    add(new THREE.CylinderGeometry(.29,.29,.07,12),steel,new THREE.Vector3(0,.355,0));
+    add(new THREE.CylinderGeometry(.235,.255,.09,12),new THREE.MeshStandardMaterial({color:0x527b91,metalness:.55,roughness:.4}),new THREE.Vector3(0,-.065,0));
+    add(new THREE.CylinderGeometry(.285,.285,.045,12),steel,new THREE.Vector3(0,-.13,0));
+    add(new THREE.CylinderGeometry(.235,.235,.012,12),new THREE.MeshStandardMaterial({color:0x4d9bc0,metalness:.65,roughness:.28}),new THREE.Vector3(0,-.16,0));
+    for(const radius of [.12,.19,.25])band(radius,-.17,.008,gold);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*.205,z=Math.sin(a)*.205;add(new THREE.CylinderGeometry(.018,.018,.09,6),gold,new THREE.Vector3(x,.22,z));}
+    for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.31,z=Math.sin(a)*.31;add(new THREE.CylinderGeometry(.025,.025,.16,6),steel,new THREE.Vector3(x,.12,z));}
+    add(new THREE.SphereGeometry(.035,6,5),gold,new THREE.Vector3(.29,-.02,0));
+   }else if(type==="hydrolox"){
+    // High-expansion cryogenic engine: narrow injector head and a long, wide vacuum bell.
+    add(new THREE.CylinderGeometry(.225,.225,.07,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.145,.135,.22,10,2,false),chamber,new THREE.Vector3(0,.29,0));
+    add(new THREE.CylinderGeometry(.12,.105,.13,10),steel,new THREE.Vector3(0,.105,0));
+    add(new THREE.CylinderGeometry(.105,.105,.12,10),dark,new THREE.Vector3(0,-.02,0));
+    for(const side of [-1,1]){
+     const pump=add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));pump.rotation.z=side*.28;
+     add(new THREE.CylinderGeometry(.105,.075,.075,8),gold,new THREE.Vector3(side*.205,.17,0));
+     pipe([new THREE.Vector3(side*.2,.38,0),new THREE.Vector3(side*.32,.29,0),new THREE.Vector3(side*.29,.12,0),new THREE.Vector3(side*.13,.04,0)],.014,gold);
+    }
+    bell(.375,.66,.014);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;const rib=add(new THREE.BoxGeometry(.012,.36,.012),steel,new THREE.Vector3(Math.cos(a)*.19,-.43,Math.sin(a)*.19));rib.rotation.y=-a;}
+    band(.13,-.16,.016,gold);
+   }else if(type==="methalox"){
+    // Compact full-flow-style assembly: stout chamber, twin pump pods and dense regen plumbing.
+    add(new THREE.CylinderGeometry(.235,.235,.075,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.17,.16,.2,12,2,false),chamber,new THREE.Vector3(0,.3,0));
+    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
+    add(new THREE.CylinderGeometry(.12,.12,.16,12),dark,new THREE.Vector3(0,-.08,0));
+    for(const side of [-1,1]){
+     const pump=add(new THREE.CylinderGeometry(.07,.09,.2,8),gold,new THREE.Vector3(side*.22,.27,0));pump.rotation.z=side*.24;
+     add(new THREE.CylinderGeometry(.105,.08,.075,8),steel,new THREE.Vector3(side*.22,.13,0));
+     pipe([new THREE.Vector3(side*.2,.4,0),new THREE.Vector3(side*.31,.31,0),new THREE.Vector3(side*.31,.08,0),new THREE.Vector3(side*.13,-.02,0)],.016,gold);
+    }
+    bell(.345,.59,.018);
+    // Short external cooling ribs make this nozzle visibly different from the smooth kerolox bell.
+    for(let row=0;row<4;row++){const y=-.25-row*.095,r=.17+row*.045;band(r,y,.009,gold);}
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;const brace=add(new THREE.BoxGeometry(.025,.16,.025),steel,new THREE.Vector3(Math.cos(a)*.205,.34,Math.sin(a)*.205));brace.rotation.z=-Math.cos(a)*.16;brace.rotation.x=Math.sin(a)*.16;}
+   }else{
+    // Conventional pump-fed liquid engine: injector head, exposed support struts and smooth bell nozzle.
+    add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,new THREE.Vector3(0,.44,0));
+    add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,new THREE.Vector3(0,.30,0));
+    add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,new THREE.Vector3(0,.045,0));
+    add(new THREE.CylinderGeometry(.12,.12,.16,12),dark,new THREE.Vector3(0,-.08,0));
+    bell(.375,.68,.018);
+    band(.14,-.19,.018,steel);
+    for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.205,.34,Math.sin(angle)*.205));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+    const pump=add(new THREE.BoxGeometry(.11,.075,.13),dark,new THREE.Vector3(.19,-.015,0));
+    pipe([new THREE.Vector3(.18,.36,0),new THREE.Vector3(.29,.25,.02),new THREE.Vector3(.25,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
+   }
   }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
   else if(p.kind==="side-decoupler"){const metal=new THREE.MeshStandardMaterial({color:0xe0bd70,metalness:.55,roughness:.4});add(new THREE.BoxGeometry(.72,.24,.3),metal);add(new THREE.BoxGeometry(.12,.34,.38),new THREE.MeshStandardMaterial({color:0x5d7483,metalness:.65}),new THREE.Vector3(.28,0,0));add(new THREE.BoxGeometry(.12,.34,.38),metal,new THREE.Vector3(-.28,0,0));}
