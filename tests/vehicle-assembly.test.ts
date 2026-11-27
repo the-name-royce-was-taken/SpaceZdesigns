@@ -46,7 +46,7 @@ describe("vehicle attachment system", () => {
     expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-(.16/1.5))<1e-8)).toBe(true);
     expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBeGreaterThan(9);
     expect(wall.some(n=>Math.abs(n.position[1])<1e-8)).toBe(true);
-    expect(wall.every(n=>Math.abs(n.position[1]/(.16/1.5)-Math.round(n.position[1]/.08))<1e-8)).toBe(true);
+    expect(wall.every(n=>Math.abs(n.position[1]/(.16/1.5)-Math.round(n.position[1]/(.16/1.5)))<1e-8)).toBe(true);
     expect(nodes.filter(n=>n.id.startsWith("surface-top-")).length).toBeGreaterThan(1);
     expect(nodes.filter(n=>n.id.startsWith("surface-bottom-")).length).toBeGreaterThan(1);
   });
