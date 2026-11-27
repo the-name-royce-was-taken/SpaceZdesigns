@@ -129,28 +129,32 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const hangarDoor=new THREE.MeshStandardMaterial({color:0x263f50,roughness:.7,metalness:.45});
  const hangarGlow=new THREE.MeshStandardMaterial({color:0x9bd9e4,emissive:0x4b9db2,emissiveIntensity:1.5,roughness:.35});
  const hangarBox=(w:number,h:number,d:number,x:number,y:number,z:number,material:THREE.Material)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.receiveShadow=true;mesh.castShadow=true;hangar.add(mesh);return mesh;};
- // Reinforced concrete floor and raised perimeter rails.
- const hangarFloor=new THREE.Mesh(new THREE.PlaneGeometry(22,28),new THREE.MeshStandardMaterial({color:0x263542,roughness:.92,metalness:.12}));hangarFloor.rotation.x=-Math.PI/2;hangarFloor.position.set(0,-.035,-1);hangarFloor.receiveShadow=true;hangar.add(hangarFloor);
- hangarBox(22,.18,.22,0,.02,12.8,hangarEdge);hangarBox(22,.18,.22,0,.02,-14.8,hangarEdge);
+ // Full-length concrete slab with aggregate texture and expansion joints.
+ const concreteCanvas=document.createElement("canvas");concreteCanvas.width=512;concreteCanvas.height=1024;const concreteCtx=concreteCanvas.getContext("2d")!;concreteCtx.fillStyle="#68727a";concreteCtx.fillRect(0,0,512,1024);let noiseSeed=7319;for(let i=0;i<22000;i++){noiseSeed=(noiseSeed*1664525+1013904223)>>>0;const x=noiseSeed%512;noiseSeed=(noiseSeed*1664525+1013904223)>>>0;const y=noiseSeed%1024;noiseSeed=(noiseSeed*1664525+1013904223)>>>0;const shade=105+(noiseSeed%75);concreteCtx.fillStyle="rgba("+shade+","+shade+","+shade+","+(0.035+(noiseSeed%12)/180)+")";const size=1+(noiseSeed%3);concreteCtx.fillRect(x,y,size,size);}
+ concreteCtx.strokeStyle="rgba(25,35,42,.32)";concreteCtx.lineWidth=3;for(let y=256;y<1024;y+=256){concreteCtx.beginPath();concreteCtx.moveTo(0,y);concreteCtx.lineTo(512,y);concreteCtx.stroke();}for(let x=256;x<512;x+=256){concreteCtx.beginPath();concreteCtx.moveTo(x,0);concreteCtx.lineTo(x,1024);concreteCtx.stroke();}
+ concreteCtx.strokeStyle="rgba(220,225,226,.13)";concreteCtx.lineWidth=1;for(let y=258;y<1024;y+=256){concreteCtx.beginPath();concreteCtx.moveTo(0,y);concreteCtx.lineTo(512,y);concreteCtx.stroke();}
+ const concreteTexture=new THREE.CanvasTexture(concreteCanvas);concreteTexture.wrapS=THREE.RepeatWrapping;concreteTexture.wrapT=THREE.RepeatWrapping;concreteTexture.repeat.set(2,4);concreteTexture.colorSpace=THREE.SRGBColorSpace;concreteTexture.anisotropy=renderer.capabilities.getMaxAnisotropy();
+ const hangarFloor=new THREE.Mesh(new THREE.PlaneGeometry(22,40),new THREE.MeshStandardMaterial({color:0xffffff,map:concreteTexture,roughness:.96,metalness:.025}));hangarFloor.rotation.x=-Math.PI/2;hangarFloor.position.set(0,-.035,-1);hangarFloor.receiveShadow=true;hangar.add(hangarFloor);
+ hangarBox(22,.18,.22,0,.02,18.8,hangarEdge);hangarBox(22,.18,.22,0,.02,-20.8,hangarEdge);
  // Side walls, structural columns, roof trusses and overhead service rails.
- hangarBox(.32,13,28,-10.8,6.45,-1,hangarSteel);hangarBox(.32,13,28,10.8,6.45,-1,hangarSteel);
- hangarBox(.12,10.8,27,-10.58,6.3,-1,hangarWall);hangarBox(.12,10.8,27,10.58,6.3,-1,hangarWall);
- for(let z=-13;z<=11;z+=4){hangarBox(.42,13,.42,-10.35,6.45,z,hangarEdge);hangarBox(.42,13,.42,10.35,6.45,z,hangarEdge);hangarBox(21.2,.32,.34,0,12.8,z,hangarEdge);hangarBox(.22,.22,21,0,12.35,z,hangarSteel);}
- hangarBox(21.6,.42,.42,0,12.95,-1,hangarEdge);hangarBox(21.6,.42,.42,0,12.95,11,hangarEdge);
+ hangarBox(.32,15.6,40,-10.8,7.8,-1,hangarSteel);hangarBox(.32,15.6,40,10.8,7.8,-1,hangarSteel);
+ hangarBox(.12,13.2,39,-10.58,7.8,-1,hangarWall);hangarBox(.12,13.2,39,10.58,7.8,-1,hangarWall);
+ for(let z=-19;z<=17;z+=4){hangarBox(.42,15.6,.42,-10.35,7.8,z,hangarEdge);hangarBox(.42,15.6,.42,10.35,7.8,z,hangarEdge);hangarBox(21.2,.32,.34,0,15.35,z,hangarEdge);hangarBox(.22,.22,21,0,14.9,z,hangarSteel);}
+ hangarBox(21.6,.42,.42,0,15.55,-1,hangarEdge);hangarBox(21.6,.42,.42,0,15.55,17,hangarEdge);
  // Tall segmented blast doors at the far end of the bay.
- hangarBox(21.6,13,.36,0,6.45,-14.85,hangarSteel);
- for(let x=-9.6;x<=9.6;x+=1.6){hangarBox(1.48,10.6,.12,x,5.65,-14.62,hangarDoor);hangarBox(.045,10.2,.035,x+.74,5.65,-14.53,hangarEdge);}
- hangarBox(21.4,.28,.24,0,11.15,-14.45,hangarEdge);hangarBox(21.4,.28,.24,0,.25,-14.45,hangarEdge);
+ hangarBox(21.6,15.6,.36,0,7.8,-21.05,hangarSteel);
+ for(let x=-9.6;x<=9.6;x+=1.6){hangarBox(1.48,12.8,.12,x,6.8,-20.82,hangarDoor);hangarBox(.045,12.4,.035,x+.74,6.8,-20.73,hangarEdge);}
+ hangarBox(21.4,.28,.24,0,14.15,-20.65,hangarEdge);hangarBox(21.4,.28,.24,0,.25,-20.65,hangarEdge);
  // Repeating roof lights and yellow safety markings around the assembly pad.
- for(let z=-11;z<=9;z+=5){hangarBox(7,.055,.42,0,12.45,z,hangarGlow);hangarBox(.12,.08,20,-10.1,.08,z,hangarGlow);hangarBox(.12,.08,20,10.1,.08,z,hangarGlow);}
+ for(let z=-17;z<=15;z+=5){hangarBox(7,.055,.42,0,15.05,z,hangarGlow);hangarBox(.12,.08,36,-10.1,.08,z,hangarGlow);hangarBox(.12,.08,36,10.1,.08,z,hangarGlow);}
  const safetyYellow=new THREE.MeshStandardMaterial({color:0xe3b64d,roughness:.8,metalness:.12});
- hangarBox(.16,.025,19,-8.9,.012,-1,safetyYellow);hangarBox(.16,.025,19,8.9,.012,-1,safetyYellow);
- for(let z=-10;z<=8;z+=3){hangarBox(1.2,.018,.09,0,.014,z,hangarEdge);}
+ hangarBox(.16,.025,36,-8.9,.012,-1,safetyYellow);hangarBox(.16,.025,36,8.9,.012,-1,safetyYellow);
+ for(let z=-17;z<=15;z+=3){hangarBox(1.2,.018,.09,0,.014,z,hangarEdge);}
  const camera=new THREE.PerspectiveCamera(42,canvas.clientWidth/canvas.clientHeight,.1,500);camera.position.set(8,6,10);
- const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,1,0);orbit.enableDamping=true;orbit.dampingFactor=.07;
+ const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,1,0);orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.minDistance=3.5;orbit.maxDistance=23.5;orbit.minPolarAngle=.08;orbit.maxPolarAngle=Math.PI/2-.035;
  scene.add(new THREE.HemisphereLight(0xc5e6ff,0x263448,2));
  const key=new THREE.DirectionalLight(0xffedcf,3);key.position.set(5,10,7);key.castShadow=true;scene.add(key);
- const grid=new THREE.GridHelper(40,80,0x3a718a,0x1b354b);scene.add(grid);
+ const grid=new THREE.GridHelper(40,80,0x3a718a,0x1b354b);grid.visible=false;scene.add(grid);
  const craftGroup=new THREE.Group();scene.add(craftGroup);
  const transform=new TransformControls(camera,renderer.domElement);transform.setMode("translate");transform.setSpace("world");const multiSelectionPivot=new THREE.Group();multiSelectionPivot.name="multi-selection-transform-pivot";scene.add(multiSelectionPivot);let multiSelectionActive=false;
  const helper=transform.getHelper();scene.add(helper);
@@ -543,7 +547,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  host.addEventListener("keydown",e=>{const target=e.target as HTMLElement|null;const typing=!!target&&((target.closest("input,textarea,select,[contenteditable='true']"))!==null);const modifier=e.ctrlKey||e.metaKey;if(!typing&&!modifier&&e.key.toLowerCase()==="d"){e.preventDefault();e.stopPropagation();lowerSelectionToGround();return;}if(modifier&&!typing){const key=e.key.toLowerCase();if(key==="a"||key==="d"){e.preventDefault();e.stopPropagation();if(key==="a")selectAllParts();else duplicateSelection();return;}if(key==="z"){e.preventDefault();e.stopPropagation();host.querySelector<HTMLButtonElement>("#vab-undo")!.click();return;}}if((e.key==="Escape"||e.key==="Backspace")&&fuelLineDrawing){e.preventDefault();e.stopPropagation();fuelLineDrawing=false;fuelLineStartId=null;fuelLinePreview.visible=false;fuelLinePreview.children.forEach(child=>(child as THREE.Mesh).geometry.dispose());fuelLinePreview.clear();status.textContent="FUEL PIPE PLACEMENT CANCELLED";return;}if(e.key==="Delete"||e.key==="Backspace"){if(selectedIds.size){for(const id of [...selectedIds])craft=craft.filter(p=>p.id!==id&&!(p.kind==="fuel-line"&&(p.fuelLineStartId===id||p.fuelLineEndId===id)));selectedIds.clear();selectedId=null;selected=null;transform.detach();redraw();record();}else if(selectedId)removePart(selectedId);}if(e.key.toLowerCase()==="w")setTool("translate");if(e.key.toLowerCase()==="e")setTool("rotate");if(e.key.toLowerCase()==="q")setTool("select");});
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
- const render=()=>{if(!alive)return;orbit.update();renderer.render(scene,camera);requestAnimationFrame(render);};
+ const render=()=>{if(!alive)return;orbit.update();camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10.25,10.25);camera.position.y=THREE.MathUtils.clamp(camera.position.y,.35,15.2);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-20.4,18.4);camera.lookAt(orbit.target);renderer.render(scene,camera);requestAnimationFrame(render);};
  craft=craft.map((p,i)=>({...p,id:p.id??uid(),x:p.x??0,y:p.y??(craft.length===3&&craft[0]?.kind==="capsule"&&craft[1]?.kind==="tank"&&craft[2]?.kind==="engine"?([1.885,.96,0][i]??0):(craft.length-1-i)*.96),z:p.z??0}));activationOrder=listActivationGroups(craft);redraw();render();
  function replaceParts(next:BuildPart[]){releaseMultiSelectionTransform();transform.detach();selectedId=null;selected=null;selectedIds.clear();craft=clone(next).map((p,i)=>({...p,id:p.id??uid(),x:p.x??0,y:p.y??(next.length===3&&next[0]?.kind==="capsule"&&next[1]?.kind==="tank"&&next[2]?.kind==="engine"?([1.885,.96,0][i]??0):(next.length-1-i)*.96),z:p.z??0}));history.splice(0,history.length,clone(craft));historyIndex=0;redraw();changed(clone(craft));status.textContent="BLUEPRINT LOADED / EDITOR READY";}
  return {replaceParts,dispose(){alive=false;observer.disconnect();transform.detach();orbit.dispose();renderer.dispose();}};
