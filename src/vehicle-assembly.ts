@@ -89,7 +89,7 @@ export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:stri
   for(const c of cn){if(p.attachmentClass!==c.attachmentClass)continue;
    let resolvedRotation=rotationY,cd=rotateY(c.direction,resolvedRotation);
    if(!opposite(pd,cd)&&p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6){
-    resolvedRotation=Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0]);
+    resolvedRotation=Math.atan2(c.direction[2],c.direction[0])-Math.atan2(pd[2],pd[0])-Math.PI;
     cd=rotateY(c.direction,resolvedRotation);
    }
    if(!opposite(pd,cd))continue;const co=rotateY(c.position,resolvedRotation);
@@ -103,7 +103,43 @@ export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:stri
 function occupiedNodes(parts:readonly BuildPart[]){const map=new Map<string,string[]>();for(const p of parts)if(p.parentId&&p.parentNode){const list=map.get(p.parentId)??[];list.push(p.parentNode);map.set(p.parentId,list);}return map;}
 export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,preferredParentId?:string,anchor?:readonly [number,number,number]):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),parents=[...parts].filter(p=>p.id).sort((a,b)=>a.id===preferredParentId?-1:b.id===preferredParentId?1:!anchor?(b.y??0)-(a.y??0):Math.hypot((a.x??0)-anchor[0],(a.y??0)-anchor[1],(a.z??0)-anchor[2])-Math.hypot((b.x??0)-anchor[0],(b.y??0)-anchor[1],(b.z??0)-anchor[2]));
- for(const parent of parents)for(const rotation of [0,Math.PI/2,Math.PI,Math.PI*1.5]){const placement=findAttachmentPlacement(parts,parent.id!,childKind,rotation,occupied.get(parent.id!)??[]);if(placement)return placement;}return null;
+ for(const parent of parents){
+  const nodes=attachmentNodes(parent.kind,parent),used=occupied.get(parent.id!)??[];
+  const usedWallAngles=used.map(id=>/^surface-wall-a(\d+)-y\d+$/.exec(id)).filter(Boolean).map(match=>Number(match![1]));
+  const candidates=nodes.filter(n=>n.attachmentClass==="stack"||/^surface-wall-a\d+-y4$/.test(n.id)||/^surface-(?:east|west|north|south|top|bottom)-r4-c4$/.test(n.id));
+  let best:AttachmentPlacement|null=null,bestScore=Infinity;
+  for(const candidate of candidates){
+   if(used.includes(candidate.id))continue;
+   const parentDirection=rotateY(candidate.direction,parent.ry??0);
+   const parentPosition=rotateY(candidate.position,parent.ry??0);
+   let candidatePlacement:AttachmentPlacement|null=null;
+   for(const childNode of attachmentNodes(childKind).filter(n=>n.attachmentClass===candidate.attachmentClass)){
+    const rotations=candidate.attachmentClass==="surface"&&Math.abs(parentDirection[1])<1e-6&&Math.abs(childNode.direction[1])<1e-6
+     ?[Math.atan2(childNode.direction[2],childNode.direction[0])-Math.atan2(parentDirection[2],parentDirection[0])-Math.PI]
+     :[0,Math.PI/2,Math.PI,Math.PI*1.5];
+    for(const rotationY of rotations){
+     if(!opposite(parentDirection,rotateY(childNode.direction,rotationY)))continue;
+     const childPosition=rotateY(childNode.position,rotationY);
+     candidatePlacement={x:(parent.x??0)+parentPosition[0]-childPosition[0],y:(parent.y??0)+parentPosition[1]-childPosition[1],z:(parent.z??0)+parentPosition[2]-childPosition[2],parentId:parent.id!,parentNode:candidate.id,childNode:childNode.id,rotationY};
+     break;
+    }
+    if(candidatePlacement)break;
+   }
+   if(!candidatePlacement)continue;
+   const placement=candidatePlacement;
+   let score=0;
+   if(candidate.attachmentClass==="stack")score-=10000;
+   const wall=/^surface-wall-a(\d+)-y4$/.exec(candidate.id);
+   if(wall&&usedWallAngles.length){
+    const angle=Number(wall[1]);
+    const separation=Math.min(...usedWallAngles.map(other=>{const delta=Math.abs(angle-other);return Math.min(delta,9-delta);}));
+    score-=separation*100;
+   }
+   if(score<bestScore){bestScore=score;best=placement;}
+  }
+  if(best)return best;
+ }
+ return null;
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
  const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
@@ -120,7 +156,7 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
    for(const c of cn){
     if(p.attachmentClass!==c.attachmentClass)continue;
     const rotations=p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6
-     ?[Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0])]
+     ?[Math.atan2(c.direction[2],c.direction[0])-Math.atan2(pd[2],pd[0])-Math.PI]
      :[0,Math.PI/2,Math.PI,Math.PI*1.5];
     for(const rotationY of rotations){
      if(!opposite(pd,rotateY(c.direction,rotationY)))continue;
