@@ -43,7 +43,7 @@ describe("vehicle attachment system", () => {
     expect(wall.length).toBeGreaterThan(81);
     expect(new Set(wall.map(n=>n.position[1])).size).toBeGreaterThan(1);
     const levels=[...new Set(wall.map(n=>n.position[1]))].sort((a,b)=>a-b);
-    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.16)<1e-8)).toBe(true);
+    expect(levels.slice(1).every((value,index)=>Math.abs((value-levels[index]!)-.08)<1e-8)).toBe(true);
     expect(new Set(wall.map(n=>n.id.split("-")[2])).size).toBeGreaterThan(9);
     expect(wall.some(n=>Math.abs(n.position[1])<1e-8)).toBe(true);
     expect(wall.every(n=>Math.abs(n.position[1]/.08-Math.round(n.position[1]/.08))<1e-8)).toBe(true);
@@ -56,7 +56,7 @@ describe("vehicle attachment system", () => {
     const zLevels=[...new Set(east.map(n=>n.position[2]))].sort((a,b)=>a-b);
     expect(east.every(n=>Math.abs(n.position[0]-.85)<1e-8&&Math.abs(n.position[1])<1e-8)).toBe(true);
     expect(zLevels).toContain(0);
-    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.16)<1e-8)).toBe(true);
+    expect(zLevels.slice(1).every((value,index)=>Math.abs((value-zLevels[index]!)-.08)<1e-8)).toBe(true);
     expect(Math.max(...zLevels)).toBeLessThanOrEqual(.55);
     expect(.55-Math.max(...zLevels)).toBeLessThan(.08);
   });
