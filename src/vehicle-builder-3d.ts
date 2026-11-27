@@ -78,7 +78,7 @@ function previewSvg(kind:string,color:number){
  "side-decoupler":'<path d="M10 25h40v14H10z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M50 22l10 10-10 10" fill="none" stroke="#f3d88b" stroke-width="3"/>',
  "separator-thruster":'<path d="M15 20h27v20H15z" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M42 23l15-7v28l-15-7z" fill="#f1a36d"/><path d="M9 30h-5" stroke="#ffd08a" stroke-width="3"/>',
  "fuel-line":'<path d="M12 17h14v18h20V17h14" fill="none" stroke="'+fill+'" stroke-width="7" stroke-linejoin="round"/><path d="M12 17h14v18h20V17h14" fill="none" stroke="#c5e7e8" stroke-width="2"/>',
- solar:'<path d="M8 19h20v22H8zM44 19h20v22H44zM29 28h14v4H29z" fill="'+fill+'" stroke="#8bd7ec" stroke-width="2"/>',
+ solar:'<path d="M15 15h42v30H15z" fill="'+fill+'" stroke="#8bd7ec" stroke-width="2"/><path d="M25.5 15v30M36 15v30M46.5 15v30M15 25h42M15 35h42" stroke="#d5f4ff" stroke-width="1.5"/><path d="M10 30h5M57 30h5" stroke="#e3edf5" stroke-width="3"/>',
  battery:'<rect x="18" y="14" width="36" height="30" rx="4" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M29 10h14v4H29z" fill="#e3edf5"/>',
  rcs:'<rect x="24" y="19" width="24" height="22" rx="3" fill="'+fill+'" stroke="#e3edf5" stroke-width="2"/><path d="M20 18l-8-7M52 18l8-7M20 42l-8 7M52 42l8 7" stroke="#d9a06f" stroke-width="4"/>',
  dock:'<circle cx="36" cy="30" r="16" fill="'+fill+'" stroke="#e3edf5" stroke-width="3"/><circle cx="36" cy="30" r="7" fill="#263d50"/>',
