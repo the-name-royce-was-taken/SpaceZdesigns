@@ -21,6 +21,15 @@ describe("buildz blueprint archives", () => {
     expect(imported.parts.map(part => part.activationGroup).filter(Boolean)).toEqual([1, 2, 3]);
   });
 
+  it("normalizes legacy engine stages while retaining blueprint activation groups", () => {
+    const validated = validateBlueprintParts([
+      { id: "legacy-engine", kind: "engine", engineStage: 2 },
+      { id: "panel", kind: "solar", activationGroup: 1 }
+    ]);
+    expect(validated.find(part => part.id === "legacy-engine")?.activationGroup).toBe(2);
+    expect(validated.find(part => part.id === "legacy-engine")?.engineStage).toBe(2);
+  });
+
   it("trims and validates names before exporting", () => {
     expect(importBuildz(exportBuildz("  Pioneer  ", sample)).name).toBe("Pioneer");
     expect(() => exportBuildz("   ", sample)).toThrow(/name cannot be empty/i);
