@@ -307,4 +307,28 @@ describe("vehicle attachment system", () => {
     expect(used).toEqual(expect.arrayContaining(["hub-up","hub-down","hub-east","hub-west","hub-north","hub-south"]));
   });
 
+  it("distance-snaps to the far end of a maximum-length structural beam", () => {
+    const beam:BuildPart={id:"long-beam",kind:"structural-beam",structuralLength:12};
+    const hub:BuildPart={kind:"structural-hub"};
+    const exact=findAttachmentPlacement([beam],"long-beam","structural-hub");
+    expect(exact).not.toBeNull();
+    const near=findNearestAttachmentPlacement([beam],"structural-hub",[exact!.x,exact!.y+.1,exact!.z],.16,hub);
+    expect(near).not.toBeNull();
+    expect(near!.parentId).toBe("long-beam");
+    expect(near!.parentNode).toBe("beam-end-top");
+    expect(Math.hypot(near!.x-exact!.x,near!.y-exact!.y-.1,near!.z-exact!.z)).toBeLessThanOrEqual(.16);
+  });
+
+  it("provides distance-snap attachment nodes for every placeable part category", () => {
+    const kinds=[
+      "capsule","tank","engine","separator","side-decoupler","separator-thruster",
+      "fin","solar","wing","control","wheel","dock","battery","rcs","strut",
+      "nose-cone","fairing","conical-fairing","interstage-fairing","clam-shell-fairing",
+      "airbrake","strake","landing-leg","heat-shield","rover-wheel",
+      "structural-beam","structural-angle","structural-hub"
+    ] as const;
+    for(const kind of kinds)expect(attachmentNodes(kind).length,kind).toBeGreaterThan(0);
+    expect(attachmentNodes("fuel-line")).toHaveLength(0);
+  });
+
 });
