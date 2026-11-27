@@ -24,7 +24,7 @@ export function tankFuelCapacity(part:Pick<BuildPart,"topRadius"|"bottomRadius"|
  return 120*volume/reference;
 }
 function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
-  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
+  const [baseX,sy,sz]=dims[kind],sx=kind==="solar"?Math.max(.8,Math.min(8,part?.solarLength??2.4)):baseX,centerX=kind==="solar"?.1+sx/2:0,hx=sx/2,hy=(kind==="tank"||kind==="nose-cone"||isFairingKind(kind))?Math.max(.25,Math.min(3,part?.height??defaultFairingHeight(kind)))/2:sy/2,hz=sz/2,out:AttachmentNode[]=[];
   const addGrid=(face:string,point:(u:number,v:number)=>[number,number,number],direction:(u:number,v:number)=>[number,number,number],inside?:(u:number,v:number)=>boolean)=>{
     for(let row=0;row<9;row++)for(let col=0;col<9;col++){const u=values[col]!,v=values[row]!;if(!inside||inside(u,v)){const p=point(u,v),d=direction(u,v);out.push(node(`surface-${face}-r${row}-c${col}`,"surface",p,d));}}
   };
@@ -60,12 +60,12 @@ function surfaceNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   }
   // Box-like parts use a 9×9 grid on each real outer face.
   const faces=[
-    {id:"east",p:(u:number,v:number):[number,number,number]=>[hx,u*hy,v*hz],d:[1,0,0] as const},
-    {id:"west",p:(u:number,v:number):[number,number,number]=>[-hx,u*hy,v*hz],d:[-1,0,0] as const},
-    {id:"north",p:(u:number,v:number):[number,number,number]=>[u*hx,v*hy,hz],d:[0,0,1] as const},
-    {id:"south",p:(u:number,v:number):[number,number,number]=>[u*hx,v*hy,-hz],d:[0,0,-1] as const},
-    {id:"top",p:(u:number,v:number):[number,number,number]=>[u*hx,hy,v*hz],d:[0,1,0] as const},
-    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[u*hx,-hy,v*hz],d:[0,-1,0] as const}
+    {id:"east",p:(u:number,v:number):[number,number,number]=>[centerX+hx,u*hy,v*hz],d:[1,0,0] as const},
+    {id:"west",p:(u:number,v:number):[number,number,number]=>[centerX-hx,u*hy,v*hz],d:[-1,0,0] as const},
+    {id:"north",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,v*hy,hz],d:[0,0,1] as const},
+    {id:"south",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,v*hy,-hz],d:[0,0,-1] as const},
+    {id:"top",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,hy,v*hz],d:[0,1,0] as const},
+    {id:"bottom",p:(u:number,v:number):[number,number,number]=>[centerX+u*hx,-hy,v*hz],d:[0,-1,0] as const}
   ];
   for(const face of faces)addGrid(face.id,face.p,()=>[...face.d] as [number,number,number]);
   return out;
