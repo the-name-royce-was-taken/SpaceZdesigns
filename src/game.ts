@@ -12,7 +12,7 @@ type SavedFlight={kind:"spacez-flight-save";craftName:string;state:FlightState;v
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>Promise<void>;toast:(m:string,k?:"success"|"error")=>void}
 const starterParts=():BuildPart[]=>[{kind:"capsule",x:0,y:1.885,z:0},{kind:"tank",x:0,y:.96,z:0,topRadius:.44,bottomRadius:.44,height:.96},{kind:"engine",x:0,y:0,z:0}];
 let host:Host,craft:Craft={name:"Pioneer I",parts:starterParts()},target="Earth";
-let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>void}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
+let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>boolean}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
