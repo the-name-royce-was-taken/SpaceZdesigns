@@ -110,9 +110,23 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
   let best:AttachmentPlacement|null=null,bestScore=Infinity;
   for(const candidate of candidates){
    if(used.includes(candidate.id))continue;
-   const reserved=[...used,...nodes.filter(n=>n.id!==candidate.id).map(n=>n.id)];
-   const placement=findAttachmentPlacement(parts,parent.id!,childKind,0,reserved);
-   if(!placement||placement.parentNode!==candidate.id)continue;
+   const parentDirection=rotateY(candidate.direction,parent.ry??0);
+   const parentPosition=rotateY(candidate.position,parent.ry??0);
+   let candidatePlacement:AttachmentPlacement|null=null;
+   for(const childNode of attachmentNodes(childKind).filter(n=>n.attachmentClass===candidate.attachmentClass)){
+    const rotations=candidate.attachmentClass==="surface"&&Math.abs(parentDirection[1])<1e-6&&Math.abs(childNode.direction[1])<1e-6
+     ?[Math.atan2(parentDirection[2],parentDirection[0])+Math.PI-Math.atan2(childNode.direction[2],childNode.direction[0])]
+     :[0,Math.PI/2,Math.PI,Math.PI*1.5];
+    for(const rotationY of rotations){
+     if(!opposite(parentDirection,rotateY(childNode.direction,rotationY)))continue;
+     const childPosition=rotateY(childNode.position,rotationY);
+     candidatePlacement={x:(parent.x??0)+parentPosition[0]-childPosition[0],y:(parent.y??0)+parentPosition[1]-childPosition[1],z:(parent.z??0)+parentPosition[2]-childPosition[2],parentId:parent.id!,parentNode:candidate.id,childNode:childNode.id,rotationY};
+     break;
+    }
+    if(candidatePlacement)break;
+   }
+   if(!candidatePlacement)continue;
+   const placement=candidatePlacement;
    let score=0;
    if(candidate.attachmentClass==="stack")score-=10000;
    const wall=/^surface-wall-a(\d+)-y4$/.exec(candidate.id);
