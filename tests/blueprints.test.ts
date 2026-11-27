@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { strToU8, zipSync } from "fflate";
 import { exportBuildz, importBuildz, validateBlueprintParts } from "../src/blueprints";
 import type { BuildPart } from "../src/vehicle-builder-3d";
 
@@ -27,7 +28,6 @@ describe("buildz blueprint archives", () => {
   });
 
   it("rejects unsupported archive versions and invalid part data", () => {
-    const { strToU8, zipSync } = requireFflate();
     const unsupported = zipSync({ "blueprint.json": strToU8(JSON.stringify({ format: "spacez-buildz", version: 99, name: "Test", parts: sample })) });
     expect(() => importBuildz(unsupported)).toThrow(/not supported/i);
     expect(() => validateBlueprintParts([{ kind: "not-a-part" }])).toThrow(/unsupported component/i);
@@ -40,10 +40,3 @@ describe("buildz blueprint archives", () => {
   });
 });
 
-function requireFflate() {
-  // Static imports keep the test bundle aligned with the application's ZIP implementation.
-  return { strToU8: (value: string) => new TextEncoder().encode(value), zipSync: (files: Record<string, Uint8Array>) => {
-    // A valid ZIP is produced by exportBuildz; this helper is replaced below for malformed metadata coverage.
-    return exportBuildz("placeholder", sample);
-  } };
-}
