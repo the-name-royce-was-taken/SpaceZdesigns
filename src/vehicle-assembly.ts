@@ -12,6 +12,7 @@ export interface AssemblyIssue { code:"duplicate-id"|"missing-parent"|"self-pare
 
 const node=(id:string,attachmentClass:AttachmentClass,position:readonly [number,number,number],direction:readonly [number,number,number]):AttachmentNode=>({id,attachmentClass,position,direction});
 const rotateY=(v:readonly [number,number,number],a:number):[number,number,number]=>{const c=Math.cos(a),s=Math.sin(a);return [v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c];};
+const rotatePart=(v:readonly [number,number,number],part:Pick<BuildPart,"rx"|"ry"|"rz">):[number,number,number]=>{const x=part.rx??0,y=part.ry??0,z=part.rz??0,cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);return [cy*cz*v[0]-cy*sz*v[1]+sy*v[2],(sx*sy*cz+cx*sz)*v[0]+(cx*cz-sx*sy*sz)*v[1]-sx*cy*v[2],(sx*sz-cx*sy*cz)*v[0]+(sx*cz+cx*sy*sz)*v[1]+cx*cy*v[2]];};
 const opposite=(a:readonly number[],b:readonly number[])=>a.length===3&&b.length===3&&Math.abs(a[0]!+b[0]!)<1e-6&&Math.abs(a[1]!+b[1]!)<1e-6&&Math.abs(a[2]!+b[2]!)<1e-6;
 const dims:Record<PartKind,readonly [number,number,number]>={capsule:[.9,.9,.9],tank:[.9,.96,.9],engine:[.85,.8,.85],separator:[1,.22,1],"side-decoupler":[.72,.28,.32],"separator-thruster":[.38,.24,.3],"fuel-line":[.8,.12,.12],fin:[.9,.7,.18],solar:[2.4,.06,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.22,.85,.22],dock:[.42,.28,.42],battery:[.6,.35,.6],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.16,1],"rover-wheel":[.65,.55,.3]};
 const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
@@ -133,8 +134,8 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  return null;
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.8,childPart?:BuildPart):AttachmentPlacement|null{
- const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart),rotationY=childPart?.ry??0;
- let best:AttachmentPlacement|null=null,bestScore=Infinity;
+ const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
+ let best:AttachmentPlacement|null=null,bestDistance=maxDistance;
  for(const parent of parts){
   if(!parent.id)continue;
   const parentDistance=Math.hypot((parent.x??0)-position[0],(parent.y??0)-position[1],(parent.z??0)-position[2]);
@@ -142,22 +143,24 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
   const reserved=occupied.get(parent.id)??[],pn=attachmentNodes(parent.kind,parent);
   for(const p of pn){
    if(reserved.includes(p.id))continue;
-   const pd=rotateY(p.direction,parent.ry??0),po=rotateY(p.position,parent.ry??0);
+   const pd=rotatePart(p.direction,parent),po=rotatePart(p.position,parent);
    for(const c of cn){
     if(p.attachmentClass!==c.attachmentClass)continue;
-    const cd=rotateY(c.direction,rotationY);
-    if(p.attachmentClass==="stack"&&!opposite(pd,cd))continue;
-    const co=rotateY(c.position,rotationY);
+    // A true flush surface connection requires opposing contact normals.
+    // If the current orientation is wrong, leave the part unsnapped rather
+    // than hiding a gap by aligning two unrelated connector points.
+    const cd=rotatePart(c.direction,childPart??{});
+    if(!opposite(pd,cd))continue;
+    const co=rotatePart(c.position,childPart??{});
     const x=(parent.x??0)+po[0]-co[0],y=(parent.y??0)+po[1]-co[1],z=(parent.z??0)+po[2]-co[2];
     const distance=Math.hypot(x-position[0],y-position[1],z-position[2]);
-    const normalPenalty=p.attachmentClass==="surface"?1+(pd[0]*cd[0]+pd[1]*cd[1]+pd[2]*cd[2]):0;
-    const score=distance+normalPenalty*.02;
-    if(distance<=maxDistance&&score<bestScore){bestScore=score;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY};}
+    if(distance<bestDistance){bestDistance=distance;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
    }
   }
  }
  return best;
 }
+
 export function validateAssembly(parts:readonly BuildPart[]):AssemblyIssue[]{
  const issues:AssemblyIssue[]=[],byId=new Map<string,BuildPart>();
  for(const p of parts){if(!p.id)continue;if(byId.has(p.id))issues.push({code:"duplicate-id",partId:p.id,message:"Part IDs must be unique."});else byId.set(p.id,p);}
