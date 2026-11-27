@@ -89,7 +89,7 @@ export function findAttachmentPlacement(parts:readonly BuildPart[],parentId:stri
   for(const c of cn){if(p.attachmentClass!==c.attachmentClass)continue;
    let resolvedRotation=rotationY,cd=rotateY(c.direction,resolvedRotation);
    if(!opposite(pd,cd)&&p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6){
-    resolvedRotation=Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0]);
+    resolvedRotation=Math.atan2(c.direction[2],c.direction[0])-Math.atan2(pd[2],pd[0])-Math.PI;
     cd=rotateY(c.direction,resolvedRotation);
    }
    if(!opposite(pd,cd))continue;const co=rotateY(c.position,resolvedRotation);
@@ -115,7 +115,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
    let candidatePlacement:AttachmentPlacement|null=null;
    for(const childNode of attachmentNodes(childKind).filter(n=>n.attachmentClass===candidate.attachmentClass)){
     const rotations=candidate.attachmentClass==="surface"&&Math.abs(parentDirection[1])<1e-6&&Math.abs(childNode.direction[1])<1e-6
-     ?[Math.atan2(parentDirection[2],parentDirection[0])+Math.PI-Math.atan2(childNode.direction[2],childNode.direction[0])]
+     ?[Math.atan2(childNode.direction[2],childNode.direction[0])-Math.atan2(parentDirection[2],parentDirection[0])-Math.PI]
      :[0,Math.PI/2,Math.PI,Math.PI*1.5];
     for(const rotationY of rotations){
      if(!opposite(parentDirection,rotateY(childNode.direction,rotationY)))continue;
@@ -156,7 +156,7 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
    for(const c of cn){
     if(p.attachmentClass!==c.attachmentClass)continue;
     const rotations=p.attachmentClass==="surface"&&Math.abs(pd[1])<1e-6&&Math.abs(c.direction[1])<1e-6
-     ?[Math.atan2(pd[2],pd[0])+Math.PI-Math.atan2(c.direction[2],c.direction[0])]
+     ?[Math.atan2(c.direction[2],c.direction[0])-Math.atan2(pd[2],pd[0])-Math.PI]
      :[0,Math.PI/2,Math.PI,Math.PI*1.5];
     for(const rotationY of rotations){
      if(!opposite(pd,rotateY(c.direction,rotationY)))continue;
