@@ -249,10 +249,10 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
     for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.175,.34,Math.sin(angle)*.175));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
     pipe([new THREE.Vector3(.16,.36,0),new THREE.Vector3(.25,.25,.02),new THREE.Vector3(.22,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
    }
-  }
    // Keep each propulsion type within a believable scale relative to the 0.9 m tank body.
    const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
    g.scale.setScalar(engineScale[type]);
+  }
   else if(p.kind==="separator"){add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),new THREE.MeshStandardMaterial({color:0xd6b66d,roughness:.42,metalness:.42}));const ring=add(new THREE.TorusGeometry(.5,.032,10,40),new THREE.MeshStandardMaterial({color:0xffd77c,metalness:.55}),new THREE.Vector3(0,.09,0));ring.rotation.x=Math.PI/2;add(new THREE.CylinderGeometry(.44,.44,.055,40),new THREE.MeshStandardMaterial({color:0x536b7d,metalness:.7}),new THREE.Vector3(0,-.12,0));}
   else if(p.kind==="side-decoupler"){const metal=new THREE.MeshStandardMaterial({color:0xe0bd70,metalness:.55,roughness:.4});add(new THREE.BoxGeometry(.72,.24,.3),metal);add(new THREE.BoxGeometry(.12,.34,.38),new THREE.MeshStandardMaterial({color:0x5d7483,metalness:.65}),new THREE.Vector3(.28,0,0));add(new THREE.BoxGeometry(.12,.34,.38),metal,new THREE.Vector3(-.28,0,0));}
   else if(p.kind==="separator-thruster"){const metal=new THREE.MeshStandardMaterial({color:0xb6c3cb,metalness:.65,roughness:.36});add(new THREE.BoxGeometry(.32,.22,.3),metal);for(const side of [-1,1]){const nozzle=add(new THREE.CylinderGeometry(.07,.11,.22,16),new THREE.MeshStandardMaterial({color:0xd88b62,metalness:.55}));nozzle.rotation.z=Math.PI/2;nozzle.position.x=side*.2;}}
