@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groundClearanceOffset, groundDropDistance, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "../src/grounding";
+import { groundClearanceOffset, groundDropDistance, groundSnapOffset, leftwardClearanceOffset, sideSpawnPosition, translatePartsY } from "../src/grounding";
 
 describe("ground clearance", () => {
   it("spawns a new part beside the craft and rests its local bottom on the ground", () => {
@@ -16,6 +16,12 @@ describe("ground clearance", () => {
     const moved = { ...candidate, minX: candidate.minX + offset, maxX: candidate.maxX + offset };
     expect(obstacles.some(obstacle => moved.minX < obstacle.maxX && moved.maxX > obstacle.minX && moved.minY < obstacle.maxY && moved.maxY > obstacle.minY && moved.minZ < obstacle.maxZ && moved.maxZ > obstacle.minZ)).toBe(false);
     expect(leftwardClearanceOffset(candidate, [{ ...obstacles[0]!, minY: 2, maxY: 3 }], .1, 2)).toBe(0);
+  });
+
+  it("moves spawned parts down to the ground when floating and up when below it", () => {
+    expect(groundSnapOffset(1.25)).toBeCloseTo(-1.25);
+    expect(groundSnapOffset(-0.4)).toBeCloseTo(0.4);
+    expect(groundSnapOffset(0)).toBe(0);
   });
 
   it("raises a part whose lowest point is below the ground plane", () => {
