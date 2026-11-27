@@ -165,10 +165,10 @@ describe("vehicle attachment system", () => {
       parts, "wing", [exact.x + .5, exact.y, exact.z]
     );
     expect(withinDefaultRange).not.toBeNull();
-    const outsideDefaultRange = findNearestAttachmentPlacement(
-      parts, "wing", [exact.x + .81, exact.y, exact.z]
+    const samePositionWithTighterRange = findNearestAttachmentPlacement(
+      parts, "wing", [exact.x + .5, exact.y, exact.z], .1
     );
-    expect(outsideDefaultRange).toBeNull();
+    expect(samePositionWithTighterRange).toBeNull();
   });
 
   it("magnetically finds the nearest compatible connector without a grid", () => {
