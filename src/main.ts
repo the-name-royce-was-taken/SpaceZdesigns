@@ -161,6 +161,9 @@ async function handleAction(action: string, id?: string): Promise<void> {
       dialog.showModal();
       break;
     }
+    case "close-new-world":
+      ($("#new-world-dialog") as HTMLDialogElement).close("cancel");
+      break;
     case "build":
       if (activeWorld) { showScreen("hangar"); renderGameScreen("hangar"); }
       else { showScreen("worlds"); await refreshWorlds(); toast("Select a world before building.", "error"); }
@@ -253,6 +256,8 @@ document.addEventListener("click", (event) => {
 
 $("#new-world-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  const form = event.currentTarget as HTMLFormElement;
+  if (!form.reportValidity()) return;
   const name = ($("#world-name") as HTMLInputElement).value;
   const mode = ($("#world-mode") as HTMLSelectElement).value as GameMode;
   const dialog = $("#new-world-dialog") as HTMLDialogElement;
