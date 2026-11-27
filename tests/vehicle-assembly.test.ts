@@ -97,7 +97,7 @@ describe("vehicle attachment system", () => {
     const placement = findAvailableAttachmentPlacement(parts, "tank", "tank");
     expect(placement).not.toBeNull();
     expect(placement!.parentNode).toMatch(/^surface-wall-/);
-    expect(placement!.childNode).toMatch(/^surface-wall-a\\d+-y4$/);
+    expect(placement!.childNode).toMatch(/^surface-wall-a\d+-y4$/);
     const childNode = attachmentNodes("tank").find(node => node.id === placement!.childNode)!;
     expect(childNode.position[1]).toBeCloseTo(0);
   });
