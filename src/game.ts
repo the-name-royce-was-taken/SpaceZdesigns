@@ -13,7 +13,7 @@ type SavedFlight={kind:"spacez-flight-save";craftName:string;state:FlightState;v
 interface Host{getWorld:()=>WorldRecord|null;setWorld:(w:WorldRecord)=>Promise<void>;toast:(m:string,k?:"success"|"error")=>void}
 const starterParts=():BuildPart[]=>[{kind:"capsule",x:0,y:1.885,z:0},{kind:"tank",x:0,y:.96,z:0,topRadius:.44,bottomRadius:.44,height:.96},{kind:"engine",x:0,y:0,z:0}];
 let host:Host,craft:Craft={name:"Pioneer I",parts:starterParts()},target="Earth";
-let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>boolean}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,trackingFrame=0,trackingRenderer:THREE.WebGLRenderer|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
+let builder:{dispose:()=>void;replaceParts:(parts:BuildPart[])=>boolean}|null=null,sim:FlightSimulator|null=null,flightFrame=0,flightRenderer:THREE.WebGLRenderer|null=null,trackingFrame=0,trackingRenderer:THREE.WebGLRenderer|null=null,flightResizeObserver:ResizeObserver|null=null,trackingResizeObserver:ResizeObserver|null=null,flightInputCleanup:(()=>void)|null=null,lastFrame=0,currentThrottle=0,currentPitch=0;
 const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.querySelector<T>(s);if(!e)throw Error("Missing game element "+s);return e};
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
@@ -80,8 +80,8 @@ function hangar(){
   catch(error){host.toast(error instanceof Error?error.message:"Could not save blueprint.","error");}
  };
 }
-function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightRenderer?.dispose();flightRenderer=null;}
-function disposeTrackingScene(){if(trackingFrame)cancelAnimationFrame(trackingFrame);trackingFrame=0;trackingRenderer?.dispose();trackingRenderer=null;}
+function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);flightFrame=0;flightInputCleanup?.();flightInputCleanup=null;flightResizeObserver?.disconnect();flightResizeObserver=null;flightRenderer?.dispose();flightRenderer=null;}
+function disposeTrackingScene(){if(trackingFrame)cancelAnimationFrame(trackingFrame);trackingFrame=0;trackingResizeObserver?.disconnect();trackingResizeObserver=null;trackingRenderer?.dispose();trackingRenderer=null;}
 function makeRocket():THREE.Group{
  const g=new THREE.Group();
  const enginePlumes:THREE.Mesh[]=[];
@@ -235,18 +235,18 @@ function launchpad(){
  const pad=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.035,8),new THREE.MeshStandardMaterial({color:0x737f86,flatShading:true}));pad.position.set(0,earthRadius,0);scene.add(pad);
  for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(.025,.55,.025),new THREE.MeshStandardMaterial({color:0xa6b5bd}));tower.position.set(Math.cos(i*Math.PI/2)*.11,earthRadius+.27,Math.sin(i*Math.PI/2)*.11);scene.add(tower);}
  const group=makeRocket();scene.add(group);
- const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(canvas);
+ const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};flightResizeObserver=new ResizeObserver(resize);flightResizeObserver.observe(canvas);
  const engineManifest=craft.parts.filter(p=>p.kind==="engine").map(p=>{const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;return{stage:partActivationGroup(p)??0,thrustKN:variant.thrustKN,ispSeconds:variant.ispSeconds};});
  const selectedEngine=craft.parts.find(p=>p.kind==="engine");
  const enginePerformance=engineVariants.find(e=>e.id===(selectedEngine?.engineType??"liquid"))??engineVariants[0]!;
  const aeroCounts={cones:craft.parts.filter(p=>p.kind==="nose-cone").length,fairings:craft.parts.filter(p=>isFairingKind(p.kind)).length,wings:craft.parts.filter(p=>p.kind==="wing").length,fins:craft.parts.filter(p=>p.kind==="fin").length,controls:craft.parts.filter(p=>p.kind==="control").length,airbrakes:craft.parts.filter(p=>p.kind==="airbrake").length,strakes:craft.parts.filter(p=>p.kind==="strake").length};
- const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,reactionWheelTorque:craft.parts.filter(p=>p.kind==="reaction-wheel").length*3.8,rcsTorque:craft.parts.filter(p=>p.kind==="rcs").length*1.5,rcsThrustKN:craft.parts.filter(p=>p.kind==="rcs").length*.35,rcsFuelTonnes:craft.parts.filter(p=>p.kind==="rcs").length*.012,controlSurfaceAuthority:aeroCounts.controls+aeroCounts.wings*.45+aeroCounts.fins*.3,engines:engineManifest,activationGroups};
+ const vehicle={dryMassTonnes:m.mass,fuelTonnes:m.fuel*.001,thrustKN:engineManifest.reduce((sum,e)=>sum+e.thrustKN,0),ispSeconds:enginePerformance.ispSeconds,referenceArea:.8+aeroCounts.wings*.12+aeroCounts.airbrakes*.16,dragCoefficient:Math.max(.2,.48-aeroCounts.cones*.06-aeroCounts.fairings*.1+aeroCounts.airbrakes*.45+aeroCounts.strakes*.025),liftSlope:2.1+aeroCounts.wings*.45+aeroCounts.fins*.2+aeroCounts.controls*.3,inertia:1.6,reactionWheelTorque:craft.parts.filter(p=>p.kind==="reaction-wheel").length*3.8,rcsTorque:craft.parts.filter(p=>p.kind==="rcs").length*1.5,rcsThrustKN:craft.parts.filter(p=>p.kind==="rcs").length*.35,rcsFuelTonnes:craft.parts.filter(p=>p.kind==="rcs").length*.012,controlSurfaceAuthority:aeroCounts.controls+aeroCounts.wings*.45+aeroCounts.fins*.3,rcsStages:craft.parts.filter(p=>p.kind==="rcs").map(p=>partActivationGroup(p)??0),reactionWheelStages:craft.parts.filter(p=>p.kind==="reaction-wheel").map(p=>partActivationGroup(p)??0),controlSurfaceStages:craft.parts.filter(p=>["wing","fin","control"].includes(p.kind)).map(p=>partActivationGroup(p)??0),engines:engineManifest,activationGroups};
  const range=$("#throttle",root) as HTMLInputElement,pitch=$("#pitch",root) as HTMLInputElement,assist=$("#stability-assist",root) as HTMLInputElement;
  const updateLabels=()=>{$("#throttle-value",root).textContent=range.value+"%";$("#pitch-value",root).textContent=pitch.value+"°";currentThrottle=Number(range.value)/100;currentPitch=Number(pitch.value);};range.oninput=updateLabels;pitch.oninput=updateLabels;
  const heldKeys=new Set<string>(),flightKeys=new Set(["KeyW","KeyS","KeyA","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"]);
  const onFlightKeyDown=(event:KeyboardEvent)=>{if(!flightKeys.has(event.code))return;const target=event.target as HTMLElement|null;if(target&&(/INPUT|TEXTAREA|SELECT/.test(target.tagName)||target.isContentEditable))return;event.preventDefault();heldKeys.add(event.code);if(event.code==="Space"&&!event.repeat)($("#next-stage",root) as HTMLButtonElement).click();};
  const onFlightKeyUp=(event:KeyboardEvent)=>{heldKeys.delete(event.code);};
- const onFlightBlur=()=>heldKeys.clear();window.addEventListener("keydown",onFlightKeyDown);window.addEventListener("keyup",onFlightKeyUp);window.addEventListener("blur",onFlightBlur);
+ const onFlightBlur=()=>heldKeys.clear();window.addEventListener("keydown",onFlightKeyDown);window.addEventListener("keyup",onFlightKeyUp);window.addEventListener("blur",onFlightBlur);flightInputCleanup=()=>{window.removeEventListener("keydown",onFlightKeyDown);window.removeEventListener("keyup",onFlightKeyUp);window.removeEventListener("blur",onFlightBlur);};
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
  if(savedFlight){sim=new FlightSimulator(savedFlight.vehicle);Object.assign(sim.state,structuredClone(savedFlight.state));range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Restored the most recently saved flight state from this world.";}
  let lastPersist=performance.now();
@@ -287,7 +287,7 @@ function launchpad(){
   }
   renderer.render(scene,camera);flightFrame=requestAnimationFrame(animate);
  };flightFrame=requestAnimationFrame(animate);
- root.addEventListener("DOMNodeRemoved",()=>{alive=false;observer.disconnect();window.removeEventListener("keydown",onFlightKeyDown);window.removeEventListener("keyup",onFlightKeyUp);window.removeEventListener("blur",onFlightBlur);disposeFlightScene();},{once:true});
+ root.addEventListener("DOMNodeRemoved",()=>{alive=false;flightResizeObserver?.disconnect();disposeFlightScene();},{once:true});
 }
 function tracking(){
  disposeTrackingScene();const root=$("#tracking-content"),w=world();const saved=(w?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save");
@@ -305,7 +305,7 @@ function tracking(){
   const orbitPoints=Array.from({length:160},(_,j)=>new THREE.Vector3(Math.cos(j/160*Math.PI*2)*radius,0,Math.sin(j/160*Math.PI*2)*radius));
   const orbit=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(orbitPoints),new THREE.LineBasicMaterial({color:0x29445b,transparent:true,opacity:.7}));system.add(orbit);
   const angle=[0,.9,2.2,3.3,4.1,5.0,5.6,0.3][i]!,position=new THREE.Vector3(Math.cos(angle)*radius,0,Math.sin(angle)*radius);
-  if(body[0]==="Luna"||body[0]==="Phobos"||body[0]==="Europa"||body[0]==="Titan"){const parent=body[0]==="Luna"?2:body[0]==="Phobos"?3:body[0]==="Europa"?4:6;const parentAngle=[0,.9,2.2,3.3,4.1,5.0,5.6,0.3][parent]!;const parentRadius=orbitalRadii[parent]!;position.set(Math.cos(parentAngle)*parentRadius+Math.cos(angle*2)*1.2,.1,Math.sin(parentAngle)*parentRadius+Math.sin(angle*2)*1.2);}
+  if(body[0]==="Luna"||body[0]==="Phobos"||body[0]==="Europa"||body[0]==="Titan"){const parent=body[0]==="Luna"?0:body[0]==="Phobos"?2:body[0]==="Europa"?4:6;const parentAngle=[0,.9,2.2,3.3,4.1,5.0,5.6,0.3][parent]!;const parentRadius=orbitalRadii[parent]!;position.set(Math.cos(parentAngle)*parentRadius+Math.cos(angle*2)*1.2,.1,Math.sin(parentAngle)*parentRadius+Math.sin(angle*2)*1.2);}
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(size,32,20),new THREE.MeshStandardMaterial({color,roughness:.88,flatShading:true}));mesh.position.copy(position);mesh.userData.body=body[0];system.add(mesh);planetMeshes.set(body[0],mesh);
  });
  const earthMesh=planetMeshes.get("Earth")!;
@@ -326,12 +326,12 @@ function tracking(){
  if(prediction?.valid){
   predictionPanel.innerHTML=`<span class="panel-kicker">EARTH ORBIT PREDICTION</span><div class="orbit-facts"><span>PERIAPSIS<b>${prediction.periapsisAltitude===null?"—":prediction.periapsisAltitude.toFixed(1)+" km"}</b></span><span>APOAPSIS<b>${prediction.apoapsisAltitude===null?"ESCAPE":prediction.apoapsisAltitude.toFixed(1)+" km"}</b></span><span>PERIOD<b>${formatDuration(prediction.periodSeconds)}</b></span><span>ECCENTRICITY<b>${prediction.eccentricity?.toFixed(4)??"—"}</b></span><span>CIRCULAR SPEED<b>${(prediction.circularSpeed/1000).toFixed(2)} km/s</b></span><span>CURRENT SPEED<b>${(prediction.orbitalSpeed/1000).toFixed(2)} km/s</b></span></div><small>${prediction.escaped?"Current trajectory is unbound; no apoapsis or orbital period exists.":"Prediction assumes a two-body Earth model and current velocity; atmospheric drag and future thrust are not projected."}</small>`;
  }else predictionPanel.innerHTML='<span class="panel-kicker">ORBIT PREDICTION</span><p>No active flight state to propagate. Launch or resume a vehicle to calculate periapsis, apoapsis, and orbital period.</p>';
- const resize=()=>{const width=canvas.clientWidth,height=canvas.clientHeight;if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(canvas);
+ const resize=()=>{const width=canvas.clientWidth,height=canvas.clientHeight;if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();};trackingResizeObserver=new ResizeObserver(resize);trackingResizeObserver.observe(canvas);
  canvas.addEventListener("pointerdown",event=>{dragging=true;lastX=event.clientX;lastY=event.clientY;canvas.setPointerCapture(event.pointerId);});
  canvas.addEventListener("pointermove",event=>{if(!dragging)return;rotY-=(event.clientX-lastX)*.006;rotX=Math.max(-1.35,Math.min(1.35,rotX+(event.clientY-lastY)*.006));lastX=event.clientX;lastY=event.clientY;updateCamera();});
  canvas.addEventListener("pointerup",event=>{if(!dragging)return;dragging=false;const rect=canvas.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects([...planetMeshes.values()])[0];if(hit){const name=hit.object.userData.body as string;selectBody(name);}});
  canvas.addEventListener("pointercancel",()=>{dragging=false;});canvas.addEventListener("wheel",event=>{distance=Math.max(18,Math.min(110,distance+event.deltaY*.035));updateCamera();},{passive:true});
  let alive=true;const animate=()=>{if(!alive)return;sun.rotation.y+=.001;renderer.render(scene,camera);trackingFrame=requestAnimationFrame(animate);};trackingFrame=requestAnimationFrame(animate);
- root.addEventListener("DOMNodeRemoved",()=>{alive=false;observer.disconnect();disposeTrackingScene();},{once:true});
+ root.addEventListener("DOMNodeRemoved",()=>{alive=false;trackingResizeObserver?.disconnect();disposeTrackingScene();},{once:true});
 }
 export function mountGame(h:Host){host=h;load();}
