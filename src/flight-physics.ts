@@ -50,7 +50,7 @@ export class FlightSimulator {
   const stages=(list:number[]|undefined,total:number)=>list?list.filter(n=>n<=s.currentStage).length:total;
   const rcsTotal=v.rcsStages?.length??((v.rcsThrustKN??0)>0?1:0),rcsActive=stages(v.rcsStages,rcsTotal),rcsScale=rcsTotal?rcsActive/rcsTotal:0,rx=Math.max(-1,Math.min(1,input.translateX??0)),ry=Math.max(-1,Math.min(1,input.translateY??0)),rz=Math.max(-1,Math.min(1,input.translateZ??0)),rcsEnabled=(v.rcsThrustKN??0)>0&&s.rcsFuelTonnes>0&&rcsActive>0;
   const rcsLocal={x:rx,y:ry,z:rz},rcsDirection=length(rcsLocal)>0?unit(rotate(s.orientation,rcsLocal)):{x:0,y:0,z:0},rcsForce=rcsEnabled?scale(rcsDirection,(v.rcsThrustKN??0)*1000*rcsScale):{x:0,y:0,z:0};
-  const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=scale(add(add(gravity,thrustForce),add(aero,rcsForce)),1/mass);
+  const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=add(gravity,scale(add(add(thrustForce,rcsForce),aero),1/mass));
   s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),wheelScale=wheelCount?stages(v.reactionWheelStages,wheelCount)/wheelCount:0,surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),surfaceScale=surfaceCount?stages(v.controlSurfaceStages,surfaceCount)/surfaceCount:0;
