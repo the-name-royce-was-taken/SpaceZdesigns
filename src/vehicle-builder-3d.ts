@@ -198,7 +198,7 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
 export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
  const worldDown=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation).y;
- return worldDown(-2.0)<=worldDown(2.0)?-2.0:2.0;
+ return worldDown(-2.3)<=worldDown(2.3)?-2.3:2.3;
 }
 export function createLandingLegModel(retracted=true,deploymentAngle=-2.0):THREE.Group{
  const root=new THREE.Group();
@@ -239,8 +239,8 @@ export function animateLandingLegModels(root:THREE.Object3D,dt:number){
   o.userData.deploymentProgress=Math.abs(target-p)<.002?target:p;
   for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){
    leg.hinge.rotation.z=Number(o.userData.deploymentAngle??-2.0)*p;
-   leg.piston.position.y=.58+.34*p;
-   leg.foot.position.y=.82+.42*p;
+   leg.piston.position.y=.58+.46*p;
+   leg.foot.position.y=.82+.54*p;
    leg.foot.rotation.z=-leg.hinge.rotation.z;
   }
  });
