@@ -50,6 +50,23 @@ function rotateLegPoint(point: Vector3, part: BuildPart): Vector3 {
     z:(sx*sz-cx*sy*cz)*point.x+(sx*cz+cx*sy*sz)*point.y+cx*cy*point.z};
 }
 
+/** Thrust axis in craft-local coordinates, weighted by each engine's rated thrust. */
+export function engineThrustDirection(parts: readonly BuildPart[]): Vector3 {
+  const engines = parts.filter(part => part.kind === "engine");
+  let direction: Vector3 = { x: 0, y: 0, z: 0 };
+  let totalThrust = 0;
+  for (const part of engines) {
+    const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
+    const axis = rotateLegPoint({ x: 0, y: 1, z: 0 }, part);
+    direction = { x: direction.x + axis.x * variant.thrustKN, y: direction.y + axis.y * variant.thrustKN, z: direction.z + axis.z * variant.thrustKN };
+    totalThrust += variant.thrustKN;
+  }
+  const magnitude = Math.hypot(direction.x, direction.y, direction.z);
+  return magnitude > 1e-9 && totalThrust > 0
+    ? { x: direction.x / magnitude, y: direction.y / magnitude, z: direction.z / magnitude }
+    : { x: 0, y: 1, z: 0 };
+}
+
 export function landingLegBounds(part: BuildPart, extended: boolean) {
   const points:Vector3[]=[];
   const addBox=(center:Vector3,half:Vector3)=>{for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])points.push(rotateLegPoint({x:center.x+x*half.x,y:center.y+y*half.y,z:center.z+z*half.z},part));};
@@ -175,7 +192,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     landingContactKind, landingGearCount, landingImpactCapacityJ, landingSupportParts,
     dryMassTonnes: mass.dryMassTonnes,
     fuelTonnes: mass.propellantTonnes,
-    thrustKN: totalThrust, ispSeconds,
+    thrustKN: totalThrust, ispSeconds, engineThrustDirection: engineThrustDirection(parts),
     referenceArea: aero.referenceArea, aeroTable: aero.table,
     dragCoefficient: aero.dragCoefficient, liftSlope: aero.liftSlope,
     inertia: mass.inertiaRadiusSquared,
