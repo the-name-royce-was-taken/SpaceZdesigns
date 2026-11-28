@@ -1,4 +1,3 @@
-import { atMach, type AeroTable } from "./orbitlab/aero-tables";
 import { differentialGravityAt, ephemerisAt } from "./celestial";
 export interface Vector3 { x:number; y:number; z:number; }
 export interface Quaternion { x:number; y:number; z:number; w:number; }
@@ -10,7 +9,7 @@ export interface FlightState {
  fuelTonnes:number; rcsFuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; maxQ:number; currentStage:number;
 }
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
-export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
+export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 export const EARTH_ROTATION_RATE=7.2921159e-5;
 export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
@@ -47,9 +46,8 @@ export class FlightSimulator {
   const throttle=Math.max(0,Math.min(1,input.throttle)),active=v.engines?.filter(e=>e.stage>0&&e.stage<=s.currentStage)??[],hasManifest=Array.isArray(v.engines),thrustKN=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN,0):v.thrustKN,mdot=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN*1000/(e.ispSeconds*G0),0):v.thrustKN*1000/(v.ispSeconds*G0);
   const thrust=s.fuelTonnes>0?thrustKN*1000*throttle:0;s.fuelTonnes-=Math.min(s.fuelTonnes,mdot*throttle*dt/1000);
   const gimbalAngle=6*Math.PI/180,gimbalPitch=Math.max(-1,Math.min(1,input.pitch))*gimbalAngle,gimbalYaw=Math.max(-1,Math.min(1,input.yaw??0))*gimbalAngle,localThrustDirection=unit({x:Math.sin(gimbalYaw)*Math.cos(gimbalPitch),y:Math.cos(gimbalYaw)*Math.cos(gimbalPitch),z:-Math.sin(gimbalPitch)}),thrustForce=scale(rotate(s.orientation,localThrustDirection),thrust),engineLever={x:0,y:-.55,z:0},engineGimbalTorque=rotate(s.orientation,cross(engineLever,scale(localThrustDirection,thrust)));
-  const temperature=altitude<11000?288.15-.0065*Math.max(0,altitude):216.65,soundSpeed=Math.sqrt(1.4*287.05287*Math.max(150,temperature)),mach=speed/Math.max(1,soundSpeed),dragCoefficient=v.aeroTable?atMach(v.aeroTable,v.aeroTable.axial,mach):v.dragCoefficient,liftSlope=v.aeroTable?atMach(v.aeroTable,v.aeroTable.normalSlope,mach):v.liftSlope;
-  const dragMagnitude=q*v.referenceArea*dragCoefficient,drag= speed>1?scale(flightDirection,-dragMagnitude):{x:0,y:0,z:0};
-  const liftAxis=sub(forward,scale(flightDirection,dot(forward,flightDirection))),liftDirection=length(liftAxis)>1e-8?unit(liftAxis):{x:0,y:0,z:0},liftMagnitude=q*v.referenceArea*liftSlope*Math.min(.7,aoa);
+  const dragMagnitude=q*v.referenceArea*v.dragCoefficient,drag= speed>1?scale(flightDirection,-dragMagnitude):{x:0,y:0,z:0};
+  const liftAxis=sub(forward,scale(flightDirection,dot(forward,flightDirection))),liftDirection=length(liftAxis)>1e-8?unit(liftAxis):{x:0,y:0,z:0},liftMagnitude=q*v.referenceArea*v.liftSlope*Math.min(.7,aoa);
   const aero=add(drag,scale(liftDirection,liftMagnitude));
   const stages=(list:number[]|undefined,total:number)=>list?list.filter(n=>n>0&&n<=s.currentStage).length:total;
   const rcsTotal=v.rcsStages?.length??((v.rcsThrustKN??0)>0?1:0),rcsActive=stages(v.rcsStages,rcsTotal),rcsScale=rcsTotal?rcsActive/rcsTotal:0,rx=Math.max(-1,Math.min(1,input.translateX??0)),ry=Math.max(-1,Math.min(1,input.translateY??0)),rz=Math.max(-1,Math.min(1,input.translateZ??0)),rcsEnabled=(v.rcsThrustKN??0)>0&&s.rcsFuelTonnes>0&&rcsActive>0;
