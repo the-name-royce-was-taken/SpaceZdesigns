@@ -28,9 +28,9 @@ export function ephemerisAt(timeSeconds:number,bodies:readonly CelestialBody[]=S
  return [...byId.values()];
 }
 /** Newtonian point-mass acceleration from every body; inside a body, radius is clamped to its surface. */
-export function gravityAt(position:Vector3,bodies:readonly Pick<CelestialBody,"massKg"|"radiusM">[]):Vector3{
+export function gravityAt(position:Vector3,bodies:readonly (Pick<CelestialBody,"massKg"|"radiusM">&{position:Vector3})[]):Vector3{
  let x=0,y=0,z=0;
- for(const body of bodies){const dx=-position.x,dy=-position.y,dz=-position.z;const raw=Math.hypot(dx,dy,dz);if(raw===0)continue;const r=Math.max(raw,body.radiusM),scale=G*body.massKg/(r*r*r);x+=dx*scale;y+=dy*scale;z+=dz*scale;}
+ for(const body of bodies){const dx=body.position.x-position.x,dy=body.position.y-position.y,dz=body.position.z-position.z;const raw=Math.hypot(dx,dy,dz);if(raw===0)continue;const r=Math.max(raw,body.radiusM),scale=G*body.massKg/(r*r*r);x+=dx*scale;y+=dy*scale;z+=dz*scale;}
  return{x,y,z};
 }
 export interface TransferWindow { departurePhaseRadians:number; transferSeconds:number; departureWindowSeconds:number; deltaVDepartureMps:number; deltaVArrivalMps:number; }
