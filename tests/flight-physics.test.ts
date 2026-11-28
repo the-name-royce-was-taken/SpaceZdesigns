@@ -126,7 +126,7 @@ describe("fixed-step flight solver",()=>{
   const heldPosition={x:sim.state.position.x/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z),y:sim.state.position.y/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z),z:sim.state.position.z/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z)};
   expect(Math.hypot(heldPosition.x-heldDirection.x,heldPosition.y-heldDirection.y,heldPosition.z-heldDirection.z)).toBeLessThan(1e-10);
   sim.step(1/120,{throttle:1,pitch:0});
-  for(let i=0;i<240&&!sim.state.crashed;i++)sim.step(1/120,{throttle:1,pitch:0});
+  for(let i=0;i<10000&&sim.state.altitude<=21;i++)sim.step(1/120,{throttle:1,pitch:0});
   const radius=Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z);
   const radial={x:sim.state.position.x/radius,y:sim.state.position.y/radius,z:sim.state.position.z/radius};
   const omega={x:EARTH_SPIN_AXIS.x,y:EARTH_SPIN_AXIS.y,z:EARTH_SPIN_AXIS.z};
