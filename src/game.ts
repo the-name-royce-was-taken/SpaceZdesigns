@@ -3,7 +3,7 @@ import type { WorldRecord } from "./worlds";
 import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKind, defaultFairingHeight, type BuildPart } from "./vehicle-builder-3d";
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
-import { EARTH_LAUNCH_ORIENTATION, EARTH_SPIN_AXIS, earthRotationAt, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
+import { EARTH_LAUNCH_ORIENTATION, earthRotationAt, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 import { FLIGHT_CAMERA_INITIAL_DISTANCE_METRES, FLIGHT_CAMERA_MAX_DISTANCE_METRES, FLIGHT_CAMERA_MIN_DISTANCE_METRES, flightCameraDistance } from "./flight-camera";
 import { listActivationGroups, normalizeActivationAssignments, partActivationGroup } from "./activation";
 import { CAREER_ACHIEVEMENTS, getNewCareerAchievements, type CareerEvent } from "./career";
