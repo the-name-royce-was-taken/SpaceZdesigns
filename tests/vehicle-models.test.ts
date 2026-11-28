@@ -28,6 +28,26 @@ describe("shared vehicle visual models", () => {
     }
   );
 
+
+  it.each(["liquid", "solid", "methalox", "hydrolox"] as EngineType[])(
+    "keeps the %s engine body fixed while exposing a separate nozzle pivot",
+    type => {
+      const model = createEngineModel(type);
+      const nozzle = model.userData.gimbalPivot as {
+        parent: unknown;
+        position: { y: number };
+        children: unknown[];
+        rotation: { x: number; z: number };
+      };
+      expect(nozzle.parent).toBe(model);
+      expect(nozzle.children.length).toBeGreaterThan(0);
+      expect(nozzle.position.y).toBeLessThan(0);
+      expect(model.rotation.x).toBe(0);
+      expect(model.rotation.z).toBe(0);
+      expect(model.userData.hasGimballedBell).toBe(true);
+    }
+  );
+
   it("builds one side-mounted hydraulic leg that stows upward and extends down and outward", () => {
     const model = createLandingLegModel();
     expect(model.userData.landingLegModel).toBe(true);
