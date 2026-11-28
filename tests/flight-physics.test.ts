@@ -53,10 +53,12 @@ describe("fixed-step flight solver",()=>{
   expect(assisted.state.angularVelocityScalar).toBeGreaterThan(baseline.state.angularVelocityScalar);
  });
  it("sequences all activation groups, including groups without engines",()=>{
-  const staged:VehiclePhysics={...vehicle,engines:[{stage:0,thrustKN:40,ispSeconds:300},{stage:3,thrustKN:80,ispSeconds:300}],activationGroups:[1,2,3]};
+  const staged:VehiclePhysics={...vehicle,engines:[{stage:1,thrustKN:40,ispSeconds:300},{stage:3,thrustKN:80,ispSeconds:300}],activationGroups:[1,2,3]};
   const sim=new FlightSimulator(staged);sim.launch();
-  expect(sim.state.currentStage).toBe(1);
+  expect(sim.state.currentStage).toBe(0);
   expect(sim.activateStage(3)).toBe(false);
+  expect(sim.activateNextStage()).toBe(true);
+  expect(sim.state.currentStage).toBe(1);
   expect(sim.activateNextStage()).toBe(true);
   expect(sim.state.currentStage).toBe(2);
   expect(sim.activateStage(3)).toBe(true);
@@ -64,24 +66,24 @@ describe("fixed-step flight solver",()=>{
   expect(sim.activateNextStage()).toBe(false);
  });
  it("applies separation impulses to an active flight without changing grounded state",()=>{const sim=new FlightSimulator(vehicle);sim.launch();const initial={...sim.state.velocity};sim.applyImpulse(1.5,-.25);expect(sim.state.velocity.x).toBeCloseTo(initial.x+1.5);expect(sim.state.velocity.y).toBeCloseTo(initial.y-.25);sim.reset();const before={...sim.state.velocity};sim.applyImpulse(5,5);expect(sim.state.velocity).toEqual(before);});
- it("uses RCS translation only when fitted and consumes its propellant",()=>{const rcs:VehiclePhysics={...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[0]};const sim=new FlightSimulator(rcs);sim.launch();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:0,translateX:1});expect(sim.state.vx).toBeGreaterThan(0);expect(sim.state.rcsFuelTonnes).toBeLessThan(.02);const inactive=new FlightSimulator({...rcs,rcsStages:[2]}),baseline=new FlightSimulator({...rcs,rcsStages:[]});inactive.launch();baseline.launch();inactive.state.position.x+=1000;baseline.state.position.x+=1000;inactive.step(1/120,{throttle:0,pitch:0,translateX:1});baseline.step(1/120,{throttle:0,pitch:0,translateX:1});expect(inactive.state.velocity).toEqual(baseline.state.velocity);expect(inactive.state.rcsFuelTonnes).toBe(.02);});
- it("rotates only with an enabled reaction wheel or RCS attitude system",()=>{const baseline=new FlightSimulator(vehicle),wheel=new FlightSimulator({...vehicle,reactionWheelTorque:3.8,reactionWheelStages:[0]});baseline.launch();wheel.launch();baseline.step(1/120,{throttle:0,pitch:1});wheel.step(1/120,{throttle:0,pitch:1});expect(wheel.state.angularVelocityScalar).toBeGreaterThan(baseline.state.angularVelocityScalar);const rcs=new FlightSimulator({...vehicle,rcsTorque:1.5,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[0]});rcs.launch();rcs.state.position.x+=1000;rcs.step(1/120,{throttle:0,pitch:1});expect(rcs.state.angularVelocityScalar).toBeGreaterThan(0);expect(rcs.state.rcsFuelTonnes).toBeLessThan(.02);});
- it("accelerates out of the orbital plane with a three-axis RCS command",()=>{const sim=new FlightSimulator({...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[0]});sim.launch();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:0,translateZ:1});expect(Math.abs(sim.state.velocity.z)).toBeGreaterThan(0);expect(sim.state.position.z).not.toBe(0);});
+ it("uses RCS translation only when fitted and consumes its propellant",()=>{const rcs:VehiclePhysics={...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[1],activationGroups:[1]};const sim=new FlightSimulator(rcs);sim.launch();sim.activateNextStage();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:0,translateX:1});expect(sim.state.vx).toBeGreaterThan(0);expect(sim.state.rcsFuelTonnes).toBeLessThan(.02);const inactive=new FlightSimulator({...rcs,rcsStages:[2]}),baseline=new FlightSimulator({...rcs,rcsStages:[]});inactive.launch();baseline.launch();inactive.state.position.x+=1000;baseline.state.position.x+=1000;inactive.step(1/120,{throttle:0,pitch:0,translateX:1});baseline.step(1/120,{throttle:0,pitch:0,translateX:1});expect(inactive.state.velocity).toEqual(baseline.state.velocity);expect(inactive.state.rcsFuelTonnes).toBe(.02);});
+ it("rotates only with an enabled reaction wheel or RCS attitude system",()=>{const baseline=new FlightSimulator(vehicle),wheel=new FlightSimulator({...vehicle,reactionWheelTorque:3.8,reactionWheelStages:[1],activationGroups:[1]});baseline.launch();wheel.launch();wheel.activateNextStage();baseline.step(1/120,{throttle:0,pitch:1});wheel.step(1/120,{throttle:0,pitch:1});expect(wheel.state.angularVelocityScalar).toBeGreaterThan(baseline.state.angularVelocityScalar);const rcs=new FlightSimulator({...vehicle,rcsTorque:1.5,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[1],activationGroups:[1]});rcs.launch();rcs.activateNextStage();rcs.state.position.x+=1000;rcs.step(1/120,{throttle:0,pitch:1});expect(rcs.state.angularVelocityScalar).toBeGreaterThan(0);expect(rcs.state.rcsFuelTonnes).toBeLessThan(.02);});
+ it("accelerates out of the orbital plane with a three-axis RCS command",()=>{const sim=new FlightSimulator({...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[1],activationGroups:[1]});sim.launch();sim.activateNextStage();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:0,translateZ:1});expect(Math.abs(sim.state.velocity.z)).toBeGreaterThan(0);expect(sim.state.position.z).not.toBe(0);});
  it("steers with gimballed engine thrust even without reaction wheels or RCS",()=>{const sim=new FlightSimulator(vehicle),straight=new FlightSimulator(vehicle);sim.launch();straight.launch();sim.step(1/120,{throttle:1,pitch:1,yaw:1});straight.step(1/120,{throttle:1,pitch:0,yaw:0});expect(Math.hypot(sim.state.velocity.x-straight.state.velocity.x,sim.state.velocity.y-straight.state.velocity.y,sim.state.velocity.z-straight.state.velocity.z)).toBeGreaterThan(0);expect(Math.abs(sim.state.angularVelocity.x)+Math.abs(sim.state.angularVelocity.z)).toBeGreaterThan(0);});
  it("integrates a full 3D attitude quaternion under yaw and roll inputs",()=>{const sim=new FlightSimulator({...vehicle,reactionWheelTorque:5});sim.launch();sim.step(1/120,{throttle:0,pitch:.5,yaw:1,roll:1});expect(Math.abs(sim.state.orientation.x)+Math.abs(sim.state.orientation.y)+Math.abs(sim.state.orientation.z)).toBeGreaterThan(0);expect(Math.hypot(sim.state.orientation.x,sim.state.orientation.y,sim.state.orientation.z,sim.state.orientation.w)).toBeCloseTo(1,8);});
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
  });
- it("fires only engines assigned to the active stage and advances in order",()=>{
-  const staged:VehiclePhysics={...vehicle,engines:[{stage:0,thrustKN:40,ispSeconds:300},{stage:1,thrustKN:80,ispSeconds:300}]};
-  const sim=new FlightSimulator(staged);sim.launch();
-  sim.step(1/120,{throttle:1,pitch:0});
-  const stageZeroVelocity=sim.state.vy;
-  expect(sim.activateNextStage()).toBe(true);
-  expect(sim.state.currentStage).toBe(1);
-  sim.step(1/120,{throttle:1,pitch:0});
-  expect(sim.state.vy-stageZeroVelocity).toBeGreaterThan(0);
+ it("fires only engines assigned to an activated group and advances in order",()=>{
+  const staged:VehiclePhysics={...vehicle,engines:[{stage:1,thrustKN:40,ispSeconds:300},{stage:2,thrustKN:80,ispSeconds:300}],activationGroups:[1,2]};
+  const sim=new FlightSimulator(staged);sim.launch();sim.state.position.x+=1000;
+  sim.step(1/120,{throttle:1,pitch:0});const unpoweredVelocity=sim.state.vy;
+  expect(sim.activateNextStage()).toBe(true);expect(sim.state.currentStage).toBe(1);
+  sim.step(1/120,{throttle:1,pitch:0});const firstGroupVelocity=sim.state.vy;
+  expect(firstGroupVelocity).toBeGreaterThan(unpoweredVelocity);
+  expect(sim.activateNextStage()).toBe(true);expect(sim.state.currentStage).toBe(2);
+  sim.step(1/120,{throttle:1,pitch:0});expect(sim.state.vy).toBeGreaterThan(firstGroupVelocity);
   expect(sim.activateNextStage()).toBe(false);
  });
 
