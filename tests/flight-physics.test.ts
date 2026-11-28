@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, landingImpactLimitMps, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, landingImpactLimitMps, landingSupportContact, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -157,6 +157,17 @@ describe("fixed-step flight solver",()=>{
   expect(landingImpactLimitMps(multiLegs)).toBeGreaterThan(landingImpactLimitMps(legs));
   expect(landingImpactLimitMps(heavy)).toBeLessThan(landingImpactLimitMps(multiLegs));
   expect(landingImpactLimitMps({...bare,landingImpactCapacityJ:landingImpactCapacityForPart("tank")})).toBeLessThan(landingImpactLimitMps(bare));
+ });
+ it("selects the part actually touching the ground after the vehicle rotates",()=>{
+  const craft:VehiclePhysics={...vehicle,landingSupportParts:[
+   {kind:"engine",min:{x:-.3,y:-.8,z:-.3},max:{x:.3,y:-.3,z:.3}},
+   {kind:"landing-leg",min:{x:-.7,y:-.95,z:-.7},max:{x:.7,y:.2,z:.7}}
+  ]};
+  const upright=landingSupportContact(craft,{x:0,y:0,z:0,w:1},{x:0,y:1,z:0});
+  expect(upright.capacityJ).toBe(landingImpactCapacityForPart("landing-leg"));
+  const sideways={x:0,y:0,z:Math.sin(Math.PI/4),w:Math.cos(Math.PI/4)};
+  const tilted=landingSupportContact(craft,sideways,{x:0,y:1,z:0});
+  expect(tilted.lowestProjectionM).not.toBeCloseTo(upright.lowestProjectionM,2);
  });
  it("does not crash a supported landing for sideways speed or attitude alone",()=>{
   const sim=new FlightSimulator({...vehicle,dryMassTonnes:1,landingContactKind:"landing-leg",landingGearCount:3,spawnClearanceM:.5,launchRailLengthM:0});sim.launch();
