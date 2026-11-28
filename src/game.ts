@@ -290,7 +290,16 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    add(new THREE.BoxGeometry(.5,.3,.5),mat(p.kind==="battery"?0x879b78:0x9caeba,.45),p.x??0,y,p.z??0);
   }
   const partGroup=new THREE.Group();partGroup.userData.partId=p.id;partGroup.userData.partKind=p.kind;
-  const meshes=g.children.slice(partChildStart);meshes.forEach(mesh=>partGroup.add(mesh));g.add(partGroup);
+  const meshes=g.children.slice(partChildStart);meshes.forEach(mesh=>partGroup.add(mesh));
+  // Rebase craft-space meshes around the part origin before applying saved XYZ rotation.
+  // Fuel lines are endpoint-routed and are not rigid part geometry.
+  if(p.kind!=="fuel-line"){
+   const pivot=new THREE.Vector3(p.x??0,y,p.z??0);
+   for(const child of partGroup.children)child.position.sub(pivot);
+   partGroup.position.copy(pivot);
+   partGroup.rotation.set(p.rx??0,p.ry??0,p.rz??0);
+  }
+  g.add(partGroup);
   const assignedGroup=partActivationGroup(p);
   if(assignedGroup!==undefined){
    const action:{group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}={group:assignedGroup,kind:p.kind,object:partGroup};
