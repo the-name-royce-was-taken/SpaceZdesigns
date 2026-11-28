@@ -88,6 +88,33 @@ function createFlightGroundTexture(){
  ctx.strokeStyle="rgba(218,210,178,.65)";ctx.lineWidth=5;for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(512+Math.cos(a)*105,512+Math.sin(a)*105);ctx.lineTo(512+Math.cos(a)*230,512+Math.sin(a)*230);ctx.stroke();}
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;
 }
+function createLaunchPadTexture(){
+ const canvas=document.createElement("canvas");canvas.width=1024;canvas.height=1024;
+ const ctx=canvas.getContext("2d");if(!ctx)throw new Error("Could not create the launch pad texture.");
+ const image=ctx.createImageData(1024,1024),data=image.data;
+ for(let y=0;y<1024;y++)for(let x=0;x<1024;x++){
+  const i=(y*1024+x)*4;
+  const noise=Math.sin(x*.071+Math.sin(y*.037)*2.1)*1.15+Math.cos(y*.083-x*.029)*.85+Math.sin((x*73.1+y*151.7)*.013)*.65;
+  data[i]=Math.max(0,Math.min(255,112+noise));
+  data[i+1]=Math.max(0,Math.min(255,119+noise));
+  data[i+2]=Math.max(0,Math.min(255,123+noise));
+  data[i+3]=255;
+ }
+ ctx.putImageData(image,0,0);
+ // Subtle expansion joints and a restrained central touchdown target are baked
+ // into the same texture, avoiding overlapping meshes and z-fighting.
+ ctx.strokeStyle="rgba(42,55,62,.16)";ctx.lineWidth=3;
+ for(const offset of [160,320,704,864]){
+  ctx.beginPath();ctx.moveTo(offset,0);ctx.lineTo(offset,1024);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,offset);ctx.lineTo(1024,offset);ctx.stroke();
+ }
+ ctx.strokeStyle="rgba(226,231,228,.48)";ctx.lineWidth=7;
+ ctx.beginPath();ctx.arc(512,512,190,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.arc(512,512,214,0,Math.PI*2);ctx.stroke();
+ ctx.strokeStyle="rgba(226,231,228,.36)";ctx.lineWidth=6;
+ for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.beginPath();ctx.moveTo(512+Math.cos(a)*235,512+Math.sin(a)*235);ctx.lineTo(512+Math.cos(a)*390,512+Math.sin(a)*390);ctx.stroke();}
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;
+}
 function metricsForParts(parts:readonly BuildPart[]){const entries=parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
 function metrics(){return metricsForParts(craft.parts)}
 async function save(){const w=world();if(!w)throw new Error("Select a world before saving a vehicle.");const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);const savedCraft=structuredClone(craft);savedCraft.parts=normalizeActivationAssignments(savedCraft.parts);list.unshift(savedCraft);w.state.craft=list;w.updatedAt=new Date().toISOString();await host.setWorld(w)}
@@ -330,8 +357,15 @@ function launchpad(){
  const lowHaze=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.0012,96,64),new THREE.MeshBasicMaterial({color:0xa9d7e8,transparent:true,opacity:.055,side:THREE.BackSide,depthWrite:false}));earthSpin.add(lowHaze);
  // High-resolution local terrain follows the globe's curvature around the launch site.
  const groundTexture=createFlightGroundTexture(),terrainPatch=new THREE.Mesh(new THREE.SphereGeometry(earthRadius+.00000002,96,64,Math.PI-.0016,.0032,Math.PI/2-.0016,.0032),new THREE.MeshStandardMaterial({map:groundTexture,roughness:1,metalness:0,side:THREE.DoubleSide}));earthFrame.add(terrainPatch);
- const pad=new THREE.Mesh(new THREE.CylinderGeometry(12,12,1,32),new THREE.MeshStandardMaterial({color:0x737f86,metalness:.35,roughness:.82}));pad.scale.setScalar(1e-6);pad.rotation.z=-Math.PI/2;pad.position.set(earthRadius+vehicleBottomClearanceM/1e6-.0000005,0,0);earthFrame.add(pad);
- const padDeck=new THREE.Mesh(new THREE.CylinderGeometry(11.8,11.8,.08,48),new THREE.MeshStandardMaterial({color:0x263b49,metalness:.25,roughness:.88}));padDeck.scale.setScalar(1e-6);padDeck.rotation.z=-Math.PI/2;padDeck.position.set(earthRadius+Math.max(.00000005,vehicleBottomClearanceM/1e6-.00000004),0,0);earthFrame.add(padDeck);
+ // One continuous, flat, high-segment concrete disk with a single baked texture.
+ // A single coplanar surface replaces the stacked cylinders that caused visible
+ // seams, z-fighting and a stepped launch deck.
+ const padTexture=createLaunchPadTexture();
+ const padMaterial=new THREE.MeshStandardMaterial({map:padTexture,roughness:.94,metalness:.035,side:THREE.DoubleSide});
+ const pad=new THREE.Mesh(new THREE.CircleGeometry(12,128),padMaterial);
+ pad.scale.setScalar(1e-6);pad.rotation.y=Math.PI/2;
+ pad.position.set(earthRadius+vehicleBottomClearanceM/1e6,0,0);pad.receiveShadow=true;
+ earthFrame.add(pad);
  // Soft low mist around the ground gives a visible scale cue without covering the launch vehicle.
  const groundMist=new THREE.Group();earthFrame.add(groundMist);const mistMaterial=new THREE.MeshBasicMaterial({color:0xd8e9ee,transparent:true,opacity:.075,depthWrite:false,side:THREE.DoubleSide});
  for(let i=0;i<14;i++){const angle=i*Math.PI*2/14,radius=55+(i%4)*38,height=18+(i%5)*9,puff=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),mistMaterial);puff.scale.set((35+(i%4)*12)/1e6,height/1e6,(45+(i%3)*14)/1e6);puff.position.set(earthRadius+(vehicleBottomClearanceM+height*.55)/1e6,Math.cos(angle)*radius/1e6,Math.sin(angle)*radius/1e6);groundMist.add(puff);}
