@@ -101,7 +101,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     const offset = part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0;
     return (part.y ?? 0) + offset - d.height / 2;
   }));
-  const spawnClearanceM = Math.max(.2, -minY + .25);
+  const spawnClearanceM = Math.max(.08, -minY + .08);
   const engineManifest: FlightEngine[] = engines.map(part => {
     const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
     return { stage: partStage(part), thrustKN: variant.thrustKN, ispSeconds: variant.ispSeconds };
