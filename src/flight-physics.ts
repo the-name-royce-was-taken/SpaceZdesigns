@@ -42,8 +42,6 @@ export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
 export const EARTH_SPIN_AXIS:Vector3={x:0,y:Math.cos(EARTH_OBLIQUITY),z:Math.sin(EARTH_OBLIQUITY)};
 export const earthRotationAt=(elapsedSeconds:number):Quaternion=>{const half=EARTH_ROTATION_RATE*elapsedSeconds/2,sine=Math.sin(half);return{x:EARTH_SPIN_AXIS.x*sine,y:EARTH_SPIN_AXIS.y*sine,z:EARTH_SPIN_AXIS.z*sine,w:Math.cos(half)};};
 export const EARTH_LAUNCH_ORIENTATION:Quaternion={x:-0.38801515,y:-0.38801515,z:-0.59113809,w:0.59113809};
-/** Damps unwanted body rotation without forcing the vehicle back toward radial/upright attitude. */
-export const stabilityAssistCommand=(_angle:number,angularVelocityScalar:number,trim=0):number=>Math.max(-1,Math.min(1,trim-angularVelocityScalar*.6));
 const cross=(a:Vector3,b:Vector3):Vector3=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
 const add=(a:Vector3,b:Vector3):Vector3=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
 const sub=(a:Vector3,b:Vector3):Vector3=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
