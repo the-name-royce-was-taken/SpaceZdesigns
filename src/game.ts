@@ -3,7 +3,7 @@ import type { WorldRecord } from "./worlds";
 import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKind, defaultFairingHeight, type BuildPart } from "./vehicle-builder-3d";
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
-import { EARTH_LAUNCH_ORIENTATION, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
+import { EARTH_LAUNCH_ORIENTATION, earthRotationAt, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 import { FLIGHT_CAMERA_INITIAL_DISTANCE_METRES, FLIGHT_CAMERA_MAX_DISTANCE_METRES, FLIGHT_CAMERA_MIN_DISTANCE_METRES, flightCameraDistance } from "./flight-camera";
 import { listActivationGroups, normalizeActivationAssignments, partActivationGroup } from "./activation";
 import { CAREER_ACHIEVEMENTS, getNewCareerAchievements, type CareerEvent } from "./career";
@@ -42,7 +42,21 @@ function createFlightEarthTexture(){
  land([[180,700],[360,680],[520,700],[690,750],[760,810],[710,860],[560,875],[410,850],[280,820]],"#829765");
  ctx.strokeStyle="rgba(224,207,151,.22)";ctx.lineWidth=3;
  for(let i=0;i<24;i++){const x=950+(i%6)*22,y=410+Math.floor(i/6)*48;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+18,y+10,x+10,y+27);ctx.stroke();}
+ // Add low-amplitude bathymetry and terrain variation without relying on remote image assets.
+ const pixels=ctx.getImageData(0,0,2048,1024),data=pixels.data;
+ for(let y=0;y<1024;y++)for(let x=0;x<2048;x++){const i=(y*2048+x)*4,r=data[i]??0,g=data[i+1]??0,b=data[i+2]??0,n=(Math.sin(x*.071+Math.sin(y*.031)*2.1)+Math.cos(y*.093+x*.017)+Math.sin((x+y)*.041))*.5,land=g>r*.98&&g>b*.92,amount=land?n*8:n*4;data[i]=Math.max(0,Math.min(255,r+amount*.72));data[i+1]=Math.max(0,Math.min(255,g+amount));data[i+2]=Math.max(0,Math.min(255,b+amount*.62));}
+ ctx.putImageData(pixels,0,0);
+ // Mountain chains and broad terrain relief.
+ ctx.save();ctx.globalAlpha=.24;ctx.lineCap="round";
+ for(let i=0;i<44;i++){const x=820+(i%11)*29,y=360+Math.floor(i/11)*65;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+18,y-24,x+22,y+31,x+44,y+7);ctx.strokeStyle=i%3===0?"#e5d7a4":"#344f39";ctx.lineWidth=i%3===0?5:3;ctx.stroke();}
+ ctx.restore();
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;texture.needsUpdate=true;return texture;
+}
+function createFlightCloudTexture(){
+ const canvas=document.createElement("canvas");canvas.width=2048;canvas.height=1024;const ctx=canvas.getContext("2d");if(!ctx)throw new Error("Could not create the flight cloud texture.");
+ ctx.clearRect(0,0,2048,1024);ctx.lineCap="round";
+ for(let i=0;i<150;i++){const x=(i*137.5)%2048,y=(i*83.7+Math.sin(i*1.7)*95)%1024,span=35+(i%7)*17;ctx.beginPath();ctx.moveTo(x-span,y);ctx.bezierCurveTo(x-span*.45,y-18-(i%5)*5,x+span*.35,y+16+(i%4)*6,x+span,y-4);ctx.strokeStyle="rgba(235,246,250,"+(0.035+(i%5)*.012)+")";ctx.lineWidth=4+(i%6)*2;ctx.stroke();}
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;
 }
 function metricsForParts(parts:readonly BuildPart[]){const entries=parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
 function metrics(){return metricsForParts(craft.parts)}
@@ -112,11 +126,11 @@ function disposeFlightScene(){if(flightFrame)cancelAnimationFrame(flightFrame);f
 function disposeTrackingScene(){if(trackingFrame)cancelAnimationFrame(trackingFrame);trackingFrame=0;trackingResizeObserver?.disconnect();trackingResizeObserver=null;trackingRenderer?.dispose();trackingRenderer=null;}
 function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
  const g=new THREE.Group();
- const enginePlumes:THREE.Mesh[]=[];
+ const enginePlumes:THREE.Group[]=[];
  const rcsPlumes:THREE.Mesh[]=[];
  const solarAssemblies:{group:number;partId:string;hinge:THREE.Group;deployed:boolean}[]=[];
  const activationParts:{group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[]=[];
- const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.42,metalness,side:THREE.DoubleSide});
+ const mat=(color:number,metalness=.25)=>new THREE.MeshStandardMaterial({color,roughness:.48,metalness,side:THREE.FrontSide});
  const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh};
  parts.forEach((p,i)=>{
   const y=p.y??(parts.length===3&&parts[0]?.kind==="capsule"&&parts[1]?.kind==="tank"&&parts[2]?.kind==="engine"?([1.885,.96,0][i]??0):(parts.length-1-i)*.96);
@@ -152,25 +166,28 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    if(start&&end){const delta=end.clone().sub(start),direction=delta.clone().normalize();const a=start.clone().add(direction.clone().multiplyScalar(.46)),b=end.clone().sub(direction.clone().multiplyScalar(.46));const mid=a.clone().add(b).multiplyScalar(.5);mid.y-=Math.min(.65,Math.max(.22,delta.length()*.18));const curve=new THREE.CatmullRomCurve3([a,a.clone().lerp(mid,.55),mid,b.clone().lerp(mid,.55),b]);add(new THREE.TubeGeometry(curve,32,.045,8,false),mat(0x65aeb4,.7));}
   }else if(p.kind==="engine"){
    const engine=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;
-   const steel=mat(0x8c9ba4,.82),chamber=mat(engine.accent,.68),bell=mat(engine.accent,.72);
-   add(new THREE.CylinderGeometry(.255,.255,.075,12),steel,p.x??0,y+.44,p.z??0);
-   add(new THREE.CylinderGeometry(.17,.16,.19,12,2,false),chamber,p.x??0,y+.30,p.z??0);
-   add(new THREE.CylinderGeometry(.145,.12,.13,12,2,false),steel,p.x??0,y+.045,p.z??0);
-   // Bridge the throat and chamber transitions so no open seams show through.
-   add(new THREE.CylinderGeometry(.12,.12,.16,12),steel,p.x??0,y-.08,p.z??0);
-   add(new THREE.CylinderGeometry(.16,.145,.12,12),chamber,p.x??0,y+.16,p.z??0);
-   const nozzleProfile=[
-    new THREE.Vector2(.12,-.16),new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),
-    new THREE.Vector2(.27,-.49),new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),
-    new THREE.Vector2(.345,-.67),new THREE.Vector2(.26,-.48),new THREE.Vector2(.18,-.33),
-    new THREE.Vector2(.115,-.22),new THREE.Vector2(.105,-.16)
+   const steel=mat(0x9aaab4,.88),bellMaterial=mat(engine.accent,.78);
+   // A continuous revolved combustion chamber and bell avoids intersecting cylinder walls.
+   const engineProfile=[
+    new THREE.Vector2(.245,.48),new THREE.Vector2(.245,.40),new THREE.Vector2(.18,.37),
+    new THREE.Vector2(.165,.20),new THREE.Vector2(.145,.08),new THREE.Vector2(.12,-.16),
+    new THREE.Vector2(.135,-.23),new THREE.Vector2(.19,-.34),new THREE.Vector2(.27,-.49),
+    new THREE.Vector2(.355,-.66),new THREE.Vector2(.375,-.68),new THREE.Vector2(.345,-.67),
+    new THREE.Vector2(.26,-.48),new THREE.Vector2(.18,-.33),new THREE.Vector2(.115,-.22),
+    new THREE.Vector2(.105,-.16),new THREE.Vector2(.11,-.08),new THREE.Vector2(.12,.02),
+    new THREE.Vector2(.145,.13),new THREE.Vector2(.16,.23),new THREE.Vector2(.18,.37)
    ];
-   add(new THREE.LatheGeometry(nozzleProfile,12),bell,p.x??0,y,p.z??0);
-   const throat=add(new THREE.TorusGeometry(.14,.018,6,12),steel,p.x??0,y-.19,p.z??0);throat.rotation.x=Math.PI/2;
-   const exitLip=add(new THREE.TorusGeometry(.365,.018,6,12),steel,p.x??0,y-.67,p.z??0);exitLip.rotation.x=Math.PI/2;
-   for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,(p.x??0)+Math.cos(angle)*.205,y+.34,(p.z??0)+Math.sin(angle)*.205);strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
-   add(new THREE.BoxGeometry(.11,.075,.13),mat(0x263744,.68),(p.x??0)+.19,y-.015,p.z??0);
-   const plume=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,12),new THREE.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.78}));plume.position.set(p.x??0,y-.9,p.z??0);plume.rotation.x=Math.PI;plume.visible=false;plume.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;g.add(plume);enginePlumes.push(plume);
+   add(new THREE.LatheGeometry(engineProfile,32),bellMaterial,p.x??0,y,p.z??0);
+   add(new THREE.CylinderGeometry(.25,.25,.075,32),steel,p.x??0,y+.44,p.z??0);
+   const mountBand=add(new THREE.TorusGeometry(.245,.014,8,32),steel,p.x??0,y+.405,p.z??0);mountBand.rotation.x=Math.PI/2;
+   const exitLip=add(new THREE.TorusGeometry(.365,.012,8,32),steel,p.x??0,y-.675,p.z??0);exitLip.rotation.x=Math.PI/2;
+   const engineDetails=mat(0x273946,.72);
+   for(let i=0;i<8;i++){const angle=i*Math.PI/4;add(new THREE.SphereGeometry(.018,8,6),engineDetails,(p.x??0)+Math.cos(angle)*.252,y+.44,(p.z??0)+Math.sin(angle)*.252);}
+   const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;flame.userData.engineExhaust=true;
+   const flameMaterial=(color:number,opacity:number)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+   const layers:[[number,number,number,number],[number,number,number,number],[number,number,number,number]]=[[.31,1.35,0xff4b19,.34],[.205,1.08,0xffa12f,.62],[.105,.78,0xfff0bd,.9]];
+   layers.forEach(([radius,length,color,opacity],index)=>{const cone=new THREE.Mesh(new THREE.ConeGeometry(radius,length,24,1,false),flameMaterial(color,opacity));cone.position.y=length/2;cone.renderOrder=10+index;flame.add(cone);});
+   g.add(flame);enginePlumes.push(flame);
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
    const sepRing=add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);sepRing.rotation.x=Math.PI/2;
@@ -205,7 +222,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }else if(p.kind==="rcs"){
    add(new THREE.BoxGeometry(.34,.22,.34),mat(0x899ba8,.72),p.x??0,y,p.z??0);
    for(let i=0;i<4;i++){const a=i*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),nozzle=add(new THREE.CylinderGeometry(.055,.075,.13,10),mat(0xb5c3ca,.78),(p.x??0)+dx*.18,y,(p.z??0)+dz*.18);nozzle.rotation.z=dz*.55;nozzle.rotation.x=dx*.55;
-    const plume=new THREE.Mesh(new THREE.ConeGeometry(.055,.3,8),new THREE.MeshBasicMaterial({color:0x7ed7e9,transparent:true,opacity:.72}));plume.position.set((p.x??0)+dx*.27,y,(p.z??0)+dz*.27);plume.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,0,dz));plume.visible=false;plume.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;g.add(plume);rcsPlumes.push(plume);
+    const plume=new THREE.Mesh(new THREE.ConeGeometry(.055,.3,8),new THREE.MeshBasicMaterial({color:0x7ed7e9,transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false}));plume.userData.rcsExhaust=true;plume.position.set((p.x??0)+dx*.27,y,(p.z??0)+dz*.27);plume.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,0,dz));plume.visible=false;plume.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;g.add(plume);rcsPlumes.push(plume);
    }
   }else if(p.kind==="remote-control"||p.kind==="reaction-wheel"){
    const top=p.topRadius??.28,bottom=p.bottomRadius??.28,height=.28,half=height/2;
@@ -265,11 +282,13 @@ function launchpad(){
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x050d18);
  const camera=new THREE.PerspectiveCamera(48,canvas.clientWidth/canvas.clientHeight,1e-10,80);camera.position.set(10,13,24);
  scene.add(new THREE.HemisphereLight(0xd9efff,0x26313b,1.5));const sun=new THREE.DirectionalLight(0xffefcf,2.6);sun.position.set(-18,28,22);scene.add(sun);
- const earthRadius=6.371,earthTexture=createFlightEarthTexture(),earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,96,64),new THREE.MeshStandardMaterial({color:0xffffff,map:earthTexture,roughness:.94}));scene.add(earth);
- const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.025,48,24),new THREE.MeshBasicMaterial({color:0x68b9e8,transparent:true,opacity:.09,side:THREE.BackSide}));scene.add(atmosphere);
- const pad=new THREE.Mesh(new THREE.CylinderGeometry(12,12,1,8),new THREE.MeshStandardMaterial({color:0x737f86,flatShading:true}));pad.scale.setScalar(1e-6);pad.rotation.z=-Math.PI/2;pad.position.set(earthRadius+1e-7,0,0);scene.add(pad);
- for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(2,30,2),new THREE.MeshStandardMaterial({color:0xa6b5bd}));tower.scale.setScalar(1e-6);tower.rotation.z=-Math.PI/2;tower.position.set(earthRadius+.000015,Math.cos(i*Math.PI/2)*.000012,Math.sin(i*Math.PI/2)*.000012);scene.add(tower);}
- const launchMinY=Math.min(...launchParts.map(part=>{const spec=partCatalog.find(item=>item.kind===part.kind)!;const height=part.kind==="tank"?(part.height??.96):part.kind==="structural-beam"?Math.max(1,Math.min(12,Math.round(part.structuralLength??3)))*.4:spec.size.y;const offset=part.kind==="capsule"?.1525:part.kind==="engine"?-.1:0;return(part.y??0)+offset-height/2;})),spawnClearanceM=Math.max(.2,-launchMinY+.05);const group=makeRocket(launchParts);group.scale.setScalar(1e-6);scene.add(group);let debrisReleased=false;const looseGroups=components.filter(component=>component!==activeComponent).map(component=>{const object=makeRocket(component.parts);scene.add(object);const minY=Math.min(...component.parts.map(part=>{const spec=partCatalog.find(item=>item.kind===part.kind)!;const height=part.kind==="tank"?(part.height??.96):part.kind==="structural-beam"?Math.max(1,Math.min(12,Math.round(part.structuralLength??3)))*.4:spec.size.y;const offset=part.kind==="capsule"?.1525:part.kind==="engine"?-.1:0;return(part.y??0)+offset-height/2;}));object.scale.setScalar(1e-6);object.quaternion.set(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w);object.position.x=earthRadius+Math.max(.2,-minY+.05)/1e6;return{object,velocity:0,landed:false,groundX:earthRadius+.00000005-minY*1e-6,initialX:earthRadius+Math.max(.2,-minY+.05)/1e6};});group.position.set(earthRadius+spawnClearanceM/1e6,0,0);const launchOrientation=new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w);group.quaternion.copy(launchOrientation);let cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES,cameraYaw=0,cameraPitch=.08,cameraDragging=false,cameraPointerX=0,cameraPointerY=0;const updateFlightCamera=()=>{const cameraDistance=flightCameraDistance(cameraDistanceMetres),localOffset=new THREE.Vector3(Math.sin(cameraYaw)*Math.cos(cameraPitch)*cameraDistance,Math.sin(cameraPitch)*cameraDistance,Math.cos(cameraYaw)*Math.cos(cameraPitch)*cameraDistance);camera.position.copy(group.position).add(localOffset.applyQuaternion(group.quaternion));camera.up.set(0,1,0).applyQuaternion(group.quaternion);camera.lookAt(group.position);};updateFlightCamera();canvas.style.cursor="grab";canvas.addEventListener("pointerdown",event=>{cameraDragging=true;cameraPointerX=event.clientX;cameraPointerY=event.clientY;canvas.setPointerCapture(event.pointerId);canvas.style.cursor="grabbing";});canvas.addEventListener("pointermove",event=>{if(!cameraDragging)return;cameraYaw-=(event.clientX-cameraPointerX)*.006;cameraPitch=Math.max(-1.35,Math.min(1.35,cameraPitch+(event.clientY-cameraPointerY)*.006));cameraPointerX=event.clientX;cameraPointerY=event.clientY;updateFlightCamera();});const stopCameraDrag=()=>{cameraDragging=false;canvas.style.cursor="grab";};canvas.addEventListener("pointerup",stopCameraDrag);canvas.addEventListener("pointercancel",stopCameraDrag);canvas.addEventListener("wheel",event=>{event.preventDefault();cameraDistanceMetres=Math.max(FLIGHT_CAMERA_MIN_DISTANCE_METRES,Math.min(FLIGHT_CAMERA_MAX_DISTANCE_METRES,cameraDistanceMetres*Math.exp(event.deltaY*.001)));updateFlightCamera();},{passive:false});
+ const earthFrame=new THREE.Group();scene.add(earthFrame);const earthRadius=6.371,earthTexture=createFlightEarthTexture(),earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,128,80),new THREE.MeshStandardMaterial({color:0xffffff,map:earthTexture,roughness:.96}));earthFrame.add(earth);
+ const cloudTexture=createFlightCloudTexture(),clouds=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.006,128,80),new THREE.MeshBasicMaterial({map:cloudTexture,transparent:true,opacity:.48,depthWrite:false,side:THREE.FrontSide}));earthFrame.add(clouds);
+ const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.025,64,40),new THREE.MeshBasicMaterial({color:0x4aa8e8,transparent:true,opacity:.075,side:THREE.BackSide,depthWrite:false}));earthFrame.add(atmosphere);
+ const pad=new THREE.Mesh(new THREE.CylinderGeometry(12,12,1,32),new THREE.MeshStandardMaterial({color:0x737f86,metalness:.55,roughness:.68}));pad.scale.setScalar(1e-6);pad.rotation.z=-Math.PI/2;pad.position.set(earthRadius+1e-7,0,0);earthFrame.add(pad);
+ const padDeck=new THREE.Mesh(new THREE.CylinderGeometry(11.8,11.8,.08,48),new THREE.MeshStandardMaterial({color:0x263b49,metalness:.45,roughness:.72}));padDeck.scale.setScalar(1e-6);padDeck.rotation.z=-Math.PI/2;padDeck.position.set(earthRadius+.00000055,0,0);earthFrame.add(padDeck);
+ for(let i=0;i<4;i++){const tower=new THREE.Mesh(new THREE.BoxGeometry(2,30,2),new THREE.MeshStandardMaterial({color:0xa6b5bd,metalness:.65,roughness:.48}));tower.scale.setScalar(1e-6);tower.rotation.z=-Math.PI/2;tower.position.set(earthRadius+.000015,Math.cos(i*Math.PI/2)*.000012,Math.sin(i*Math.PI/2)*.000012);earthFrame.add(tower);}
+ const group=makeRocket(launchParts);const launchBounds=new THREE.Box3();group.updateMatrixWorld(true);group.traverse(object=>{if((object as THREE.Mesh).isMesh&&!object.userData.engineExhaust&&!object.userData.rcsExhaust&&!object.parent?.userData.engineExhaust)launchBounds.expandByObject(object);});const spawnClearanceM=Math.max(.2,-launchBounds.min.y+.25);group.scale.setScalar(1e-6);scene.add(group);let debrisReleased=false;const looseGroups=components.filter(component=>component!==activeComponent).map(component=>{const object=makeRocket(component.parts);scene.add(object);const minY=Math.min(...component.parts.map(part=>{const spec=partCatalog.find(item=>item.kind===part.kind)!;const height=part.kind==="tank"?(part.height??.96):part.kind==="structural-beam"?Math.max(1,Math.min(12,Math.round(part.structuralLength??3)))*.4:spec.size.y;const offset=part.kind==="capsule"?.1525:part.kind==="engine"?-.1:0;return(part.y??0)+offset-height/2;}));object.scale.setScalar(1e-6);object.quaternion.set(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w);object.position.x=earthRadius+Math.max(.2,-minY+.05)/1e6;return{object,velocity:0,landed:false,groundX:earthRadius+.00000005-minY*1e-6,initialX:earthRadius+Math.max(.2,-minY+.05)/1e6};});group.position.set(earthRadius+spawnClearanceM/1e6,0,0);const launchOrientation=new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w);group.quaternion.copy(launchOrientation);let cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES,cameraYaw=0,cameraPitch=.08,cameraDragging=false,cameraPointerX=0,cameraPointerY=0;const updateFlightCamera=()=>{const cameraDistance=flightCameraDistance(cameraDistanceMetres),localOffset=new THREE.Vector3(Math.sin(cameraYaw)*Math.cos(cameraPitch)*cameraDistance,Math.sin(cameraPitch)*cameraDistance,Math.cos(cameraYaw)*Math.cos(cameraPitch)*cameraDistance);camera.position.copy(group.position).add(localOffset.applyQuaternion(group.quaternion));camera.up.set(0,1,0).applyQuaternion(group.quaternion);camera.lookAt(group.position);};updateFlightCamera();canvas.style.cursor="grab";canvas.addEventListener("pointerdown",event=>{cameraDragging=true;cameraPointerX=event.clientX;cameraPointerY=event.clientY;canvas.setPointerCapture(event.pointerId);canvas.style.cursor="grabbing";});canvas.addEventListener("pointermove",event=>{if(!cameraDragging)return;cameraYaw-=(event.clientX-cameraPointerX)*.006;cameraPitch=Math.max(-1.35,Math.min(1.35,cameraPitch+(event.clientY-cameraPointerY)*.006));cameraPointerX=event.clientX;cameraPointerY=event.clientY;updateFlightCamera();});const stopCameraDrag=()=>{cameraDragging=false;canvas.style.cursor="grab";};canvas.addEventListener("pointerup",stopCameraDrag);canvas.addEventListener("pointercancel",stopCameraDrag);canvas.addEventListener("wheel",event=>{event.preventDefault();cameraDistanceMetres=Math.max(FLIGHT_CAMERA_MIN_DISTANCE_METRES,Math.min(FLIGHT_CAMERA_MAX_DISTANCE_METRES,cameraDistanceMetres*Math.exp(event.deltaY*.001)));updateFlightCamera();},{passive:false});
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};flightResizeObserver=new ResizeObserver(resize);flightResizeObserver.observe(canvas);
  const engineManifest=launchParts.filter(p=>p.kind==="engine").map(p=>{const variant=engineVariants.find(e=>e.id===(p.engineType??"liquid"))??engineVariants[0]!;return{stage:partActivationGroup(p)??Number.MAX_SAFE_INTEGER,thrustKN:variant.thrustKN,ispSeconds:variant.ispSeconds};});
  const selectedEngine=launchParts.find(p=>p.kind==="engine");
@@ -327,7 +346,7 @@ function launchpad(){
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;simWorldId=null;debrisReleased=false;poweredFlightStarted=false;looseGroups.forEach(debris=>{debris.object.position.x=debris.initialX;debris.velocity=0;debris.landed=false;});range.value="0";pitch.value="0";updateLabels();group.position.set(earthRadius+spawnClearanceM/1e6,0,0);group.quaternion.copy(new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w));cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES;cameraYaw=0;cameraPitch=.08;updateFlightCamera();$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
  let poweredFlightStarted=!!savedFlight&&(savedFlight.state.elapsed>0||savedFlight.state.altitude>0);
- let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;
+ let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;const earthRotation=earthRotationAt(sim?.state.elapsed??0);earthFrame.quaternion.set(earthRotation.x,earthRotation.y,earthRotation.z,earthRotation.w);
   const throttleDelta=(heldKeys.has("ArrowUp")?1:0)-(heldKeys.has("ArrowDown")?1:0);if(throttleDelta)range.value=String(Math.max(0,Math.min(100,Number(range.value)+throttleDelta*45*dt)));updateLabels();
   if(debrisReleased)for(const debris of looseGroups){if(debris.landed)continue;debris.velocity-=9.81*dt;debris.object.position.x+=debris.velocity*dt/1e6;if(debris.object.position.x<=debris.groundX){debris.object.position.x=debris.groundX;debris.velocity=0;debris.landed=true;}}
   if(sim){const s=sim.state,stability=assist.checked,keyboardPitch=(heldKeys.has("KeyW")?1:0)-(heldKeys.has("KeyS")?1:0),keyboardYaw=(heldKeys.has("KeyA")?1:0)-(heldKeys.has("KeyD")?1:0),desiredPitch=Math.max(-1,Math.min(1,Number(pitch.value)/30+keyboardPitch)),command=stability?Math.max(-1,Math.min(1,-s.angle*.9-s.angularVelocityScalar*.6+desiredPitch)):desiredPitch,hasActiveEngine=engineManifest.some(engine=>engine.stage>0&&engine.stage<=s.currentStage);if(hasActiveEngine&&Number(range.value)>0)poweredFlightStarted=true;if(poweredFlightStarted)sim.step(dt,{throttle:Number(range.value)/100,pitch:command,yaw:keyboardYaw,roll:(heldKeys.has("KeyC")?1:0)-(heldKeys.has("KeyQ")?1:0),translateZ:(heldKeys.has("ArrowRight")?1:0)-(heldKeys.has("ArrowLeft")?1:0)});awardCareerAchievements(s,undefined,root);
@@ -335,7 +354,7 @@ function launchpad(){
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),speed=Math.hypot(s.velocity.x,s.velocity.y,s.velocity.z),q=.5*rho*speed*speed;
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#engine-stage-readout",root).textContent="STAGE "+s.currentStage;
-   const plumes=group.userData.enginePlumes as THREE.Mesh[];plumes.forEach(plume=>{plume.visible=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&Number(range.value)>0&&s.fuelTonnes>0;});
+   const plumes=group.userData.enginePlumes as THREE.Group[];plumes.forEach((plume,index)=>{plume.visible=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&Number(range.value)>0&&s.fuelTonnes>0;plume.scale.set(1,.94+.06*Math.sin(s.elapsed*43+index*2.7),1);});
    const rcsJets=group.userData.rcsPlumes as THREE.Mesh[];const rcsCommand=heldKeys.has("KeyA")||heldKeys.has("KeyD")||heldKeys.has("ArrowLeft")||heldKeys.has("ArrowRight");rcsJets.forEach(jet=>{jet.visible=!s.landed&&!s.crashed&&rcsCommand&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&s.rcsFuelTonnes>0;});
    updateActivationControls();
    $("#flight-status",root).textContent=s.crashed?"VEHICLE LOST":s.landed?"LANDED":"IN FLIGHT";$("#flight-note",root).textContent=s.crashed?"Impact detected. Recover and redesign the vehicle.":s.landed?"Vehicle landed. Recover to reset the launchpad.":q>30000?"MAX-Q REGION: monitor dynamic pressure and throttle.":"Gravity turn and aerodynamic forces are active.";
