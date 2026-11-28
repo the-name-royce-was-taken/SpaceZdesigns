@@ -4,7 +4,7 @@ import {
   createEngineModel,
   createLandingLegModel,
   setLandingLegDeployment,
-  rotationSnapForShift,
+  rotationSnapForShift,\n  landingLegDeploymentAngle,
   type EngineType
 } from "../src/vehicle-builder-3d";
 
@@ -41,6 +41,14 @@ describe("shared vehicle visual models", () => {
     expect(leg.hinge.rotation.z).toBeCloseTo(-2.0);
     expect(leg.piston.position.y).toBeCloseTo(.92);
     expect(leg.foot.position.y).toBeCloseTo(1.24);
+  });
+
+  it("chooses the downward deployment swing from the part's saved rotation", () => {
+    expect(landingLegDeploymentAngle({rz:0})).toBeCloseTo(-2);
+    expect(landingLegDeploymentAngle({rz:Math.PI})).toBeCloseTo(2);
+    const model=createLandingLegModel(false,landingLegDeploymentAngle({rz:Math.PI}));
+    const leg=(model.userData.legs as {hinge:{rotation:{z:number}}}[])[0]!;
+    expect(leg.hinge.rotation.z).toBeCloseTo(2);
   });
 
   it("can retract the hydraulic leg", () => {
