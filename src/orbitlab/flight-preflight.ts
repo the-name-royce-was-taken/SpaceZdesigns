@@ -11,7 +11,6 @@ import { listActivationGroups, partActivationGroup } from "../activation";
 import type { VehiclePhysics, FlightEngine, Vector3 } from "../flight-physics";
 
 const G0 = 9.80665;
-const RCS_ISP = 220;
 const surfaceKinds = new Set(["fin", "wing", "control", "strake"]);
 
 export interface FlightPreflight {
@@ -98,12 +97,24 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
 
   const aero = buildOrbitlabAeroModel(parts, craftName);
   const mass = massProperties(parts);
+  const minY = Math.min(...parts.map(part => {
+    const d = dimensions(part);
+    const offset = part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0;
+    return (part.y ?? 0) + offset - d.height / 2;
+  }));
+  const spawnClearanceM = Math.max(.2, -minY + .25);
   const engineManifest: FlightEngine[] = engines.map(part => {
     const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
     return { stage: partStage(part), thrustKN: variant.thrustKN, ispSeconds: variant.ispSeconds };
   });
   const stageNumbers = [...new Set(engineManifest.map(engine => engine.stage))].sort((a,b) => a-b);
   const totalThrust = engineManifest.reduce((sum, engine) => sum + engine.thrustKN, 0);
+  const engineMountM = engines.reduce((sum, part) => {
+    const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
+    const thrust = variant.thrustKN;
+    return { x: sum.x + (part.x ?? 0) * thrust, y: sum.y + (part.y ?? 0) * thrust, z: sum.z + (part.z ?? 0) * thrust };
+  }, { x: 0, y: 0, z: 0 });
+  engineMountM.x /= Math.max(totalThrust, 1e-9); engineMountM.y /= Math.max(totalThrust, 1e-9); engineMountM.z /= Math.max(totalThrust, 1e-9);
   const totalFlow = engineManifest.reduce((sum, engine) => sum + engine.thrustKN * 1000 / (engine.ispSeconds * G0), 0);
   const ispSeconds = totalFlow > 0 ? totalThrust * 1000 / (totalFlow * G0) : 285;
   const rcs = parts.filter(part => part.kind === "rcs");
@@ -118,7 +129,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     referenceArea: aero.referenceArea, aeroTable: aero.table,
     dragCoefficient: aero.dragCoefficient, liftSlope: aero.liftSlope,
     inertia: mass.inertiaRadiusSquared,
-    centerOfMassM: mass.centerOfMassM,
+    centerOfMassM: mass.centerOfMassM, engineMountM,
     reactionWheelTorque: wheels.length * 3.8,
     rcsTorque: rcs.length * 1.5, rcsThrustKN: rcs.length * .35,
     rcsFuelTonnes,
