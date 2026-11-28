@@ -24,7 +24,7 @@ describe("shared vehicle visual models", () => {
   );
 
   it("builds one side-mounted hydraulic leg that stows upward and extends down and outward", () => {
-    const model = createLandingLegModel(true);
+    const model = createLandingLegModel();
     expect(model.userData.landingLegModel).toBe(true);
     expect(model.userData.legs).toHaveLength(1);
     expect(model.userData.deploymentProgress).toBe(0);
