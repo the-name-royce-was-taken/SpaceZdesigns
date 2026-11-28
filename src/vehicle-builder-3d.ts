@@ -130,9 +130,41 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    const steel=new THREE.MeshStandardMaterial({color:0x9aa8ae,roughness:.34,metalness:.82});
    const gold=new THREE.MeshStandardMaterial({color:0xc49a55,roughness:.38,metalness:.76});
    const bellMaterial=new THREE.MeshStandardMaterial({color:0x8e9da4,roughness:.3,metalness:.84,side:THREE.DoubleSide});
-   const band=(radius:number,y:number,tube=.014,material=steel)=>{const ring=add(new THREE.TorusGeometry(radius,tube,5,12),material,new THREE.Vector3(0,y,0));ring.rotation.x=Math.PI/2;return ring;};
+   const nozzlePivot=new THREE.Group();
+   g.add(nozzlePivot);
+   let nozzleThroatY=0;
+   let hasGimballedBell=false;
+   const band=(radius:number,y:number,tube=.014,material=steel)=>{
+    const onNozzle=hasGimballedBell&&y<nozzleThroatY;
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,5,12),material);
+    ring.position.y=onNozzle?y-nozzleThroatY:y;
+    ring.rotation.x=Math.PI/2;
+    (onNozzle?nozzlePivot:g).add(ring);
+    ring.castShadow=true;ring.receiveShadow=true;
+    return ring;
+   };
    const pipe=(points:THREE.Vector3[],radius=.018,material=gold)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,radius,5,false),material);
-   const continuousCore=(profile:THREE.Vector2[])=>add(new THREE.LatheGeometry(profile,12),bellMaterial);
+   const continuousCore=(profile:THREE.Vector2[])=>{
+    const isOuterThroat=(index:number)=>profile[index]!.x<profile[index-1]!.x&&profile[index]!.x<profile[index+1]!.x;
+    const isInnerThroat=(index:number)=>profile[index]!.x<=profile[index-1]!.x&&profile[index]!.x<=profile[index+1]!.x&&(profile[index]!.x<profile[index-1]!.x||profile[index]!.x<profile[index+1]!.x);
+    const outerThroat=profile.findIndex((_,index)=>index>0&&index<profile.length-1&&isOuterThroat(index));
+    const innerThroat=outerThroat>=0?profile.findIndex((_,index)=>index>outerThroat+1&&index<profile.length-1&&isInnerThroat(index)):-1;
+    if(outerThroat<0||innerThroat<0){
+     add(new THREE.LatheGeometry(profile,12),bellMaterial);
+     return;
+    }
+    hasGimballedBell=true;
+    nozzleThroatY=profile[outerThroat]!.y;
+    nozzlePivot.position.y=nozzleThroatY;
+    const chamber=[...profile.slice(0,outerThroat+1),profile[innerThroat]!,...profile.slice(innerThroat+1)];
+    add(new THREE.LatheGeometry(chamber,12),bellMaterial);
+    const bellProfile=[new THREE.Vector2(0,nozzleThroatY),...profile.slice(outerThroat,innerThroat+1),new THREE.Vector2(0,nozzleThroatY)]
+     .map(point=>new THREE.Vector2(point.x,point.y-nozzleThroatY));
+    const bell=new THREE.Mesh(new THREE.LatheGeometry(bellProfile,12),bellMaterial);
+    bell.castShadow=true;bell.receiveShadow=true;
+    nozzlePivot.add(bell);
+   };
+   g.userData.gimbalPivot=nozzlePivot;
    if(type==="solid"){
     // One closed pressure-case/nozzle shell: the domed head, case and throat are a single surface.
     continuousCore([
@@ -203,6 +235,7 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    // Scale engine families to believable proportions relative to the 0.9 m tank body.
    const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
    g.scale.setScalar(engineScale[type]);
+   g.userData.hasGimballedBell=hasGimballedBell;
   return g;}
 export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
