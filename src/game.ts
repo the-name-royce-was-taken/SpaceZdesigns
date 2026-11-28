@@ -228,7 +228,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
-  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(!!p.retracted);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
+  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
    }else if(p.kind==="heat-shield"){
    const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
    add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-thickness/2,p.z??0);
