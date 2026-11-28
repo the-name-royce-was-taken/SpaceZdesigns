@@ -111,8 +111,8 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const landingImpactCapacityJ = supportingParts.reduce((sum, candidate) => sum + landingImpactCapacityForPart(candidate.part.kind), 0);
   const landingSupportParts: LandingSupportPart[] = parts.map(part => {
     const d = dimensions(part), x = part.x ?? 0, y = part.y ?? 0, z = part.z ?? 0;
-    const radius = part.kind === "landing-leg" ? (part.retracted ? .2 : 1.02) : part.kind === "wheel" ? .32 : part.kind === "rover-wheel" ? (part.radius ?? .24) + .12 : d.radius;
-    const bottom = part.kind === "landing-leg" ? (part.retracted ? -.12 : -.80)
+    const radius = part.kind === "landing-leg" ? (part.retracted !== false ? .2 : 1.02) : part.kind === "wheel" ? .32 : part.kind === "rover-wheel" ? (part.radius ?? .24) + .12 : d.radius;
+    const bottom = part.kind === "landing-leg" ? (part.retracted !== false ? -.12 : -.80)
       : part.kind === "rover-wheel" ? -.12 - (part.radius ?? .24)
       : part.kind === "heat-shield" ? -(part.thickness ?? .16)
       : part.kind === "engine" ? -.72
