@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -140,6 +140,13 @@ describe("fixed-step flight solver",()=>{
   expect(sim.activateNextStage()).toBe(true);expect(sim.state.currentStage).toBe(2);
   sim.step(1/120,{throttle:1,pitch:0});expect(sim.state.vy).toBeGreaterThan(firstGroupVelocity);
   expect(sim.activateNextStage()).toBe(false);
+ });
+
+ it("commands the engine gimbal toward the radial attitude error instead of reinforcing it",()=>{
+  expect(stabilityAssistCommand(-.1,0)).toBeLessThan(0);
+  expect(stabilityAssistCommand(.1,0)).toBeGreaterThan(0);
+  expect(stabilityAssistCommand(0,1)).toBeLessThan(0);
+  expect(stabilityAssistCommand(0,-1)).toBeGreaterThan(0);
  });
 
 });
