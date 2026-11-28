@@ -121,7 +121,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const surfaces = parts.filter(part => surfaceKinds.has(part.kind));
   const rcsFuelTonnes = rcs.length * .012;
   const vehicle: VehiclePhysics = {
-    epochSeconds, spawnClearanceM,
+    epochSeconds, spawnClearanceM, launchRailLengthM: 20,
     dryMassTonnes: mass.dryMassTonnes,
     fuelTonnes: mass.propellantTonnes,
     thrustKN: totalThrust, ispSeconds,
