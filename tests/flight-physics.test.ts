@@ -17,6 +17,14 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.altitude).toBeGreaterThan(.5);
  });
 
+ it("integrates world-space angular velocity as a world-space rotation",()=>{
+  const sim=new FlightSimulator(vehicle);sim.launch();sim.state.position.x+=1000;
+  const initial={...sim.state.orientation},initialForward=rotateByQuaternion(initial,{x:0,y:1,z:0});
+  sim.state.angularVelocity={x:0,y:0,z:1};sim.step(1/120,{throttle:0,pitch:0});
+  const half=.5*(1/120)*Math.exp(-.35/120),worldDelta={x:0,y:0,z:Math.sin(half),w:Math.cos(half)};
+  const expected=rotateByQuaternion(worldDelta,initialForward),actual=rotateByQuaternion(sim.state.orientation,{x:0,y:1,z:0});
+  expect(Math.hypot(actual.x-expected.x,actual.y-expected.y,actual.z-expected.z)).toBeLessThan(1e-7);
+ });
  it("provides a co-rotating launch-site orientation at Earth's spin rate",()=>{
   const elapsed=120,rotation=earthRotationAt(elapsed),angle=EARTH_ROTATION_RATE*elapsed,sine=Math.sin(angle/2);
   expect(Math.hypot(rotation.x,rotation.y,rotation.z,rotation.w)).toBeCloseTo(1,10);
