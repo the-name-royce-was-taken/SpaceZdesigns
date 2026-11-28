@@ -53,10 +53,9 @@ export class FlightSimulator {
   const rcsTotal=v.rcsStages?.length??((v.rcsThrustKN??0)>0?1:0),rcsActive=stages(v.rcsStages,rcsTotal),rcsScale=rcsTotal?rcsActive/rcsTotal:0,rx=Math.max(-1,Math.min(1,input.translateX??0)),ry=Math.max(-1,Math.min(1,input.translateY??0)),rz=Math.max(-1,Math.min(1,input.translateZ??0)),rcsEnabled=(v.rcsThrustKN??0)>0&&s.rcsFuelTonnes>0&&rcsActive>0;
   const rcsLocal={x:rx,y:ry,z:rz},rcsDirection=length(rcsLocal)>0?unit(rotate(s.orientation,rcsLocal)):{x:0,y:0,z:0},rcsForce=rcsEnabled?scale(rcsDirection,(v.rcsThrustKN??0)*1000*rcsScale):{x:0,y:0,z:0};
   const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=add(gravity,scale(add(add(thrustForce,rcsForce),aero),1/mass));
-  const radial=unit(s.position),padRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);
-  if(!this.hasClearedPad&&altitude<=(v.spawnClearanceM??.5)+.05&&dot(acceleration,radial)<=0){s.position=scale(radial,padRadius);s.velocity=atmosphereVelocity;s.elapsed+=dt;this.syncTelemetry();return;}
-  this.hasClearedPad=true;
-  s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));
+  const radial=unit(s.position),padRadius=EARTH_RADIUS+(v.spawnClearanceM??.5),holdingOnPad=!this.hasClearedPad&&altitude<=(v.spawnClearanceM??.5)+.05&&dot(acceleration,radial)<=0;
+  if(holdingOnPad){s.position=scale(radial,padRadius);s.velocity=atmosphereVelocity;}
+  else{this.hasClearedPad=true;s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));}
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),wheelScale=wheelCount?stages(v.reactionWheelStages,wheelCount)/wheelCount:0,surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),surfaceScale=surfaceCount?stages(v.controlSurfaceStages,surfaceCount)/surfaceCount:0;
   const rcsUse=rcsEnabled?Math.min(1,Math.hypot(rx,ry,rz)+Math.hypot(pitch,yaw,roll)*.35):0,rcsTorque=(v.rcsTorque??0)*rcsScale,torque=(v.reactionWheelTorque??0)*wheelScale,airTorque=(v.controlSurfaceAuthority??0)*surfaceScale*q*.00002;
@@ -64,6 +63,6 @@ export class FlightSimulator {
   s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
-  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
+  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!holdingOnPad&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
  }
 }
