@@ -80,7 +80,7 @@ function massProperties(parts: readonly BuildPart[]) {
     centerOfMassM, inertiaRadiusSquared };
 }
 
-export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: string, epochSeconds = Date.now() / 1000 - 946728000, spawnClearanceM = .5): FlightPreflight {
+export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: string, epochSeconds = Date.now() / 1000 - 946728000): FlightPreflight {
   if (!parts.length) throw new Error("The vehicle is empty.");
   if (parts.some(part => !finitePart(part))) throw new Error("A part has invalid or non-finite dimensions or placement.");
   if (!parts.some(part => part.kind === "capsule" || part.kind === "remote-control"))
