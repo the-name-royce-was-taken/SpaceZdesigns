@@ -118,6 +118,26 @@ describe("fixed-step flight solver",()=>{
   const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
   expect(lateralSpeed).toBeLessThan(.1);
  });
+ it("keeps launch-rail position and velocity locked to the rotating pad radial",()=>{
+  const launchVehicle:VehiclePhysics={...vehicle,spawnClearanceM:1,launchRailLengthM:20,dryMassTonnes:10,fuelTonnes:2,thrustKN:1000};
+  const sim=new FlightSimulator(launchVehicle);sim.launch();
+  for(let i=0;i<60*120;i++)sim.step(1/120,{throttle:.05,pitch:0});
+  const heldDirection=rotateByQuaternion(earthRotationAt(sim.state.elapsed),{x:1,y:0,z:0});
+  const heldPosition={x:sim.state.position.x/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z),y:sim.state.position.y/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z),z:sim.state.position.z/Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z)};
+  expect(Math.hypot(heldPosition.x-heldDirection.x,heldPosition.y-heldDirection.y,heldPosition.z-heldDirection.z)).toBeLessThan(1e-10);
+  sim.step(1/120,{throttle:1,pitch:0});
+  for(let i=0;i<10000&&sim.state.altitude<=21;i++)sim.step(1/120,{throttle:1,pitch:0});
+  const radius=Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z);
+  const radial={x:sim.state.position.x/radius,y:sim.state.position.y/radius,z:sim.state.position.z/radius};
+  const omega={x:EARTH_SPIN_AXIS.x,y:EARTH_SPIN_AXIS.y,z:EARTH_SPIN_AXIS.z};
+  const surface={x:(omega.y*sim.state.position.z-omega.z*sim.state.position.y)*EARTH_ROTATION_RATE,y:(omega.z*sim.state.position.x-omega.x*sim.state.position.z)*EARTH_ROTATION_RATE,z:(omega.x*sim.state.position.y-omega.y*sim.state.position.x)*EARTH_ROTATION_RATE};
+  const relative={x:sim.state.velocity.x-surface.x,y:sim.state.velocity.y-surface.y,z:sim.state.velocity.z-surface.z};
+  const radialSpeed=relative.x*radial.x+relative.y*radial.y+relative.z*radial.z;
+  const lateral={x:relative.x-radial.x*radialSpeed,y:relative.y-radial.y*radialSpeed,z:relative.z-radial.z*radialSpeed};
+  const lateralSpeed=Math.hypot(lateral.x,lateral.y,lateral.z);
+  expect(sim.state.altitude).toBeGreaterThan(21);
+  expect(lateralSpeed).toBeLessThan(1e-8);
+ });
  it("records impact speed and crashes on a high-speed ground collision",()=>{
   const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
   const position={x:6_371_000+25.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
