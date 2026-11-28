@@ -570,3 +570,11 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
 .flight-activation-row.activated{border-color:rgba(112,220,239,.4);background:rgba(22,67,77,.42)}
 .flight-activation-row.next{border-color:rgba(112,220,239,.72);box-shadow:inset 0 0 0 1px rgba(112,220,239,.12)}
 .flight-activation-row button:disabled{opacity:.55;cursor:default}
+
+/* Tracking map wheel input is reserved for camera zoom, not document scrolling. */
+body.tracking-map-open{overflow:hidden!important;overscroll-behavior:none}
+.tracking-live-controls{display:grid;gap:9px;padding:12px;border:1px solid rgba(101,226,255,.26);border-radius:8px;background:rgba(9,35,48,.6)}
+.tracking-live-controls label{display:grid;grid-template-columns:1fr auto;gap:5px;color:#91a9bd;font:8px var(--mono)}
+.tracking-live-controls label input{grid-column:1/-1;width:100%;accent-color:var(--cyan)}
+.tracking-3d-top #continue-live-flight{pointer-events:auto;white-space:nowrap}
+.tracking-3d-top #continue-live-flight[hidden]{display:none}

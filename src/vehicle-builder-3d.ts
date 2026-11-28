@@ -269,8 +269,10 @@ export function createLandingLegModel(retracted=true,deploymentAngle=-(2.3+Math.
  const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.84,12),pistonMetal);
  piston.position.y=.58+(retracted?0:.46);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
  const foot=new THREE.Group();foot.position.y=retracted?.82:1.36;hinge.add(foot);
- const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
- const toe=new THREE.Mesh(new THREE.BoxGeometry(.24,.035,.3),dark);toe.position.y=-.035;foot.add(toe);
+ const pad=new THREE.Mesh(new THREE.CylinderGeometry(.19,.17,.075,24,1,false),footMaterial);pad.position.y=-.025;pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
+ const contactSole=new THREE.Mesh(new THREE.CylinderGeometry(.155,.16,.025,24,1,false),dark);contactSole.position.y=-.075;contactSole.castShadow=true;contactSole.receiveShadow=true;foot.add(contactSole);
+ const padRim=new THREE.Mesh(new THREE.TorusGeometry(.17,.012,8,24),steel);padRim.rotation.x=Math.PI/2;padRim.position.y=.015;foot.add(padRim);
+ const padBoss=new THREE.Mesh(new THREE.CylinderGeometry(.065,.08,.07,16),dark);padBoss.position.y=.045;foot.add(padBoss);
  hinge.rotation.z=retracted?0:deploymentAngle;
  foot.rotation.z=-hinge.rotation.z;
  root.userData.landingLegModel=true;
