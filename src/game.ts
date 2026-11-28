@@ -322,7 +322,7 @@ function tracking(){
  const canvas=$("#system-canvas",root) as HTMLCanvasElement,renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});trackingRenderer=renderer;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x030a13);scene.fog=new THREE.Fog(0x030a13,1000,6000);
  const camera=new THREE.PerspectiveCamera(48,canvas.clientWidth/canvas.clientHeight,.00001,10000);let distance=1700,rotX=.42,rotY=.32,targetPoint=new THREE.Vector3();
- scene.add(new THREE.AmbientLight(0xffffff,.75));const sunLight=new THREE.PointLight(0xffe0a2,3e8,0,0);sunLight.position.set(0,0,0);scene.add(sunLight);
+ scene.add(new THREE.AmbientLight(0xffffff,.85));const sunLight=new THREE.DirectionalLight(0xffe0a2,2.5);sunLight.position.set(1,.6,1);scene.add(sunLight);
  const sunBody=byId.get("sun")!;const sunMesh=new THREE.Mesh(new THREE.SphereGeometry(sunBody.radiusM*SCALE,64,32),new THREE.MeshBasicMaterial({color:0xffc56e}));scene.add(sunMesh);
  const system=new THREE.Group();scene.add(system);const planetMeshes=new Map<string,THREE.Mesh>(),markerObjects=new Map<string,THREE.Sprite>();
  const planetTextures:Record<string,string>={Earth:"https://spaceengine.solarsystemscope.com/textures/download/2k_earth_daymap.jpg",Luna:"https://spaceengine.solarsystemscope.com/textures/download/2k_moon.jpg",Mars:"https://spaceengine.solarsystemscope.com/textures/download/2k_mars.jpg",Jupiter:"https://spaceengine.solarsystemscope.com/textures/download/2k_jupiter.jpg",Saturn:"https://spaceengine.solarsystemscope.com/textures/download/2k_saturn.jpg"};
