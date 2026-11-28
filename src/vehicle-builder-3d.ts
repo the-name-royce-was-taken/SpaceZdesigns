@@ -240,14 +240,15 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
 export function landingLegDeploymentAngle(part:Pick<BuildPart,"x"|"z"|"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
  const direction=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation);
- const deploymentAngle=2.3+Math.PI/9; // Existing 2.3 rad swing plus 20 degrees.\n const candidates=[-deploymentAngle,deploymentAngle].map(angle=>({angle,vector:direction(angle)}));
+ const deploymentAngle=2.3+Math.PI/9; // Existing 2.3 rad swing plus 20 degrees.
+ const candidates=[-deploymentAngle,deploymentAngle].map(angle=>({angle,vector:direction(angle)}));
  const [first,second]=candidates as [{angle:number;vector:THREE.Vector3},{angle:number;vector:THREE.Vector3}];
  // First prefer the swing that points farther down in world space.
  if(Math.abs(first.vector.y-second.vector.y)>1e-6)return first.vector.y<second.vector.y?first.angle:second.angle;
  // When both swings descend equally (common for mirrored side mounts), swing away
  // from the vehicle centre instead of choosing the same local direction on both sides.
  const outward=new THREE.Vector3(part.x??0,0,part.z??0);
- if(outward.lengthSq()<1e-8)return -2.3;
+ if(outward.lengthSq()<1e-8)return -deploymentAngle;
  outward.normalize();
  return first.vector.dot(outward)>=second.vector.dot(outward)?first.angle:second.angle;
 }
