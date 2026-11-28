@@ -74,8 +74,9 @@ describe("shared vehicle visual models", () => {
     expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3+Math.PI/9);
     expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-(2.3+Math.PI/9));
     const model=createLandingLegModel(false,landingLegDeploymentAngle({x:1,rz:Math.PI}));
-    const leg=(model.userData.legs as {hinge:{rotation:{z:number}}}[])[0]!;
+    const leg=(model.userData.legs as {hinge:{rotation:{z:number}};foot:{children:{geometry:{type:string}}[]}}[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(2.3+Math.PI/9);
+    expect(leg.foot.children.some(child=>child.geometry.type==="CylinderGeometry")).toBe(true);
   });
 
   it("can retract the hydraulic leg", () => {
