@@ -4,7 +4,7 @@ import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKi
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { prepareSpaceZFlight } from "./orbitlab/flight-preflight";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
-import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
+import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, stabilityAssistCommand, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 import { FLIGHT_CAMERA_INITIAL_DISTANCE_METRES, FLIGHT_CAMERA_MAX_DISTANCE_METRES, FLIGHT_CAMERA_MIN_DISTANCE_METRES, flightCameraDistance } from "./flight-camera";
 import { listActivationGroups, normalizeActivationAssignments, partActivationGroup } from "./activation";
 import { CAREER_ACHIEVEMENTS, getNewCareerAchievements, type CareerEvent } from "./career";
