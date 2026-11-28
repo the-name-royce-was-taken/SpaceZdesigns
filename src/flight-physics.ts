@@ -25,7 +25,8 @@ export const landingImpactCapacityForPart=(kind:string):number=>({
 export const landingImpactLimitMps=(vehicle:VehiclePhysics,currentMassTonnes=vehicle.dryMassTonnes+vehicle.fuelTonnes+(vehicle.rcsFuelTonnes??0),capacityOverrideJ?:number):number=>{
  const capacity=Math.max(0,capacityOverrideJ??vehicle.landingImpactCapacityJ??landingImpactCapacityForPart(vehicle.landingContactKind??"tank"));
  const massKg=Math.max(1,currentMassTonnes*1000);
- return Math.max(.25,Math.min(15,Math.sqrt(2*capacity/massKg)));
+ // Preserve a forgiving low-speed landing envelope; energy capacity still governs harder impacts.
+ return Math.max(1.25,Math.min(15,Math.sqrt(2*capacity/massKg)));
 };
 /** Finds the lowest real part bounds along the current ground normal and sums only parts at that contact plane. */
 export const landingSupportContact=(vehicle:VehiclePhysics,orientation:Quaternion,groundNormal:Vector3):{lowestProjectionM:number;capacityJ:number}=>{
