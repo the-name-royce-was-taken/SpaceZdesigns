@@ -363,7 +363,7 @@ function launchpad(){
    if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
    if(part.kind==="separator-thruster"&&part.plume){part.plume.visible=true;window.setTimeout(()=>{part.plume!.visible=false;},450);return;}
    if(part.kind==="separator"||part.kind==="side-decoupler"||part.kind==="fairing"||part.kind==="conical-fairing"||part.kind==="interstage-fairing"||part.kind==="clam-shell-fairing"||part.kind==="heat-shield"){part.object.visible=false;return;}
-   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);return;}
+   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);const support=vehicle.landingSupportParts?.[launchParts.indexOf(part)];if(support){const x=part.x??0,y=part.y??0,z=part.z??0;support.min={x:x-.12,y:y-.80,z:z-.18};support.max={x:x+1.1,y:y+.31,z:z+.18};}return;}
     if(part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="reaction-wheel"||part.kind==="dock"){part.object.visible=true;return;}
    part.object.visible=true;
   });
