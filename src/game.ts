@@ -343,7 +343,7 @@ function launchpad(){
   debrisReleased=true;sim=new FlightSimulator(savedFlight.vehicle);simWorldId=world()?.id??null;
   const restored=structuredClone(savedFlight.state) as FlightState&{position?:{x:number;y:number;z:number};velocity?:{x:number;y:number;z:number};orientation?:{x:number;y:number;z:number;w:number};angularVelocity?:{x:number;y:number;z:number}};
   if(!restored.position){restored.position={x:restored.x,y:6_371_000+restored.altitude,z:0};restored.velocity={x:restored.vx,y:restored.vy,z:0};restored.orientation={x:0,y:0,z:Math.sin(restored.angle/2),w:Math.cos(restored.angle/2)};restored.angularVelocity={x:0,y:0,z:restored.angularVelocityScalar??0};}
-  Object.assign(sim.state,restored);range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();
+  sim.restoreState(restored);range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();
   $("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Resumed the saved flight. Use SPACE CENTER to leave it and launch fresh when ready.";poweredFlightStarted=true;
  };
  const resumeButton=$("#resume-saved-flight",root) as HTMLButtonElement;
