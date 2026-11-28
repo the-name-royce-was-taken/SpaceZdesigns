@@ -61,9 +61,9 @@ export class FlightSimulator {
    // vehicle has cleared the pad. Only positive/negative radial motion is
    // integrated here; otherwise tiny thrust or off-axis engine placement can
    // inject an enormous sideways velocity before the craft has room to fly.
-   const nextRadialSpeed=Math.max(0,relativeRadialSpeed+radialAcceleration*dt);
+   const nextRadialSpeed=relativeRadialSpeed+radialAcceleration*dt;
    if(nextRadialSpeed<=1e-8&&altitude<=padAltitude+.05){s.position=scale(radial,padRadius);s.velocity=atmosphereVelocity;}
-   else{s.velocity=add(atmosphereVelocity,scale(radial,nextRadialSpeed));s.position=add(s.position,scale(s.velocity,dt));}
+   else{s.velocity=add(atmosphereVelocity,scale(radial,nextRadialSpeed));s.position=add(s.position,scale(s.velocity,dt));if(length(s.position)<=padRadius&&nextRadialSpeed<0){const groundRadial=unit(s.position);s.position=scale(groundRadial,padRadius);s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);}}
    if(length(s.position)-EARTH_RADIUS>padAltitude+railLength)this.hasClearedPad=true;
   }else{s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));}
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
@@ -75,6 +75,6 @@ export class FlightSimulator {
   else{s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);}
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
-  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!holdingOnPad&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
+  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!onLaunchRail&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
  }
 }
