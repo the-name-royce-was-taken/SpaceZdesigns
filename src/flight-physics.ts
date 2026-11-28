@@ -10,7 +10,8 @@ export interface FlightState {
  fuelTonnes:number; rcsFuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; impactSpeedMps?:number; maxQ:number; currentStage:number;
 }
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
-export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; launchRailLengthM?:number; landingContactKind?:string; landingGearCount?:number; landingImpactCapacityJ?:number; centerOfMassM?:Vector3; engineMountM?:Vector3; aeroDatumY?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
+export interface LandingSupportPart { kind:string; min:Vector3; max:Vector3; }
+export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; launchRailLengthM?:number; landingContactKind?:string; landingGearCount?:number; landingImpactCapacityJ?:number; landingSupportParts?:LandingSupportPart[]; centerOfMassM?:Vector3; engineMountM?:Vector3; aeroDatumY?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 /** Approximate energy absorbed before the supporting part or gear assembly fails. */
 export const landingImpactCapacityForPart=(kind:string):number=>({
@@ -21,10 +22,19 @@ export const landingImpactCapacityForPart=(kind:string):number=>({
  fin:2_000,wing:3_000,control:1_500,airbrake:1_000,strake:2_000,dock:5_000,battery:2_000,"remote-control":5_000,"reaction-wheel":3_000,rcs:2_000,strut:4_000
 } as Record<string,number>)[kind]??1_500;
 /** Energy capacity divided by the current vehicle mass gives a physical touchdown-speed limit. */
-export const landingImpactLimitMps=(vehicle:VehiclePhysics,currentMassTonnes=vehicle.dryMassTonnes+vehicle.fuelTonnes+(vehicle.rcsFuelTonnes??0)):number=>{
- const capacity=Math.max(0,vehicle.landingImpactCapacityJ??landingImpactCapacityForPart(vehicle.landingContactKind??"tank"));
+export const landingImpactLimitMps=(vehicle:VehiclePhysics,currentMassTonnes=vehicle.dryMassTonnes+vehicle.fuelTonnes+(vehicle.rcsFuelTonnes??0),capacityOverrideJ?:number):number=>{
+ const capacity=Math.max(0,capacityOverrideJ??vehicle.landingImpactCapacityJ??landingImpactCapacityForPart(vehicle.landingContactKind??"tank"));
  const massKg=Math.max(1,currentMassTonnes*1000);
  return Math.max(.25,Math.min(15,Math.sqrt(2*capacity/massKg)));
+};
+/** Finds the lowest real part bounds along the current ground normal and sums only parts at that contact plane. */
+export const landingSupportContact=(vehicle:VehiclePhysics,orientation:Quaternion,groundNormal:Vector3):{lowestProjectionM:number;capacityJ:number}=>{
+ const parts=vehicle.landingSupportParts??[];
+ if(!parts.length)return{lowestProjectionM:-(vehicle.spawnClearanceM??.5),capacityJ:vehicle.landingImpactCapacityJ??landingImpactCapacityForPart(vehicle.landingContactKind??"tank")};
+ const projected=parts.map(part=>{let lowest=Infinity;for(const x of [part.min.x,part.max.x])for(const y of [part.min.y,part.max.y])for(const z of [part.min.z,part.max.z])lowest=Math.min(lowest,dot(rotate(orientation,{x,y,z}),groundNormal));return{kind:part.kind,lowest};});
+ const lowestProjectionM=Math.min(...projected.map(part=>part.lowest));
+ const capacityJ=projected.filter(part=>part.lowest<=lowestProjectionM+.035).reduce((sum,part)=>sum+landingImpactCapacityForPart(part.kind),0);
+ return{lowestProjectionM,capacityJ:capacityJ||vehicle.landingImpactCapacityJ||landingImpactCapacityForPart(vehicle.landingContactKind??"tank")};
 };
 export const EARTH_ROTATION_RATE=7.2921159e-5;
 export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
@@ -102,6 +112,6 @@ export class FlightSimulator {
   else{s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);}
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
-  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!onLaunchRail&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),impactLimit=landingImpactLimitMps(v,mass/1000);if(normalSpeed< -impactLimit){s.crashed=true;s.impactSpeedMps=Math.abs(normalSpeed);}else{s.landed=true;s.impactSpeedMps=0;}s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
+  const radialAtContact=unit(s.position),support=landingSupportContact(v,s.orientation,radialAtContact),contactRadius=EARTH_RADIUS-support.lowestProjectionM;if(!onLaunchRail&&length(s.position)<=contactRadius){const radial=radialAtContact,surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),impactLimit=landingImpactLimitMps(v,mass/1000,support.capacityJ);if(normalSpeed< -impactLimit){s.crashed=true;s.impactSpeedMps=Math.abs(normalSpeed);}else{s.landed=true;s.impactSpeedMps=0;}s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
  }
 }
