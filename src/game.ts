@@ -4,7 +4,7 @@ import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKi
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { prepareSpaceZFlight } from "./orbitlab/flight-preflight";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
-import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, stabilityAssistCommand, landingImpactCapacityForPart, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
+import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, stabilityAssistCommand, landingImpactCapacityForPart, FlightSimulator, type FlightState, type LandingSupportPart, type VehiclePhysics } from "./flight-physics";
 import { FLIGHT_CAMERA_INITIAL_DISTANCE_METRES, FLIGHT_CAMERA_MAX_DISTANCE_METRES, FLIGHT_CAMERA_MIN_DISTANCE_METRES, flightCameraDistance } from "./flight-camera";
 import { listActivationGroups, normalizeActivationAssignments, partActivationGroup } from "./activation";
 import { CAREER_ACHIEVEMENTS, getNewCareerAchievements, type CareerEvent } from "./career";
@@ -343,8 +343,9 @@ function launchpad(){
  const group=makeRocket(launchParts);group.scale.setScalar(1e-6);group.updateMatrixWorld(true);
  const launchBounds=new THREE.Box3();group.traverse(object=>{if((object as THREE.Mesh).isMesh&&!object.userData.engineExhaust&&!object.userData.rcsExhaust&&!object.parent?.userData.engineExhaust)launchBounds.expandByObject(object);});
  const actualMinY=Number.isFinite(launchBounds.min.y)?launchBounds.min.y*1e6:-.5;
- const actualSupportParts:{kind:string;lowestY:number}[]=[];group.traverse(object=>{const kind=object.userData.partKind as string|undefined;if(!kind)return;const bounds=new THREE.Box3().setFromObject(object);if(!bounds.isEmpty())actualSupportParts.push({kind,lowestY:bounds.min.y*1e6});});
- const actualSupportingParts=actualSupportParts.filter(part=>part.lowestY<=actualMinY+.08);
+ const actualSupportParts:LandingSupportPart[]=[];group.traverse(object=>{const kind=object.userData.partKind as string|undefined;if(!kind)return;const bounds=new THREE.Box3().setFromObject(object);if(!bounds.isEmpty())actualSupportParts.push({kind,min:{x:bounds.min.x*1e6,y:bounds.min.y*1e6,z:bounds.min.z*1e6},max:{x:bounds.max.x*1e6,y:bounds.max.y*1e6,z:bounds.max.z*1e6}});});
+ const actualSupportingParts=actualSupportParts.filter(part=>part.min.y<=actualMinY+.08);
+ preparedVehicle.landingSupportParts=actualSupportParts;
  preparedVehicle.landingImpactCapacityJ=actualSupportingParts.reduce((sum,part)=>sum+landingImpactCapacityForPart(part.kind),0)||landingImpactCapacityForPart(preparedVehicle.landingContactKind??"tank");
  preparedVehicle.landingContactKind=actualSupportingParts[0]?.kind??preparedVehicle.landingContactKind;
  spawnClearanceM=Math.max(.08,-actualMinY+.08);vehicleBottomClearanceM=spawnClearanceM+actualMinY;preparedVehicle.spawnClearanceM=spawnClearanceM;
