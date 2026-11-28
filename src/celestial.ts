@@ -41,3 +41,10 @@ export function hohmannTransferWindow(originRadiusM:number,targetRadiusM:number,
  const deltaVDepartureMps=Math.abs(vTransfer-vOrigin),deltaVArrivalMps=Math.abs(vTarget-vArrival);
  return{departurePhaseRadians,transferSeconds,departureWindowSeconds:2*Math.PI/Math.max(1e-12,Math.abs(Math.sqrt(originMu/originRadiusM**3)-targetMeanMotion)),deltaVDepartureMps,deltaVArrivalMps};
 }
+
+/** Differential third-body acceleration relative to the chosen central body's freely-falling frame. */
+export function differentialGravityAt(spacecraftPosition:Vector3,referencePosition:Vector3,timeSeconds:number,centralBodyId="earth"):Vector3{
+ const ephemeris=ephemerisAt(timeSeconds),perturbers=ephemeris.filter(body=>body.id!==centralBodyId);
+ const atCraft=gravityAt(spacecraftPosition,perturbers),atReference=gravityAt(referencePosition,perturbers);
+ return{x:atCraft.x-atReference.x,y:atCraft.y-atReference.y,z:atCraft.z-atReference.z};
+}
