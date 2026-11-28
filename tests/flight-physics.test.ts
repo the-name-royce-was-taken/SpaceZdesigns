@@ -177,6 +177,20 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.crashed).toBe(false);
   expect(sim.state.landed).toBe(true);
  });
+ it("lands without exploding on a gentle contact with a resilient part",()=>{
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:8_000,spawnClearanceM:0,launchRailLengthM:0});sim.launch();
+  const position={x:6_371_000+.005,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-.1,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  for(let i=0;i<120&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(false);expect(sim.state.landed).toBe(true);
+ });
+ it("destroys a vehicle when vertical touchdown energy exceeds its supporting part capacity",()=>{
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:8_000,spawnClearanceM:0,launchRailLengthM:0});sim.launch();
+  const position={x:6_371_000+.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-2,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  for(let i=0;i<120&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(true);expect(sim.state.impactSpeedMps).toBeGreaterThan(landingImpactLimitMps(sim.vehicle,10));
+ });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
