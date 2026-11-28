@@ -43,7 +43,7 @@ describe("launch rail constraint", () => {
     expect(Math.hypot(relative.x, relative.y, relative.z)).toBeLessThan(.01);
   });
 
-  it("constrains lateral motion and attitude while the rocket clears the launch rail", () => {
+  it("constrains lateral motion and attitude while the rocket is on the launch rail", () => {
     const sim = new FlightSimulator(vehicle);
     sim.launch();
     sim.step(.25, { throttle: .5, pitch: 0, yaw: 0, roll: 0 });
