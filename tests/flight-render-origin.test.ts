@@ -10,7 +10,10 @@ describe("launch-relative flight rendering",()=>{
     expect(local.z).toBe(-0.000003);
   });
   it("moves the Earth-centred visual frame by the inverse origin offset",()=>{
-    expect(flightRenderOriginOffset(earthCentre)).toEqual({x:-6.371,y:0,z:0});
+    const offset=flightRenderOriginOffset(earthCentre);
+    expect(offset.x).toBeCloseTo(-6.371,12);
+    expect(offset.y).toBeCloseTo(0,12);
+    expect(offset.z).toBeCloseTo(0,12);
   });
   it("preserves small frame-to-frame rocket displacement after rebasing",()=>{
     const first=flightRenderPosition({x:6.371001,y:0,z:0},earthCentre);
