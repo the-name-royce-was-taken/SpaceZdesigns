@@ -164,7 +164,6 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
     nozzlePivot.add(bell);
    };
    g.userData.gimbalPivot=nozzlePivot;
-   g.userData.hasGimballedBell=hasGimballedBell;
    if(type==="solid"){
     // One closed pressure-case/nozzle shell: the domed head, case and throat are a single surface.
     continuousCore([
@@ -235,6 +234,7 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    // Scale engine families to believable proportions relative to the 0.9 m tank body.
    const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
    g.scale.setScalar(engineScale[type]);
+   g.userData.hasGimballedBell=hasGimballedBell;
   return g;}
 export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
