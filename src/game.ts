@@ -332,6 +332,7 @@ function launchpad(){
  const onFlightKeyDown=(event:KeyboardEvent)=>{if(!flightKeys.has(event.code))return;const target=event.target as HTMLElement|null;if(target&&(/INPUT|TEXTAREA|SELECT/.test(target.tagName)||target.isContentEditable))return;event.preventDefault();heldKeys.add(event.code);if((event.code==="KeyE"||event.code==="Space")&&!event.repeat)activateNextFlightGroup();};
  const onFlightKeyUp=(event:KeyboardEvent)=>{heldKeys.delete(event.code);};
  const onFlightBlur=()=>heldKeys.clear();window.addEventListener("keydown",onFlightKeyDown);window.addEventListener("keyup",onFlightKeyUp);window.addEventListener("blur",onFlightBlur);flightInputCleanup=()=>{window.removeEventListener("keydown",onFlightKeyDown);window.removeEventListener("keyup",onFlightKeyUp);window.removeEventListener("blur",onFlightBlur);};
+ let poweredFlightStarted=false;
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
  const restoreSavedFlight=()=>{
   if(!savedFlight||sim)return;
@@ -384,7 +385,6 @@ function launchpad(){
  updateActivationControls();
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;simWorldId=null;debrisReleased=false;poweredFlightStarted=false;looseGroups.forEach(debris=>{debris.object.position.x=debris.initialX;debris.velocity=0;debris.landed=false;});range.value="0";pitch.value="0";updateLabels();group.position.set(earthRadius+spawnClearanceM/1e6,0,0);group.quaternion.copy(new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w));cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES;cameraYaw=0;cameraPitch=.08;updateFlightCamera();$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
- let poweredFlightStarted=false;
  let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;const earthRotation=earthRotationAt(sim?.state.elapsed??0);earthFrame.quaternion.set(earthRotation.x,earthRotation.y,earthRotation.z,earthRotation.w);clouds.rotation.y+=(dt*.0007);highClouds.rotation.y-=dt*.00035;
   const throttleDelta=(heldKeys.has("ArrowUp")?1:0)-(heldKeys.has("ArrowDown")?1:0);if(throttleDelta)range.value=String(Math.max(0,Math.min(100,Number(range.value)+throttleDelta*45*dt)));updateLabels();
   if(debrisReleased)for(const debris of looseGroups){if(debris.landed)continue;debris.velocity-=9.81*dt;debris.object.position.x+=debris.velocity*dt/1e6;if(debris.object.position.x<=debris.groundX){debris.object.position.x=debris.groundX;debris.velocity=0;debris.landed=true;}}
