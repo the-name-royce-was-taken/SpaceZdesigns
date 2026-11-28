@@ -42,7 +42,21 @@ function createFlightEarthTexture(){
  land([[180,700],[360,680],[520,700],[690,750],[760,810],[710,860],[560,875],[410,850],[280,820]],"#829765");
  ctx.strokeStyle="rgba(224,207,151,.22)";ctx.lineWidth=3;
  for(let i=0;i<24;i++){const x=950+(i%6)*22,y=410+Math.floor(i/6)*48;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+18,y+10,x+10,y+27);ctx.stroke();}
+ // Add low-amplitude bathymetry and terrain variation without relying on remote image assets.
+ const pixels=ctx.getImageData(0,0,2048,1024),data=pixels.data;
+ for(let y=0;y<1024;y++)for(let x=0;x<2048;x++){const i=(y*2048+x)*4,n=(Math.sin(x*.071+Math.sin(y*.031)*2.1)+Math.cos(y*.093+x*.017)+Math.sin((x+y)*.041))*.5,land=data[i+1]!>data[i]!*.98&&data[i+1]!>data[i+2]!*.92;const amount=land?n*8:n*4;data[i]=Math.max(0,Math.min(255,data[i]!+amount*.72));data[i+1]=Math.max(0,Math.min(255,data[i+1]!+amount));data[i+2]=Math.max(0,Math.min(255,data[i+2]!+amount*.62);}
+ ctx.putImageData(pixels,0,0);
+ // Mountain chains and broad terrain relief.
+ ctx.save();ctx.globalAlpha=.24;ctx.lineCap="round";
+ for(let i=0;i<44;i++){const x=820+(i%11)*29,y=360+Math.floor(i/11)*65;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+18,y-24,x+22,y+31,x+44,y+7);ctx.strokeStyle=i%3===0?"#e5d7a4":"#344f39";ctx.lineWidth=i%3===0?5:3;ctx.stroke();}
+ ctx.restore();
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;texture.needsUpdate=true;return texture;
+}
+function createFlightCloudTexture(){
+ const canvas=document.createElement("canvas");canvas.width=2048;canvas.height=1024;const ctx=canvas.getContext("2d");if(!ctx)throw new Error("Could not create the flight cloud texture.");
+ ctx.clearRect(0,0,2048,1024);ctx.lineCap="round";
+ for(let i=0;i<150;i++){const x=(i*137.5)%2048,y=(i*83.7+Math.sin(i*1.7)*95)%1024,span=35+(i%7)*17;ctx.beginPath();ctx.moveTo(x-span,y);ctx.bezierCurveTo(x-span*.45,y-18-(i%5)*5,x+span*.35,y+16+(i%4)*6,x+span,y-4);ctx.strokeStyle="rgba(235,246,250,"+(0.035+(i%5)*.012)+")";ctx.lineWidth=4+(i%6)*2;ctx.stroke();}
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;
 }
 function metricsForParts(parts:readonly BuildPart[]){const entries=parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
 function metrics(){return metricsForParts(craft.parts)}
@@ -269,6 +283,7 @@ function launchpad(){
  const camera=new THREE.PerspectiveCamera(48,canvas.clientWidth/canvas.clientHeight,1e-10,80);camera.position.set(10,13,24);
  scene.add(new THREE.HemisphereLight(0xd9efff,0x26313b,1.5));const sun=new THREE.DirectionalLight(0xffefcf,2.6);sun.position.set(-18,28,22);scene.add(sun);
  const earthFrame=new THREE.Group();scene.add(earthFrame);const earthRadius=6.371,earthTexture=createFlightEarthTexture(),earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,128,80),new THREE.MeshStandardMaterial({color:0xffffff,map:earthTexture,roughness:.96}));earthFrame.add(earth);
+ const cloudTexture=createFlightCloudTexture(),clouds=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.006,128,80),new THREE.MeshBasicMaterial({map:cloudTexture,transparent:true,opacity:.48,depthWrite:false,side:THREE.FrontSide}));earthFrame.add(clouds);
  const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.025,64,40),new THREE.MeshBasicMaterial({color:0x4aa8e8,transparent:true,opacity:.075,side:THREE.BackSide,depthWrite:false}));earthFrame.add(atmosphere);
  const pad=new THREE.Mesh(new THREE.CylinderGeometry(12,12,1,32),new THREE.MeshStandardMaterial({color:0x737f86,metalness:.55,roughness:.68}));pad.scale.setScalar(1e-6);pad.rotation.z=-Math.PI/2;pad.position.set(earthRadius+1e-7,0,0);earthFrame.add(pad);
  const padDeck=new THREE.Mesh(new THREE.CylinderGeometry(11.8,11.8,.08,48),new THREE.MeshStandardMaterial({color:0x263b49,metalness:.45,roughness:.72}));padDeck.scale.setScalar(1e-6);padDeck.rotation.z=-Math.PI/2;padDeck.position.set(earthRadius+.00000055,0,0);earthFrame.add(padDeck);
