@@ -210,10 +210,18 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    const exitLip=add(new THREE.TorusGeometry(.365,.012,8,32),steel,p.x??0,y-.675,p.z??0);exitLip.rotation.x=Math.PI/2;
    const engineDetails=mat(0x273946,.72);
    for(let i=0;i<8;i++){const angle=i*Math.PI/4;add(new THREE.SphereGeometry(.018,8,6),engineDetails,(p.x??0)+Math.cos(angle)*.252,y+.44,(p.z??0)+Math.sin(angle)*.252);}
-   const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;flame.userData.engineExhaust=true;
+   const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;flame.userData.engineExhaust=true;flame.userData.engineType=engine.id;
    const flameMaterial=(color:number,opacity:number)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-   const layers:[[number,number,number,number],[number,number,number,number],[number,number,number,number]]=[[.31,1.35,0xff4b19,.34],[.205,1.08,0xffa12f,.62],[.105,.78,0xfff0bd,.9]];
-   layers.forEach(([radius,length,color,opacity],index)=>{const cone=new THREE.Mesh(new THREE.ConeGeometry(radius,length,24,1,false),flameMaterial(color,opacity));cone.position.y=length/2;cone.renderOrder=10+index;flame.add(cone);});
+   const flameProfiles:Record<string,number[][]>={
+    liquid:[[.30,1.45,0xff4b19,.28],[.20,1.12,0xff9a32,.56],[.105,.82,0xfff2cf,.88]],
+    solid:[[.39,1.18,0xff3d12,.36],[.29,.98,0xff8a22,.62],[.16,.72,0xffe5a0,.9]],
+    methalox:[[.25,1.55,0x287fff,.28],[.17,1.25,0x65caff,.52],[.085,.92,0xd8f5ff,.88]],
+    hydrolox:[[.22,2.05,0x3d9cff,.2],[.14,1.72,0x8bdcff,.42],[.065,1.3,0xe5fbff,.8]],
+    ion:[[.105,3.2,0x536bff,.16],[.065,2.65,0x55c9ff,.3],[.032,2.1,0xc7eaff,.56]]
+   };
+   const layers=flameProfiles[engine.id]??flameProfiles.liquid;
+   layers.forEach(([radius,length,color,opacity],index)=>{const cone=new THREE.Mesh(new THREE.ConeGeometry(radius,length,32,3,false),flameMaterial(color,opacity));cone.position.y=length/2;cone.renderOrder=10+index;cone.userData.baseOpacity=opacity;flame.add(cone);});
+   flame.userData.baseLength=engine.id==="hydrolox"?1.25:engine.id==="ion"?1.8:engine.id==="solid"?.9:1;
    g.add(flame);enginePlumes.push(flame);
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
@@ -397,7 +405,7 @@ function launchpad(){
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),position=new THREE.Vector3(s.position.x,s.position.y,s.position.z),omega=new THREE.Vector3(EARTH_SPIN_AXIS.x,EARTH_SPIN_AXIS.y,EARTH_SPIN_AXIS.z),atmosphereVelocity=omega.cross(position).multiplyScalar(EARTH_ROTATION_RATE),airVelocity=new THREE.Vector3(s.velocity.x,s.velocity.y,s.velocity.z).sub(atmosphereVelocity),q=.5*rho*airVelocity.lengthSq();
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#engine-stage-readout",root).textContent="STAGE "+s.currentStage;
-   const plumes=group.userData.enginePlumes as THREE.Group[];plumes.forEach((plume,index)=>{plume.visible=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&Number(range.value)>0&&s.fuelTonnes>0;plume.scale.set(1,.94+.06*Math.sin(s.elapsed*43+index*2.7),1);});
+   const plumes=group.userData.enginePlumes as THREE.Group[],flameThrottle=Math.max(0,Math.min(1,Number(range.value)/100));plumes.forEach((plume,index)=>{const active=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&flameThrottle>.005&&s.fuelTonnes>0;plume.visible=active;const flicker=.94+.06*Math.sin(s.elapsed*(plume.userData.engineType==="solid"?58:plume.userData.engineType==="ion"?12:38)+index*2.7),power=Math.pow(flameThrottle,.72);plume.scale.set(1,Number(plume.userData.baseLength??1)*power*flicker,1);plume.children.forEach(layer=>{const mesh=layer as THREE.Mesh,material=mesh.material as THREE.MeshBasicMaterial;material.opacity=Number(mesh.userData.baseOpacity??.5)*Math.pow(flameThrottle,.8);});});
    const rcsJets=group.userData.rcsPlumes as THREE.Mesh[];const rcsCommand=heldKeys.has("KeyA")||heldKeys.has("KeyD")||heldKeys.has("ArrowLeft")||heldKeys.has("ArrowRight");rcsJets.forEach(jet=>{jet.visible=!s.landed&&!s.crashed&&rcsCommand&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&s.rcsFuelTonnes>0;});
    updateActivationControls();
    $("#flight-status",root).textContent=s.crashed?"VEHICLE LOST":s.landed?"LANDED":"IN FLIGHT";$("#flight-note",root).textContent=s.crashed?"Impact detected. Recover and redesign the vehicle.":s.landed?"Vehicle landed. Recover to reset the launchpad.":q>30000?"MAX-Q REGION: monitor dynamic pressure and throttle.":"Gravity turn and aerodynamic forces are active.";
