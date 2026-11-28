@@ -53,7 +53,7 @@ describe("shared vehicle visual models", () => {
     expect(model.userData.landingLegModel).toBe(true);
     expect(model.userData.legs).toHaveLength(1);
     expect(model.userData.deploymentProgress).toBe(0);
-    const leg = (model.userData.legs as { hinge: { rotation: { z: number } }; piston: { position: { y: number } }; foot: { position: { y: number } } }[])[0]!;
+    const leg = (model.userData.legs as { hinge: { rotation: { z: number } }; piston: { position: { y: number }; geometry: { parameters: { height: number } } }; foot: { position: { y: number } } }[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(0);
     expect(leg.piston.position.y).toBeCloseTo(.58);
     expect(leg.foot.position.y).toBeCloseTo(.82);
