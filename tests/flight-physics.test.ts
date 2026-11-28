@@ -117,6 +117,16 @@ describe("fixed-step flight solver",()=>{
   const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
   expect(lateralSpeed).toBeLessThan(.1);
  });
+ it("records impact speed and crashes on a high-speed ground collision",()=>{
+  const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
+  sim.state.position.x=6_371_000+25.5;
+  const surface={x:0,y:0,z:0};
+  surface.x=0;surface.y=EARTH_SPIN_AXIS.y*0;surface.z=0;
+  sim.state.velocity={x:-50,y:0,z:0};
+  for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(true);
+  expect(sim.state.impactSpeedMps).toBeGreaterThan(18);
+ });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
