@@ -13,7 +13,7 @@ export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number;
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,EARTH_ROTATION=7.2921159e-5,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
 export const EARTH_SPIN_AXIS:Vector3={x:0,y:Math.cos(EARTH_OBLIQUITY),z:Math.sin(EARTH_OBLIQUITY)};
-export const EARTH_LAUNCH_ORIENTATION:Quaternion={x:Math.sin(EARTH_OBLIQUITY/2)*Math.SQRT1_2,y:Math.sin(EARTH_OBLIQUITY/2)*Math.SQRT1_2,z:-Math.cos(EARTH_OBLIQUITY/2)*Math.SQRT1_2,w:Math.cos(EARTH_OBLIQUITY/2)*Math.SQRT1_2};
+export const EARTH_LAUNCH_ORIENTATION:Quaternion={x:-0.38801515,y:-0.38801515,z:-0.59113809,w:0.59113809};
 const cross=(a:Vector3,b:Vector3):Vector3=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
 const add=(a:Vector3,b:Vector3):Vector3=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
 const sub=(a:Vector3,b:Vector3):Vector3=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
@@ -43,7 +43,7 @@ export class FlightSimulator {
   const forward=unit(rotate(s.orientation,{x:0,y:1,z:0})),flightDirection=speed>1?unit(airVelocity):forward,cosAoA=Math.max(-1,Math.min(1,dot(forward,flightDirection))),aoa=Math.acos(cosAoA);
   const throttle=Math.max(0,Math.min(1,input.throttle)),active=v.engines?.filter(e=>e.stage<=s.currentStage)??[],hasManifest=Array.isArray(v.engines),thrustKN=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN,0):v.thrustKN,mdot=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN*1000/(e.ispSeconds*G0),0):v.thrustKN*1000/(v.ispSeconds*G0);
   const thrust=s.fuelTonnes>0?thrustKN*1000*throttle:0;s.fuelTonnes-=Math.min(s.fuelTonnes,mdot*throttle*dt/1000);
-  const gimbalAngle=6*Math.PI/180,gimbalPitch=Math.max(-1,Math.min(1,input.pitch))*gimbalAngle,gimbalYaw=Math.max(-1,Math.min(1,input.yaw??0))*gimbalAngle,localThrustDirection=unit({x:-Math.sin(gimbalYaw)*Math.cos(gimbalPitch),y:Math.cos(gimbalYaw)*Math.cos(gimbalPitch),z:Math.sin(gimbalPitch)}),thrustForce=scale(rotate(s.orientation,localThrustDirection),thrust),engineLever={x:0,y:-.55,z:0},engineGimbalTorque=rotate(s.orientation,cross(engineLever,scale(localThrustDirection,thrust)));
+  const gimbalAngle=6*Math.PI/180,gimbalPitch=Math.max(-1,Math.min(1,input.pitch))*gimbalAngle,gimbalYaw=Math.max(-1,Math.min(1,input.yaw??0))*gimbalAngle,localThrustDirection=unit({x:Math.sin(gimbalYaw)*Math.cos(gimbalPitch),y:Math.cos(gimbalYaw)*Math.cos(gimbalPitch),z:-Math.sin(gimbalPitch)}),thrustForce=scale(rotate(s.orientation,localThrustDirection),thrust),engineLever={x:0,y:-.55,z:0},engineGimbalTorque=rotate(s.orientation,cross(engineLever,scale(localThrustDirection,thrust)));
   const dragMagnitude=q*v.referenceArea*v.dragCoefficient,drag= speed>1?scale(flightDirection,-dragMagnitude):{x:0,y:0,z:0};
   const liftAxis=sub(forward,scale(flightDirection,dot(forward,flightDirection))),liftDirection=length(liftAxis)>1e-8?unit(liftAxis):{x:0,y:0,z:0},liftMagnitude=q*v.referenceArea*v.liftSlope*Math.min(.7,aoa);
   const aero=add(drag,scale(liftDirection,liftMagnitude));
