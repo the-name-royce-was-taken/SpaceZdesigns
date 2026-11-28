@@ -42,6 +42,11 @@ export class FlightSimulator {
  private syncTelemetry(){const s=this.state,r=length(s.position),radial=unit(s.position);s.altitude=r-EARTH_RADIUS;s.x=s.position.x;s.vx=Math.sqrt(Math.max(0,dot(s.velocity,s.velocity)-dot(s.velocity,radial)**2));s.vy=dot(s.velocity,radial);const forward=rotate(s.orientation,{x:0,y:1,z:0}),east={x:radial.z,y:0,z:-radial.x};s.angle=Math.atan2(dot(forward,east),dot(forward,radial));s.angularVelocityScalar=dot(s.angularVelocity,rotate(s.orientation,{x:1,y:0,z:0}));}
  private integrate(dt:number,input:FlightInputs){
   const s=this.state,v=this.vehicle,r=length(s.position),altitude=r-EARTH_RADIUS,epoch=(v.epochSeconds??0)+s.elapsed,earth=ephemerisAt(epoch).find(b=>b.id==="earth")!;
+  const padAltitude=v.spawnClearanceM??.5,railLength=Math.max(0,v.launchRailLengthM??20);
+  const onLaunchRail=!this.hasClearedPad&&altitude<=padAltitude+railLength;
+  // The launch pad is Earth-fixed, not inertially fixed. Keep the vehicle's
+  // body axis aligned with the rotating launch site while it is rail-constrained.
+  if(onLaunchRail)s.orientation=normalizeQ(qmul(earthRotationAt(s.elapsed),EARTH_LAUNCH_ORIENTATION));
   const heliocentricCraft=add(earth.position,s.position),third=differentialGravityAt(heliocentricCraft,earth.position,epoch),gravity=add(gravityEarth(s.position),third);
   const rho=altitude>0?SEA_LEVEL_DENSITY*Math.exp(-altitude/SCALE_HEIGHT):SEA_LEVEL_DENSITY,atmosphereVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),airVelocity=sub(s.velocity,atmosphereVelocity),speed=length(airVelocity),q=.5*rho*speed*speed;s.maxQ=Math.max(s.maxQ,q);
   const forward=unit(rotate(s.orientation,{x:0,y:1,z:0})),flightDirection=speed>1?unit(airVelocity):forward,cosAoA=Math.max(-1,Math.min(1,dot(forward,flightDirection))),aoa=Math.acos(cosAoA);
@@ -56,7 +61,7 @@ export class FlightSimulator {
   const rcsTotal=v.rcsStages?.length??((v.rcsThrustKN??0)>0?1:0),rcsActive=stages(v.rcsStages,rcsTotal),rcsScale=rcsTotal?rcsActive/rcsTotal:0,rx=Math.max(-1,Math.min(1,input.translateX??0)),ry=Math.max(-1,Math.min(1,input.translateY??0)),rz=Math.max(-1,Math.min(1,input.translateZ??0)),rcsEnabled=(v.rcsThrustKN??0)>0&&s.rcsFuelTonnes>0&&rcsActive>0;
   const rcsLocal={x:rx,y:ry,z:rz},rcsDirection=length(rcsLocal)>0?unit(rotate(s.orientation,rcsLocal)):{x:0,y:0,z:0},rcsForce=rcsEnabled?scale(rcsDirection,(v.rcsThrustKN??0)*1000*rcsScale):{x:0,y:0,z:0};
   const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=add(gravity,scale(add(add(thrustForce,rcsForce),aero),1/mass));
-  const radial=unit(s.position),padAltitude=v.spawnClearanceM??.5,padRadius=EARTH_RADIUS+padAltitude,railLength=Math.max(0,v.launchRailLengthM??20),relativeRadialSpeed=dot(sub(s.velocity,atmosphereVelocity),radial),radialAcceleration=dot(acceleration,radial),onLaunchRail=!this.hasClearedPad&&altitude<=padAltitude+railLength;
+  const radial=unit(s.position),padRadius=EARTH_RADIUS+padAltitude,relativeRadialSpeed=dot(sub(s.velocity,atmosphereVelocity),radial),radialAcceleration=dot(acceleration,radial);
   if(onLaunchRail){
    // The launch rail constrains lateral translation and attitude until the
    // vehicle has cleared the pad. Only positive/negative radial motion is
@@ -72,7 +77,7 @@ export class FlightSimulator {
   const rcsUse=rcsEnabled?Math.min(1,Math.hypot(rx,ry,rz)+Math.hypot(pitch,yaw,roll)*.35):0,rcsTorque=(v.rcsTorque??0)*rcsScale,torque=(v.reactionWheelTorque??0)*wheelScale,airTorque=(v.controlSurfaceAuthority??0)*surfaceScale*q*.00002;
   const cpStation=v.aeroTable?atMach(v.aeroTable,v.aeroTable.cpX,mach):0,aeroLever=rotate(s.orientation,{x:0,y:cpStation+(v.aeroDatumY??0)-cg.y,z:0}),aeroLiftForce=scale(liftDirection,liftMagnitude),aeroMoment=cross(aeroLever,aeroLiftForce);
   const localTorque={x:pitch*(torque+rcsTorque+airTorque),y:roll*(torque+rcsTorque+airTorque),z:yaw*(torque+rcsTorque+airTorque)},worldTorque=add(add(rotate(s.orientation,localTorque),engineGimbalTorque),aeroMoment),inertia=Math.max(.01,v.inertia*mass);
-  if(onLaunchRail){s.angularVelocity={x:0,y:0,z:0};s.orientation={...EARTH_LAUNCH_ORIENTATION};}
+  if(onLaunchRail){s.angularVelocity={x:0,y:0,z:0};s.orientation=normalizeQ(qmul(earthRotationAt(s.elapsed+dt),EARTH_LAUNCH_ORIENTATION));}
   else{s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);}
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
