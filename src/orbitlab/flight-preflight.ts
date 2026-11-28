@@ -75,7 +75,7 @@ function massProperties(parts: readonly BuildPart[]) {
   const ixx = bodies.reduce((sum, b) => sum + b.transverse + b.massKg * ((b.y-centerOfMassM.y)**2 + (b.z-centerOfMassM.z)**2), 0);
   const izz = bodies.reduce((sum, b) => sum + b.transverse + b.massKg * ((b.x-centerOfMassM.x)**2 + (b.y-centerOfMassM.y)**2), 0);
   const inertiaRadiusSquared = Math.max(.01, (ixx + izz) / (2 * totalKg));
-  return { dryMassTonnes: bodies.reduce((sum, b, i) => sum + (partCatalog.find(p => p.kind === parts[i]!.kind)!.mass), 0),
+  return { dryMassTonnes: bodies.reduce((sum, b, i) => sum + (b.massKg - (parts[i]!.kind === "tank" ? tankFuelCapacity(parts[i]!) : 0)) / 1000, 0),
     propellantTonnes: bodies.reduce((sum, b, i) => sum + (parts[i]!.kind === "tank" ? b.massKg - partCatalog.find(p => p.kind === parts[i]!.kind)!.mass * 1000 : 0), 0) / 1000,
     centerOfMassM, inertiaRadiusSquared };
 }
@@ -137,7 +137,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     reactionWheelStages: wheels.map(partStage),
     controlSurfaceStages: surfaces.map(partStage),
     engines: engineManifest,
-    activationGroups: listActivationGroups(parts)
+    activationGroups: [...new Set([...listActivationGroups(parts), ...engineManifest.map(engine => engine.stage)])].sort((a,b) => a-b)
   };
   const wetMassTonnes = vehicle.dryMassTonnes + vehicle.fuelTonnes + rcsFuelTonnes;
   if (![wetMassTonnes, vehicle.thrustKN, vehicle.ispSeconds, vehicle.referenceArea, vehicle.inertia].every(Number.isFinite)
