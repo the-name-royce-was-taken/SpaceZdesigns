@@ -43,6 +43,24 @@ function dimensions(part: BuildPart) {
   return { height: Math.max(.05, height), radius: Math.max(.025, radius) };
 }
 
+function rotateLegPoint(point: Vector3, part: BuildPart): Vector3 {
+  const x=part.rx??0,y=part.ry??0,z=part.rz??0,cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);
+  return {x:cy*cz*point.x-cy*sz*point.y+sy*point.z,
+    y:(sx*sy*cz+cx*sz)*point.x+(cx*cz-sx*sy*sz)*point.y-sx*cy*point.z,
+    z:(sx*sz-cx*sy*cz)*point.x+(sx*cz+cx*sy*sz)*point.y+cx*cy*point.z};
+}
+
+function landingLegBounds(part: BuildPart, extended: boolean) {
+  const corners=extended
+    ? [[-.12,-.44,-.18],[1.35,-.44,-.18],[-.12,.31,.18],[1.35,.31,.18]]
+    : [[-.12,-.12,-.18],[.12,-.12,-.18],[-.12,.98,.18],[.12,.98,.18]];
+  const points=corners.map(([x,y,z])=>rotateLegPoint({x:x!,y:y!,z:z!},part));
+  return {
+    min:{x:Math.min(...points.map(point=>point.x)),y:Math.min(...points.map(point=>point.y)),z:Math.min(...points.map(point=>point.z))},
+    max:{x:Math.max(...points.map(point=>point.x)),y:Math.max(...points.map(point=>point.y)),z:Math.max(...points.map(point=>point.z))}
+  };
+}
+
 function partStage(part: BuildPart): number {
   return Math.max(1, Math.floor(part.engineStage ?? partActivationGroup(part) ?? 1));
 }
@@ -99,7 +117,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const contactCandidates = parts.map(part => {
     const d = dimensions(part);
     const y = part.y ?? 0;
-    const lowestY = part.kind === "landing-leg" ? y - (part.retracted !== false ? .12 : .44)
+    const lowestY = part.kind === "landing-leg" ? y + landingLegBounds(part, part.retracted === false).min.y
       : part.kind === "wheel" ? y - (part.retracted ? .22 : .92)
       : y + (part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0) - d.height / 2;
     return { part, lowestY };
@@ -119,9 +137,11 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
       : part.kind === "engine" ? -.72
       : -d.height / 2;
     const top = part.kind === "landing-leg" ? (retractedLeg ? .98 : .31) : d.height/2;
-    const minX = part.kind === "landing-leg" ? x-.12 : x-radius;
-    const maxX = part.kind === "landing-leg" ? x+(retractedLeg?.12:1.35) : x+radius;
-    return { kind: part.kind, min: { x: minX, y: y+bottom, z: z-radius }, max: { x: maxX, y: y+top, z: z+radius } };
+    if(part.kind==="landing-leg"){
+      const bounds=landingLegBounds(part,!retractedLeg);
+      return {kind:part.kind,min:{x:x+bounds.min.x,y:y+bounds.min.y,z:z+bounds.min.z},max:{x:x+bounds.max.x,y:y+bounds.max.y,z:z+bounds.max.z}};
+    }
+    return { kind: part.kind, min: { x: x-radius, y: y+bottom, z: z-radius }, max: { x: x+radius, y: y+top, z: z+radius } };
   });
   const spawnClearanceM = Math.max(.08, -minY + .08);
   const engineManifest: FlightEngine[] = engines.map(part => {

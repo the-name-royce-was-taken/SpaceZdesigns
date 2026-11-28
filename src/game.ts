@@ -228,7 +228,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
-  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
+  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false);landingLeg.position.set(p.x??0,y,p.z??0);landingLeg.rotation.set(p.rx??0,p.ry??0,p.rz??0);g.add(landingLeg);
    }else if(p.kind==="heat-shield"){
    const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
    add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-thickness/2,p.z??0);
@@ -363,7 +363,7 @@ function launchpad(){
    if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
    if(part.kind==="separator-thruster"&&part.plume){part.plume.visible=true;window.setTimeout(()=>{part.plume!.visible=false;},450);return;}
    if(part.kind==="separator"||part.kind==="side-decoupler"||part.kind==="fairing"||part.kind==="conical-fairing"||part.kind==="interstage-fairing"||part.kind==="clam-shell-fairing"||part.kind==="heat-shield"){part.object.visible=false;return;}
-   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);const sourceIndex=launchParts.findIndex(source=>source.id===part.object.userData.partId),sourcePart=launchParts[sourceIndex],support=vehicle.landingSupportParts?.[sourceIndex];if(sourcePart&&support){const x=sourcePart.x??0,y=sourcePart.y??0,z=sourcePart.z??0;support.min={x:x-.12,y:y-.44,z:z-.18};support.max={x:x+1.35,y:y+.31,z:z+.18};}return;}
+   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);const sourceIndex=launchParts.findIndex(source=>source.id===part.object.userData.partId),sourcePart=launchParts[sourceIndex],support=vehicle.landingSupportParts?.[sourceIndex];if(sourcePart&&support){const x=sourcePart.x??0,y=sourcePart.y??0,z=sourcePart.z??0;const rotation=new THREE.Euler(sourcePart.rx??0,sourcePart.ry??0,sourcePart.rz??0),points=[new THREE.Vector3(-.12,-.12,-.18),new THREE.Vector3(1.35,-.44,-.18),new THREE.Vector3(-.12,.31,.18),new THREE.Vector3(1.35,.31,.18)].map(point=>point.applyEuler(rotation));support.min={x:x+Math.min(...points.map(point=>point.x)),y:y+Math.min(...points.map(point=>point.y)),z:z+Math.min(...points.map(point=>point.z))};support.max={x:x+Math.max(...points.map(point=>point.x)),y:y+Math.max(...points.map(point=>point.y)),z:z+Math.max(...points.map(point=>point.z))};}return;}
     if(part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="reaction-wheel"||part.kind==="dock"){part.object.visible=true;return;}
    part.object.visible=true;
   });
