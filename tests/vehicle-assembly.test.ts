@@ -393,4 +393,24 @@ describe("vehicle attachment system", () => {
    expect(nodes.some(n=>n.attachmentClass==="stack")).toBe(true);
   }
  });
+
+  it("provides stack connectors for side couplers and separation thrusters", () => {
+    for (const kind of ["side-decoupler","separator-thruster"] as const) {
+      const nodes=attachmentNodes(kind).filter(node=>node.attachmentClass==="stack");
+      expect(nodes.some(node=>node.direction[1]===1)).toBe(true);
+      expect(nodes.some(node=>node.direction[1]===-1)).toBe(true);
+      expect(findAttachmentPlacement([{id:"tank",kind:"tank"}], "tank", kind)).not.toBeNull();
+    }
+  });
+
+  it("allows magnetic snapping to correct perpendicular offsets during axis-constrained drags", () => {
+    const parts:BuildPart[]=[{id:"tank",kind:"tank"}];
+    const exact=findAttachmentPlacement(parts,"tank","structural-beam")!;
+    const beam:BuildPart={id:"beam",kind:"structural-beam",x:exact.x+.1,y:exact.y+.1,z:exact.z};
+    const placement=findNearestAttachmentPlacement(parts,"structural-beam",[beam.x!,beam.y!,beam.z!],.24,beam,"X");
+    expect(placement).not.toBeNull();
+    expect(placement!.parentId).toBe("tank");
+    expect(placement!.x).toBeCloseTo(exact.x);
+    expect(placement!.y).toBeCloseTo(exact.y);
+  });
 });
