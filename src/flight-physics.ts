@@ -5,7 +5,7 @@ export interface VehiclePhysics { epochSeconds?:number;
  dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number;
  reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[];
 }
-import { differentialGravityAt } from "./celestial";
+import { differentialGravityAt, ephemerisAt } from "./celestial";
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 export class FlightSimulator {
  readonly state:FlightState; private accumulator=0;
@@ -18,8 +18,8 @@ export class FlightSimulator {
  step(frameDt:number,input:FlightInputs){if(this.state.landed||this.state.crashed)return;this.accumulator+=Math.min(Math.max(frameDt,0),.1);let n=0;while(this.accumulator>=FIXED_DT&&n<MAX_SUBSTEPS){this.integrate(FIXED_DT,input);this.accumulator-=FIXED_DT;n++;}if(n===MAX_SUBSTEPS)this.accumulator=0;}
  private integrate(dt:number,input:FlightInputs){
   const s=this.state,v=this.vehicle,r=EARTH_RADIUS+Math.max(0,s.altitude),gravity=EARTH_MU/(r*r),rho=SEA_LEVEL_DENSITY*Math.exp(-Math.max(0,s.altitude)/SCALE_HEIGHT);
-  const theta=s.x/EARTH_RADIUS,earthPosition={x:EARTH_RADIUS*Math.sin(0),y:0,z:0},spacecraftPosition={x:r*Math.sin(theta),y:0,z:r*Math.cos(theta)};
-  const thirdBody=differentialGravityAt(spacecraftPosition,earthPosition,(v.epochSeconds??0)+s.elapsed),thirdTangential=thirdBody.x*Math.cos(theta)-thirdBody.z*Math.sin(theta),thirdRadial=thirdBody.x*Math.sin(theta)+thirdBody.z*Math.cos(theta);
+  const theta=s.x/EARTH_RADIUS,epoch=(v.epochSeconds??0)+s.elapsed,earthPosition=ephemerisAt(epoch).find(body=>body.id==="earth")!.position,spacecraftPosition={x:earthPosition.x+r*Math.sin(theta),y:earthPosition.y,z:earthPosition.z+r*Math.cos(theta)};
+  const thirdBody=differentialGravityAt(spacecraftPosition,earthPosition,epoch),thirdTangential=thirdBody.x*Math.cos(theta)-thirdBody.z*Math.sin(theta),thirdRadial=thirdBody.x*Math.sin(theta)+thirdBody.z*Math.cos(theta);
   const speed=Math.hypot(s.vx,s.vy),q=.5*rho*speed*speed;s.maxQ=Math.max(s.maxQ,q);
   const flightAngle=speed>1?Math.atan2(s.vx,s.vy):Math.PI/2;let aoa=Math.atan2(Math.sin(s.angle-flightAngle),Math.cos(s.angle-flightAngle));aoa=Math.max(-.7,Math.min(.7,aoa));
   const drag=q*v.referenceArea*v.dragCoefficient,lift=q*v.referenceArea*v.liftSlope*aoa,throttle=Math.max(0,Math.min(1,input.throttle));
