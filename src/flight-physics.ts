@@ -10,15 +10,17 @@ export interface FlightState {
  fuelTonnes:number; rcsFuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; impactSpeedMps?:number; maxQ:number; currentStage:number;
 }
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
-export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; launchRailLengthM?:number; centerOfMassM?:Vector3; engineMountM?:Vector3; aeroDatumY?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
+export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; launchRailLengthM?:number; landingContactKind?:string; landingGearCount?:number; centerOfMassM?:Vector3; engineMountM?:Vector3; aeroDatumY?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
+/** Approximate vertical touchdown limits for the part actually supporting the craft. */
+export const landingImpactLimitMps=(vehicle:VehiclePhysics):number=>{const base=vehicle.landingContactKind==="landing-leg"?8.5:vehicle.landingContactKind==="wheel"?6.5:vehicle.landingContactKind==="rover-wheel"?5.5:vehicle.landingContactKind==="heat-shield"?5:vehicle.landingContactKind==="engine"?3:vehicle.landingContactKind==="tank"?3.5:3.5,mass=Math.max(.1,vehicle.dryMassTonnes+vehicle.fuelTonnes+(vehicle.rcsFuelTonnes??0)),massFactor=Math.max(.45,Math.min(1.5,1/Math.sqrt(mass))),gearFactor=vehicle.landingContactKind==="landing-leg"?Math.sqrt(Math.max(1,vehicle.landingGearCount??1)):1;return base*massFactor*gearFactor;};
 export const EARTH_ROTATION_RATE=7.2921159e-5;
 export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
 export const EARTH_SPIN_AXIS:Vector3={x:0,y:Math.cos(EARTH_OBLIQUITY),z:Math.sin(EARTH_OBLIQUITY)};
 export const earthRotationAt=(elapsedSeconds:number):Quaternion=>{const half=EARTH_ROTATION_RATE*elapsedSeconds/2,sine=Math.sin(half);return{x:EARTH_SPIN_AXIS.x*sine,y:EARTH_SPIN_AXIS.y*sine,z:EARTH_SPIN_AXIS.z*sine,w:Math.cos(half)};};
 export const EARTH_LAUNCH_ORIENTATION:Quaternion={x:-0.38801515,y:-0.38801515,z:-0.59113809,w:0.59113809};
-/** Converts radial attitude error and body pitch rate into a bounded engine-gimbal command. */
-export const stabilityAssistCommand=(angle:number,angularVelocityScalar:number,trim=0):number=>Math.max(-1,Math.min(1,angle*.9-angularVelocityScalar*.6+trim));
+/** Damps unwanted body rotation without forcing the vehicle back toward radial/upright attitude. */
+export const stabilityAssistCommand=(_angle:number,angularVelocityScalar:number,trim=0):number=>Math.max(-1,Math.min(1,trim-angularVelocityScalar*.6));
 const cross=(a:Vector3,b:Vector3):Vector3=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
 const add=(a:Vector3,b:Vector3):Vector3=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
 const sub=(a:Vector3,b:Vector3):Vector3=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
@@ -88,6 +90,6 @@ export class FlightSimulator {
   else{s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);}
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
-  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!onLaunchRail&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9){s.crashed=true;s.impactSpeedMps=length(relativeVelocity);}else{s.landed=true;s.impactSpeedMps=0;}s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
+  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(!onLaunchRail&&length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE),relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),impactLimit=landingImpactLimitMps(v);if(normalSpeed< -impactLimit){s.crashed=true;s.impactSpeedMps=Math.abs(normalSpeed);}else{s.landed=true;s.impactSpeedMps=0;}s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
  }
 }

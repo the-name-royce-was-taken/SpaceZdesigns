@@ -96,11 +96,17 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
 
   const aero = buildOrbitlabAeroModel(parts, craftName);
   const mass = massProperties(parts);
-  const minY = Math.min(...parts.map(part => {
+  const contactCandidates = parts.map(part => {
     const d = dimensions(part);
-    const offset = part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0;
-    return (part.y ?? 0) + offset - d.height / 2;
-  }));
+    const y = part.y ?? 0;
+    const lowestY = part.kind === "landing-leg" || part.kind === "wheel"
+      ? y - (part.retracted ? .22 : .92)
+      : y + (part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0) - d.height / 2;
+    return { part, lowestY };
+  }).sort((a, b) => a.lowestY - b.lowestY);
+  const minY = contactCandidates[0]!.lowestY;
+  const landingContactKind = contactCandidates[0]!.part.kind;
+  const landingGearCount = parts.filter(part => part.kind === "wheel" || (part.kind === "landing-leg" && !part.retracted)).length;
   const spawnClearanceM = Math.max(.08, -minY + .08);
   const engineManifest: FlightEngine[] = engines.map(part => {
     const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
@@ -122,6 +128,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const rcsFuelTonnes = rcs.length * .012;
   const vehicle: VehiclePhysics = {
     epochSeconds, spawnClearanceM, launchRailLengthM: 20,
+    landingContactKind, landingGearCount,
     dryMassTonnes: mass.dryMassTonnes,
     fuelTonnes: mass.propellantTonnes,
     thrustKN: totalThrust, ispSeconds,
