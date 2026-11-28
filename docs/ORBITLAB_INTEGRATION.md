@@ -5,10 +5,11 @@ SpaceZ vendors the upstream [Orbitlab](https://github.com/ROYIN001/Orbitlab) rep
 ## What is wired into SpaceZ now
 
 - The existing SpaceZ 3D builder remains the source of truth for each craft.
-- `src/orbitlab/vehicle-adapter.ts` translates that specific build into an Orbitlab-shaped vehicle specification: staged engine clusters, propellant loads, dry mass, stage dimensions and fairing geometry.
-- Orbitlab's geometry-derived aerodynamic table generator builds Mach-dependent axial drag and normal-force slope tables from that vehicle's stage diameters, lengths, transitions, nose/fairing and boosters.
-- SpaceZ adds the actual built fins, wings, elevons, strakes and deployed airbrakes to the table. The flight solver interpolates the resulting drag and lift coefficients at the current Mach number and angle of attack.
-- The tables are generated at launch from the selected connected craft component; they are not shared static coefficients from a catalogue vehicle.
+- `src/orbitlab/vehicle-adapter.ts` translates that specific build into an Orbitlab-shaped vehicle specification: staged engine clusters, propellant loads, dry mass, stage dimensions and fairing or exposed nose geometry.
+- Orbitlab's geometry-derived aerodynamic table generator builds Mach-dependent axial-drag and normal-force slope tables from each build's stage diameters, lengths, stage transitions and nose/fairing shape.
+- SpaceZ adds the actual built fins, wings, elevons and strakes to normal-force authority, plus deployed airbrakes to axial drag. Side-mounted parts contribute to the vehicle's aerodynamic reference diameter.
+- The flight solver interpolates the generated drag and lift coefficients at the current Mach number and angle of attack.
+- Tables are generated at launch from the selected connected craft component; they are not shared static coefficients from a catalogue vehicle.
 
 The underlying Orbitlab aerodynamic method is a low-order slender-body/crossflow estimate (Allen & Perkins, NACA TR 1048; Jorgensen, NASA TR R-474), not wind-tunnel data. SpaceZ's current atmosphere remains its existing exponential approximation, and the current flight integrator is still SpaceZ's. This change does **not** claim that Orbitlab's full `Simulation` runtime has replaced the flight loop yet; the pinned upstream source is present for the next integration stage, which must map SpaceZ's custom craft and controls to Orbitlab's `MissionConfig`/six-DOF runtime and be regression-tested before switching the live flight over.
 

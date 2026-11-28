@@ -41,16 +41,20 @@ export function buildOrbitlabAeroModel(parts:readonly BuildPart[],craftName="Spa
  const stageKeys=[...new Set(engines.map(engineGroup))].sort((a,b)=>a-b);
  const fairingPart=parts.find(part=>isFairingKind(part.kind)),fd=fairingPart?dimensions(fairingPart):null;
  const fairing:FairingSpec|null=fairingPart&&fd?{mass:fd.massKg,diameter:fd.diameter,length:fd.height,sepAltitude:100000}:null;
- const structure=parts.filter(part=>!isFairingKind(part.kind));
+ const nosePart=parts.filter(part=>part.kind==="nose-cone").sort((a,b)=>(b.y??0)-(a.y??0))[0];
+ const nd=nosePart?dimensions(nosePart):null;
+ const exposedPayload=!fairing&&nosePart&&nd?{diameter:nd.diameter,length:nd.height,noseLength:nd.height}:undefined;
+ const structure=parts.filter(part=>!isFairingKind(part.kind)&&part!==nosePart);
  const stages:StageSpec[]=stageKeys.map((key,index)=>{
   const assigned=structure.filter(part=>partStage(part,stageKeys,engines)===key);
   const sized=assigned.map(part=>({part,dim:dimensions(part)}));
   const minY=Math.min(...sized.map(({part,dim})=>(part.y??0)-dim.height/2)),maxY=Math.max(...sized.map(({part,dim})=>(part.y??0)+dim.height/2));
-  return{id:"spacez-stage-"+key,name:"Stage "+(index+1),dryMass:sized.reduce((sum,item)=>sum+item.dim.massKg,0),propellantMass:assigned.filter(part=>part.kind==="tank").reduce((sum,part)=>sum+tankFuelCapacity(part),0),engine:engineSpec(assigned),diameter:Math.max(.1,...sized.map(({dim})=>dim.diameter)),length:Math.max(.25,maxY-minY)};
+  const diameter=Math.max(.1,...sized.map(({part,dim})=>2*(Math.hypot(part.x??0,part.z??0)+dim.diameter/2)));
+  return{id:"spacez-stage-"+key,name:"Stage "+(index+1),dryMass:sized.reduce((sum,item)=>sum+item.dim.massKg,0),propellantMass:assigned.filter(part=>part.kind==="tank").reduce((sum,part)=>sum+tankFuelCapacity(part),0),engine:engineSpec(assigned),diameter,length:Math.max(.25,maxY-minY)};
  });
- const maxDiameter=Math.max(.1,...stages.map(stage=>stage.diameter),fairing?.diameter??0),height=stages.reduce((sum,stage)=>sum+stage.length,0)+(fairing?.length??0);
+ const maxDiameter=Math.max(.1,...stages.map(stage=>stage.diameter),fairing?.diameter??0,exposedPayload?.diameter??0),height=stages.reduce((sum,stage)=>sum+stage.length,0)+(fairing?.length??exposedPayload?.length??0);
  const safeName=craftName.trim().replace(/[^a-z0-9-]+/gi,"-").replace(/^-|-$/g,"").slice(0,36)||"custom";
- const vehicleSpec:VehicleSpec={id:"spacez-"+safeName.toLowerCase(),name:craftName,country:"Custom",manufacturer:"SpaceZdesigns",height,payloadLEO:0,payloadGTO:0,fairing,stages,sites:["spacez-default"],maxQ:50000,maxAccel:60};
+ const vehicleSpec:VehicleSpec={id:"spacez-"+safeName.toLowerCase(),name:craftName,country:"Custom",manufacturer:"SpaceZdesigns",height,payloadLEO:0,payloadGTO:0,fairing,stages,sites:["spacez-default"],maxQ:50000,maxAccel:60,...(exposedPayload?{exposedPayload}:{})};
  const referenceArea=Math.PI*maxDiameter*maxDiameter/4;
  const attached:AttachedStack={activeIndex:0,stageAttached:stages.map(()=>true),fairingAttached:!!fairing,boosterGroups:[]};
  const layout=stackLayout(vehicleSpec),base=ascentAeroTable(vehicleSpec,attached,referenceArea,index=>layout.base[index]??0);

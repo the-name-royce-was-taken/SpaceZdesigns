@@ -23,6 +23,15 @@ describe("Orbitlab per-build vehicle and aerodynamic adapter",()=>{
   expect(winged.table.normalSlope[0]).toBeGreaterThan(plain.table.normalSlope[0]);
   expect(winged.table.planformArea).toBeGreaterThan(plain.table.planformArea);
  });
+ it("represents an uncovered nose cone as Orbitlab's exposed payload geometry",()=>{
+  const model=buildOrbitlabAeroModel([...starter,{kind:"nose-cone",y:2.7}]);
+  expect(model.vehicleSpec.exposedPayload?.noseLength).toBeGreaterThan(0);
+ });
+ it("includes side-mounted hardware in the aerodynamic reference diameter",()=>{
+  const centered=buildOrbitlabAeroModel(starter);
+  const wide=buildOrbitlabAeroModel([...starter,{kind:"engine",x:1.2,y:0,z:0,engineType:"solid"}]);
+  expect(wide.referenceArea).toBeGreaterThan(centered.referenceArea);
+ });
  it("maps engine activation groups to serial stage numbers",()=>{
   const staged:BuildPart[]=[...starter,{kind:"engine",y:-2,activationGroup:2,engineType:"solid"},{kind:"tank",y:-1.2,activationGroup:2}];
   const model=buildOrbitlabAeroModel(staged);
