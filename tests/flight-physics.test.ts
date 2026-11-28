@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -7,6 +7,14 @@ const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:
  return{x:v.x+2*(q.w*p.x+cross.x),y:v.y+2*(q.w*p.y+cross.y),z:v.z+2*(q.w*p.z+cross.z)};
 };
 describe("fixed-step flight solver",()=>{
+ it("provides a co-rotating launch-site orientation at Earth's spin rate",()=>{
+  const elapsed=120,rotation=earthRotationAt(elapsed),angle=EARTH_ROTATION_RATE*elapsed,sine=Math.sin(angle/2);
+  expect(Math.hypot(rotation.x,rotation.y,rotation.z,rotation.w)).toBeCloseTo(1,10);
+  expect(2*Math.acos(rotation.w)).toBeCloseTo(angle,10);
+  expect(rotation.x/sine).toBeCloseTo(EARTH_SPIN_AXIS.x,10);
+  expect(rotation.y/sine).toBeCloseTo(EARTH_SPIN_AXIS.y,10);
+  expect(rotation.z/sine).toBeCloseTo(EARTH_SPIN_AXIS.z,10);
+ });
  it("starts with a normalized attitude that points the rocket's forward axis radially upward",()=>{
   const sim=new FlightSimulator(vehicle),q=sim.state.orientation,forward=rotateByQuaternion(q,{x:0,y:1,z:0});
   expect(Math.hypot(q.x,q.y,q.z,q.w)).toBeCloseTo(1,8);
