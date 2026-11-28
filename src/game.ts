@@ -406,7 +406,7 @@ function launchpad(){
  };
  root.querySelectorAll<HTMLButtonElement>("[data-flight-activation]").forEach(button=>button.onclick=()=>activateFlightGroup(Number(button.dataset.flightActivation)));
  updateActivationControls();
- const recoverToLaunch=()=>{sim?.reset();sim=null;simWorldId=null;debrisReleased=false;poweredFlightStarted=false;explosionTriggered=false;group.visible=true;$("#flight-crash-menu",root).hidden=true;impactEffects.forEach(effect=>{scene.remove(effect.mesh);effect.mesh.geometry.dispose();(effect.mesh.material as THREE.Material).dispose();});impactEffects.length=0;looseGroups.forEach(debris=>{debris.object.position.x=debris.initialX;debris.velocity=0;debris.landed=false;});range.value="0";pitch.value="0";updateLabels();group.position.set(earthRadius+spawnClearanceM/1e6,0,0);group.quaternion.copy(new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w));cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES;cameraYaw=0;cameraPitch=.08;updateFlightCamera();$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch.";};
+ const recoverToLaunch=()=>nav("flight");
  $("#recover",root).onclick=recoverToLaunch;
  $("#crash-build",root).onclick=()=>nav("build");
  $("#crash-relaunch",root).onclick=recoverToLaunch;
