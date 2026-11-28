@@ -4,6 +4,7 @@ import {
   createEngineModel,
   createLandingLegModel,
   setLandingLegDeployment,
+  rotationSnapForShift,
   type EngineType
 } from "../src/vehicle-builder-3d";
 
@@ -49,5 +50,12 @@ describe("shared vehicle visual models", () => {
     expect(model.userData.deploymentProgress).toBe(0);
     const leg = (model.userData.legs as { hinge: { rotation: { z: number } } }[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(0);
+  });
+});
+
+describe("builder rotation snapping", () => {
+  it("uses 22.5 degree increments only while Shift is held", () => {
+    expect(rotationSnapForShift(true)).toBeCloseTo(Math.PI / 8);
+    expect(rotationSnapForShift(false)).toBeNull();
   });
 });
