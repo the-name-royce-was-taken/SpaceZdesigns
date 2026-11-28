@@ -5,7 +5,7 @@
  * a partially initialized simulation.
  */
 import { buildOrbitlabAeroModel } from "./vehicle-adapter";
-import { engineVariants, partCatalog, type BuildPart } from "../vehicle-builder-3d";
+import { engineVariants, partCatalog, partMassTonnes, type BuildPart } from "../vehicle-builder-3d";
 import { tankFuelCapacity } from "../vehicle-assembly";
 import { listActivationGroups, partActivationGroup } from "../activation";
 import { landingImpactCapacityForPart, type LandingSupportPart, type VehiclePhysics, type FlightEngine, type Vector3 } from "../flight-physics";
@@ -76,7 +76,7 @@ function massProperties(parts: readonly BuildPart[]) {
     const spec = partCatalog.find(item => item.kind === part.kind);
     if (!spec) throw new Error("Unsupported part type: " + part.kind);
     const d = dimensions(part);
-    const dryKg = spec.mass * 1000;
+    const dryKg = partMassTonnes(part) * 1000;
     const fuelKg = part.kind === "tank" ? tankFuelCapacity(part) : 0;
     const massKg = dryKg + fuelKg;
     const x = part.x ?? 0, y = part.y ?? 0, z = part.z ?? 0;

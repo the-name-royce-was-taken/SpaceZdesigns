@@ -6,6 +6,9 @@ import {
   setLandingLegDeployment,
   rotationSnapForShift,
   landingLegDeploymentAngle,
+  engineGimbalRotation,
+  engineVariants,
+  partMassTonnes,
   type EngineType
 } from "../src/vehicle-builder-3d";
 
@@ -61,6 +64,25 @@ describe("shared vehicle visual models", () => {
     expect(leg.hinge.rotation.z).toBeCloseTo(0);
   });
 });
+
+
+  it("uses distinct engine thrust, specific impulse, and dry mass values", () => {
+    expect(engineVariants.find(engine => engine.id === "liquid")?.thrustKN).toBe(75);
+    expect(engineVariants.find(engine => engine.id === "solid")?.ispSeconds).toBe(245);
+    expect(engineVariants.find(engine => engine.id === "ion")?.thrustKN).toBeLessThan(.001);
+    expect(partMassTonnes({kind:"engine",engineType:"liquid"})).toBeCloseTo(.18);
+    expect(partMassTonnes({kind:"engine",engineType:"ion"})).toBeCloseTo(.06);
+  });
+
+  it("maps steering commands to the same six-degree nozzle gimbal used by flight physics", () => {
+    const pitch=engineGimbalRotation(1,0);
+    const yaw=engineGimbalRotation(0,1);
+    expect(pitch.x).toBeCloseTo(-Math.PI/30);
+    expect(pitch.z).toBeCloseTo(0);
+    expect(yaw.x).toBeCloseTo(0);
+    expect(yaw.z).toBeCloseTo(-Math.PI/30);
+    expect(engineGimbalRotation(4,-4)).toEqual(engineGimbalRotation(1,-1));
+  });
 
 describe("builder rotation snapping", () => {
   it("uses 22.5 degree increments only while Shift is held", () => {

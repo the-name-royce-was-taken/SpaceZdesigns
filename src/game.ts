@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { WorldRecord } from "./worlds";
-import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKind, defaultFairingHeight, createEngineModel, createLandingLegModel, landingLegDeploymentAngle, setLandingLegDeployment, animateLandingLegModels, type BuildPart } from "./vehicle-builder-3d";
+import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKind, defaultFairingHeight, createEngineModel, createLandingLegModel, landingLegDeploymentAngle, engineGimbalRotation, partMassTonnes, setLandingLegDeployment, animateLandingLegModels, type BuildPart } from "./vehicle-builder-3d";
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { prepareSpaceZFlight } from "./orbitlab/flight-preflight";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
@@ -115,7 +115,7 @@ function createLaunchPadTexture(){
  for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.beginPath();ctx.moveTo(512+Math.cos(a)*235,512+Math.sin(a)*235);ctx.lineTo(512+Math.cos(a)*390,512+Math.sin(a)*390);ctx.stroke();}
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;
 }
-function metricsForParts(parts:readonly BuildPart[]){const entries=parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+e.spec.mass,0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+e.spec.thrust,0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
+function metricsForParts(parts:readonly BuildPart[]){const entries=parts.map(part=>({part,spec:partCatalog.find(item=>item.kind===part.kind)!}));const mass=entries.reduce((n,e)=>n+partMassTonnes(e.part),0),fuel=entries.reduce((n,e)=>n+(e.part.kind==="tank"?tankFuelCapacity(e.part):e.spec.fuel),0),thrust=entries.reduce((n,e)=>n+(e.part.kind==="engine"?(engineVariants.find(engine=>engine.id===(e.part.engineType??"liquid"))?.thrustKN??0):e.spec.thrust),0),cost=entries.reduce((n,e)=>n+partCost(e.part.kind,e.part.engineType),0);return{mass,fuel,thrust,cost}}
 function metrics(){return metricsForParts(craft.parts)}
 async function save(){const w=world();if(!w)throw new Error("Select a world before saving a vehicle.");const list=((w.state.craft??[]) as Craft[]).filter(c=>c.name!==craft.name);const savedCraft=structuredClone(craft);savedCraft.parts=normalizeActivationAssignments(savedCraft.parts);list.unshift(savedCraft);w.state.craft=list;w.updatedAt=new Date().toISOString();await host.setWorld(w)}
 function makeFlightId(){return globalThis.crypto?.randomUUID?.()??("flight-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10))}
@@ -187,6 +187,7 @@ function disposeTrackingScene(){if(trackingFrame)cancelAnimationFrame(trackingFr
 function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
  const g=new THREE.Group();
  const enginePlumes:THREE.Group[]=[];
+ const engineGimbals:{model:THREE.Group;plume:THREE.Group}[]=[];
  const rcsPlumes:THREE.Mesh[]=[];
  const solarAssemblies:{group:number;partId:string;hinge:THREE.Group;deployed:boolean}[]=[];
  const activationParts:{group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[]=[];
@@ -237,7 +238,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    const layers=flameProfiles[engine.id]??flameProfiles.liquid;
    layers.forEach(([radius,length,color,opacity],index)=>{const cone=new THREE.Mesh(new THREE.ConeGeometry(radius,length,32,3,false),flameMaterial(color,opacity));cone.position.y=length/2;cone.renderOrder=10+index;cone.userData.baseOpacity=opacity;flame.add(cone);});
    flame.userData.baseLength=engine.id==="hydrolox"?1.25:engine.id==="ion"?1.8:engine.id==="solid"?.9:1;
-   g.add(flame);enginePlumes.push(flame);
+   g.add(flame);enginePlumes.push(flame);engineGimbals.push({model:engineModel,plume:flame});
   }else if(p.kind==="separator"){
    add(new THREE.CylinderGeometry(.5,.5,.2,40,2,false),mat(0xd6b66d,.45),p.x??0,y,p.z??0);
    const sepRing=add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);sepRing.rotation.x=Math.PI/2;
@@ -300,6 +301,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }
  });
  g.userData.enginePlumes=enginePlumes;
+ g.userData.engineGimbals=engineGimbals;
  g.userData.rcsPlumes=rcsPlumes;
  g.userData.solarAssemblies=solarAssemblies;
  g.userData.activationParts=activationParts;
@@ -444,7 +446,7 @@ function launchpad(){
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),position=new THREE.Vector3(s.position.x,s.position.y,s.position.z),omega=new THREE.Vector3(EARTH_SPIN_AXIS.x,EARTH_SPIN_AXIS.y,EARTH_SPIN_AXIS.z),atmosphereVelocity=omega.cross(position).multiplyScalar(EARTH_ROTATION_RATE),airVelocity=new THREE.Vector3(s.velocity.x,s.velocity.y,s.velocity.z).sub(atmosphereVelocity),q=.5*rho*airVelocity.lengthSq();
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
    $("#engine-stage-readout",root).textContent="STAGE "+s.currentStage;
-   animateLandingLegModels(group,dt);const plumes=group.userData.enginePlumes as THREE.Group[],flameThrottle=Math.max(0,Math.min(1,Number(range.value)/100));plumes.forEach((plume,index)=>{const active=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&flameThrottle>.005&&s.fuelTonnes>0;plume.visible=active;const flicker=.94+.06*Math.sin(s.elapsed*(plume.userData.engineType==="solid"?58:plume.userData.engineType==="ion"?12:38)+index*2.7),power=Math.pow(flameThrottle,.72);plume.scale.set(1,Number(plume.userData.baseLength??1)*power*flicker,1);plume.children.forEach(layer=>{const mesh=layer as THREE.Mesh,material=mesh.material as THREE.MeshBasicMaterial;material.opacity=Number(mesh.userData.baseOpacity??.5)*Math.pow(flameThrottle,.8);});});
+   animateLandingLegModels(group,dt);const gimbal=engineGimbalRotation(desiredPitch,keyboardYaw);(group.userData.engineGimbals as {model:THREE.Group;plume:THREE.Group}[]).forEach(({model,plume})=>{model.rotation.set(gimbal.x,0,gimbal.z);plume.rotation.set(Math.PI+gimbal.x,0,gimbal.z);});const plumes=group.userData.enginePlumes as THREE.Group[],flameThrottle=Math.max(0,Math.min(1,Number(range.value)/100));plumes.forEach((plume,index)=>{const active=!s.landed&&!s.crashed&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(plume.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&flameThrottle>.005&&s.fuelTonnes>0;plume.visible=active;const flicker=.94+.06*Math.sin(s.elapsed*(plume.userData.engineType==="solid"?58:plume.userData.engineType==="ion"?12:38)+index*2.7),power=Math.pow(flameThrottle,.72);plume.scale.set(1,Number(plume.userData.baseLength??1)*power*flicker,1);plume.children.forEach(layer=>{const mesh=layer as THREE.Mesh,material=mesh.material as THREE.MeshBasicMaterial;material.opacity=Number(mesh.userData.baseOpacity??.5)*Math.pow(flameThrottle,.8);});});
    const rcsJets=group.userData.rcsPlumes as THREE.Mesh[];const rcsCommand=heldKeys.has("KeyA")||heldKeys.has("KeyD")||heldKeys.has("ArrowLeft")||heldKeys.has("ArrowRight");rcsJets.forEach(jet=>{jet.visible=!s.landed&&!s.crashed&&rcsCommand&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)>0&&Number(jet.userData.stage??Number.MAX_SAFE_INTEGER)<=s.currentStage&&s.rcsFuelTonnes>0;});
    updateActivationControls();
    if(s.crashed&&!explosionTriggered){explosionTriggered=true;group.visible=false;const crashMenu=$("#flight-crash-menu",root);crashMenu.hidden=false;crashMenu.style.display="grid";const impactPosition=new THREE.Vector3(s.position.x,s.position.y,s.position.z).applyQuaternion(renderRotation).normalize().multiplyScalar(earthRadius+3e-6).sub(new THREE.Vector3(earthRadius,0,0));spawnImpactExplosion(impactPosition,s.impactSpeedMps??s.vy);}

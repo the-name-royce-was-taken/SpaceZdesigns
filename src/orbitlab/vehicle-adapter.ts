@@ -7,7 +7,7 @@ import { atMach, ascentAeroTable, type AeroTable, type AttachedStack } from "./a
 import { stackLayout } from "./stack-layout";
 import type { EngineSpec, FairingSpec, StageSpec, VehicleSpec } from "./types";
 import { partActivationGroup } from "../activation";
-import { engineVariants, isFairingKind, partCatalog, type BuildPart } from "../vehicle-builder-3d";
+import { engineVariants, isFairingKind, partCatalog, partMassTonnes, type BuildPart } from "../vehicle-builder-3d";
 import { tankFuelCapacity } from "../vehicle-assembly";
 const G0=9.80665;
 const surfaceKinds=new Set(["fin","wing","control","strake"]);
@@ -17,7 +17,7 @@ function dimensions(part:BuildPart):PartDimensions{
  if(!catalog)throw new Error("Unsupported SpaceZ part in Orbitlab adapter: "+part.kind);
  const height=part.kind==="tank"?(part.height??catalog.size.y):part.kind==="structural-beam"?Math.max(1,Math.min(12,Math.round(part.structuralLength??3)))*.4:isFairingKind(part.kind)?(part.height??1.15):catalog.size.y;
  const radius=part.kind==="tank"?Math.max(part.topRadius??.44,part.bottomRadius??.44):part.radius??0;
- return{height:Math.max(.05,height),diameter:Math.max(catalog.size.x,catalog.size.z,radius*2),area:catalog.size.x*catalog.size.z,massKg:catalog.mass*1000};
+ return{height:Math.max(.05,height),diameter:Math.max(catalog.size.x,catalog.size.z,radius*2),area:catalog.size.x*catalog.size.z,massKg:partMassTonnes(part)*1000};
 }
 function engineGroup(part:BuildPart):number{return Math.max(1,Math.floor(part.engineStage??partActivationGroup(part)??1));}
 function engineSpec(parts:readonly BuildPart[]):EngineSpec{

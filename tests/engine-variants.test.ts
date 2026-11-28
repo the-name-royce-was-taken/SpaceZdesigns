@@ -8,8 +8,10 @@ describe("balanced engine variants", () => {
     ]);
   });
 
-  it("keeps thrust and specific impulse identical across engine variants", () => {
-    expect(new Set(engineVariants.map(engine => engine.thrustKN))).toEqual(new Set([34]));
-    expect(new Set(engineVariants.map(engine => engine.ispSeconds))).toEqual(new Set([285]));
+  it("uses engine-specific thrust and specific impulse values", () => {
+    expect(new Set(engineVariants.map(engine => engine.thrustKN)).size).toBe(5);
+    expect(new Set(engineVariants.map(engine => engine.ispSeconds)).size).toBe(5);
+    expect(engineVariants.find(engine => engine.id === "ion")?.thrustKN).toBeLessThan(.001);
+    expect(engineVariants.find(engine => engine.id === "hydrolox")?.ispSeconds).toBeGreaterThan(400);
   });
 });
