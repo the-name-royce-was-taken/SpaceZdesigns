@@ -267,8 +267,10 @@ export function createLandingLegModel(retracted=true,deploymentAngle=-(2.3+Math.
  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.065,12),dark);
  collar.position.y=.59;hinge.add(collar);
  const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.84,12),pistonMetal);
- piston.position.y=.58+(retracted?0:.46);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
+ piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
  const foot=new THREE.Group();foot.position.y=retracted?.82:1.36;hinge.add(foot);
+ const positionPistonAtPad=(footY:number)=>{const endY=footY+.01,length=endY-.58;piston.scale.y=length/.84;piston.position.y=.58+length/2;};
+ positionPistonAtPad(foot.position.y);
  const pad=new THREE.Mesh(new THREE.CylinderGeometry(.19,.17,.075,24,1,false),footMaterial);pad.position.y=-.025;pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
  const contactSole=new THREE.Mesh(new THREE.CylinderGeometry(.155,.16,.025,24,1,false),dark);contactSole.position.y=-.075;contactSole.castShadow=true;contactSole.receiveShadow=true;foot.add(contactSole);
  const padRim=new THREE.Mesh(new THREE.TorusGeometry(.17,.012,8,24),steel);padRim.rotation.x=Math.PI/2;padRim.position.y=.015;foot.add(padRim);
@@ -293,8 +295,10 @@ export function animateLandingLegModels(root:THREE.Object3D,dt:number){
   o.userData.deploymentProgress=Math.abs(target-p)<.002?target:p;
   for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){
    leg.hinge.rotation.z=Number(o.userData.deploymentAngle??-2.0)*p;
-   leg.piston.position.y=.58+.46*p;
    leg.foot.position.y=.82+.54*p;
+   const pistonEndY=leg.foot.position.y+.01,pistonLength=pistonEndY-.58;
+   leg.piston.scale.y=pistonLength/.84;
+   leg.piston.position.y=.58+pistonLength/2;
    leg.foot.rotation.z=-leg.hinge.rotation.z;
   }
  });
