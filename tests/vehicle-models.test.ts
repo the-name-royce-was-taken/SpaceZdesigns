@@ -67,10 +67,12 @@ describe("shared vehicle visual models", () => {
     expect(leg.foot.position.y).toBeCloseTo(1.36);
   });
 
-  it("chooses the downward deployment swing from the part's saved rotation", () => {
-    expect(landingLegDeploymentAngle({rz:0})).toBeCloseTo(-2.3);
-    expect(landingLegDeploymentAngle({rz:Math.PI})).toBeCloseTo(2.3);
-    const model=createLandingLegModel(false,landingLegDeploymentAngle({rz:Math.PI}));
+  it("chooses a downward, outward deployment swing for mirrored side-mounted legs", () => {
+    expect(landingLegDeploymentAngle({x:1,rz:0})).toBeCloseTo(-2.3);
+    expect(landingLegDeploymentAngle({x:-1,rz:0})).toBeCloseTo(2.3);
+    expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3);
+    expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-2.3);
+    const model=createLandingLegModel(false,landingLegDeploymentAngle({x:1,rz:Math.PI}));
     const leg=(model.userData.legs as {hinge:{rotation:{z:number}}}[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(2.3);
   });
