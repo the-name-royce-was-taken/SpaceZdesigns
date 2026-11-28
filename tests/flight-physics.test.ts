@@ -18,9 +18,10 @@ describe("fixed-step flight solver",()=>{
  });
 
  it("integrates world-space angular velocity as a world-space rotation",()=>{
-  const sim=new FlightSimulator(vehicle);sim.launch();sim.state.position.x+=1000;
+  const sim=new FlightSimulator(vehicle);sim.launch();
+  const position={x:6_371_100,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
   const initial={...sim.state.orientation},initialForward=rotateByQuaternion(initial,{x:0,y:1,z:0});
-  sim.state.angularVelocity={x:0,y:0,z:1};sim.step(1/120,{throttle:0,pitch:0});
+  sim.restoreState({...sim.state,position,velocity:surfaceVelocity,angularVelocity:{x:0,y:0,z:1},landed:false,crashed:false});sim.step(1/120,{throttle:0,pitch:0});
   const half=.5*(1/120)*Math.exp(-.35/120),worldDelta={x:0,y:0,z:Math.sin(half),w:Math.cos(half)};
   const expected=rotateByQuaternion(worldDelta,initialForward),actual=rotateByQuaternion(sim.state.orientation,{x:0,y:1,z:0});
   expect(Math.hypot(actual.x-expected.x,actual.y-expected.y,actual.z-expected.z)).toBeLessThan(1e-7);
