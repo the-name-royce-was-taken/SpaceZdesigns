@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactLimitMps, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, landingImpactLimitMps, landingSupportContact, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -146,12 +146,28 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.altitude).toBeGreaterThan(21);
   expect(lateralSpeed).toBeLessThan(1e-8);
  });
- it("uses the supporting part and vehicle mass to set vertical impact tolerance",()=>{
-  const bare:VehiclePhysics={...vehicle,dryMassTonnes:1,landingContactKind:"engine"};
-  const legs:VehiclePhysics={...bare,landingContactKind:"landing-leg",landingGearCount:3};
-  const heavy:VehiclePhysics={...legs,dryMassTonnes:8};
-  expect(landingImpactLimitMps(legs)).toBeGreaterThan(landingImpactLimitMps(bare));
-  expect(landingImpactLimitMps(heavy)).toBeLessThan(landingImpactLimitMps(legs));
+ it("uses per-part impact energy and the actual supporting assembly",()=>{
+  const mass=10;
+  const bare:VehiclePhysics={...vehicle,dryMassTonnes:mass,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:landingImpactCapacityForPart("engine")};
+  const tank:VehiclePhysics={...bare,landingContactKind:"tank",landingImpactCapacityJ:landingImpactCapacityForPart("tank")};
+  const legs:VehiclePhysics={...bare,landingContactKind:"landing-leg",landingImpactCapacityJ:landingImpactCapacityForPart("landing-leg")};
+  const multiLegs:VehiclePhysics={...legs,landingImpactCapacityJ:3*landingImpactCapacityForPart("landing-leg")};
+  const heavy:VehiclePhysics={...multiLegs,dryMassTonnes:30};
+  expect(landingImpactLimitMps(legs)).toBeGreaterThan(landingImpactLimitMps(tank));
+  expect(landingImpactLimitMps(multiLegs)).toBeGreaterThan(landingImpactLimitMps(legs));
+  expect(landingImpactLimitMps(heavy)).toBeLessThan(landingImpactLimitMps(multiLegs));
+  expect(landingImpactLimitMps({...bare,landingImpactCapacityJ:landingImpactCapacityForPart("tank")})).toBeLessThan(landingImpactLimitMps(bare));
+ });
+ it("selects the part actually touching the ground after the vehicle rotates",()=>{
+  const craft:VehiclePhysics={...vehicle,landingSupportParts:[
+   {kind:"engine",min:{x:-.3,y:-.8,z:-.3},max:{x:.3,y:-.3,z:.3}},
+   {kind:"landing-leg",min:{x:-.7,y:-.95,z:-.7},max:{x:.7,y:.2,z:.7}}
+  ]};
+  const upright=landingSupportContact(craft,{x:0,y:0,z:0,w:1},{x:0,y:1,z:0});
+  expect(upright.capacityJ).toBe(landingImpactCapacityForPart("landing-leg"));
+  const sideways={x:0,y:0,z:Math.sin(Math.PI/4),w:Math.cos(Math.PI/4)};
+  const tilted=landingSupportContact(craft,sideways,{x:0,y:1,z:0});
+  expect(tilted.lowestProjectionM).not.toBeCloseTo(upright.lowestProjectionM,2);
  });
  it("does not crash a supported landing for sideways speed or attitude alone",()=>{
   const sim=new FlightSimulator({...vehicle,dryMassTonnes:1,landingContactKind:"landing-leg",landingGearCount:3,spawnClearanceM:.5,launchRailLengthM:0});sim.launch();
@@ -160,6 +176,20 @@ describe("fixed-step flight solver",()=>{
   for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
   expect(sim.state.crashed).toBe(false);
   expect(sim.state.landed).toBe(true);
+ });
+ it("lands without exploding on a gentle contact with a resilient part",()=>{
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:8_000,spawnClearanceM:0,launchRailLengthM:0});sim.launch();
+  const position={x:6_371_000+.005,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-.1,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  for(let i=0;i<120&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(false);expect(sim.state.landed).toBe(true);
+ });
+ it("destroys a vehicle when vertical touchdown energy exceeds its supporting part capacity",()=>{
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:8_000,spawnClearanceM:0,launchRailLengthM:0});sim.launch();
+  const position={x:6_371_000+.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-2,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  for(let i=0;i<120&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(true);expect(sim.state.impactSpeedMps).toBeGreaterThan(landingImpactLimitMps(sim.vehicle,10));
  });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
