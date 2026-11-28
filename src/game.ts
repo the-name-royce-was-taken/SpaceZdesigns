@@ -212,7 +212,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    for(let i=0;i<8;i++){const angle=i*Math.PI/4;add(new THREE.SphereGeometry(.018,8,6),engineDetails,(p.x??0)+Math.cos(angle)*.252,y+.44,(p.z??0)+Math.sin(angle)*.252);}
    const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;flame.userData.engineExhaust=true;flame.userData.engineType=engine.id;
    const flameMaterial=(color:number,opacity:number)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-   const flameProfiles:Record<string,number[][]>={
+   const flameProfiles:Record<string,[number,number,number,number][] >={
     liquid:[[.30,1.45,0xff4b19,.28],[.20,1.12,0xff9a32,.56],[.105,.82,0xfff2cf,.88]],
     solid:[[.39,1.18,0xff3d12,.36],[.29,.98,0xff8a22,.62],[.16,.72,0xffe5a0,.9]],
     methalox:[[.25,1.55,0x287fff,.28],[.17,1.25,0x65caff,.52],[.085,.92,0xd8f5ff,.88]],
