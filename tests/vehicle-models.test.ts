@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { landingLegBounds } from "../src/orbitlab/flight-preflight";
 import {
   animateLandingLegModels,
   createEngineModel,
@@ -77,6 +78,14 @@ describe("shared vehicle visual models", () => {
     const leg=(model.userData.legs as {hinge:{rotation:{z:number}};foot:{children:{geometry:{type:string}}[]}}[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(2.3+Math.PI/9);
     expect(leg.foot.children.some(child=>child.geometry.type==="CylinderGeometry")).toBe(true);
+  });
+
+  it("uses the deployed landing foot as the lowest physical support bounds", () => {
+    const stowed=landingLegBounds({kind:"landing-leg",x:1,rz:0},false);
+    const deployed=landingLegBounds({kind:"landing-leg",x:1,rz:0},true);
+    expect(deployed.min.y).toBeLessThan(-1);
+    expect(deployed.max.y).toBeGreaterThan(stowed.min.y);
+    expect(deployed.min.x).toBeLessThan(deployed.max.x);
   });
 
   it("can retract the hydraulic leg", () => {
