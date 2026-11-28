@@ -618,7 +618,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
    for(let i=0;i<count;i++){
     const placement=i===0?first:findAvailableAttachmentPlacement(working,kind,preferredId,anchor);
     if(!placement)break;
-    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="remote-control"||kind==="reaction-wheel")?{topRadius:.28,bottomRadius:.28}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false}:{}),...(kind==="structural-beam"?{structuralLength:3}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:0,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
+    const part:BuildPart={kind,id:uid(),...(kind==="tank"?{topRadius:.44,bottomRadius:.44,height:.96}:{}),...((kind==="remote-control"||kind==="reaction-wheel")?{topRadius:.28,bottomRadius:.28}:{}),...(kind==="heat-shield"?{radius:.62,thickness:.16}:{}),...(kind==="rover-wheel"?{radius:.24}:{}),...(kind==="solar"?{solarLength:2.4,solarDeployed:false}:{}),...(kind==="structural-beam"?{structuralLength:3}:{}),...((kind==="nose-cone"||isFairingKind(kind))?{bottomRadius:.44,height:defaultFairingHeight(kind)}:{}),...(kind==="engine"?{engineType,engineStage:0}:{}),x:placement.x,y:placement.y,z:placement.z,ry:placement.rotationY,parentId:placement.parentId,parentNode:placement.parentNode,childNode:placement.childNode};
     additions.push(part);working.push(part);
    }
   }
