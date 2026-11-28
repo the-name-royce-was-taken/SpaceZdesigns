@@ -4,7 +4,8 @@ import {
   createEngineModel,
   createLandingLegModel,
   setLandingLegDeployment,
-  rotationSnapForShift,\n  landingLegDeploymentAngle,
+  rotationSnapForShift,
+  landingLegDeploymentAngle,
   type EngineType
 } from "../src/vehicle-builder-3d";
 
