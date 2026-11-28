@@ -339,7 +339,7 @@ function launchpad(){
   const restored=structuredClone(savedFlight.state) as FlightState&{position?:{x:number;y:number;z:number};velocity?:{x:number;y:number;z:number};orientation?:{x:number;y:number;z:number;w:number};angularVelocity?:{x:number;y:number;z:number}};
   if(!restored.position){restored.position={x:restored.x,y:6_371_000+restored.altitude,z:0};restored.velocity={x:restored.vx,y:restored.vy,z:0};restored.orientation={x:0,y:0,z:Math.sin(restored.angle/2),w:Math.cos(restored.angle/2)};restored.angularVelocity={x:0,y:0,z:restored.angularVelocityScalar??0};}
   Object.assign(sim.state,restored);range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();
-  $("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Resumed the saved flight. Use SPACE CENTER to leave it and launch fresh when ready.";
+  $("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Resumed the saved flight. Use SPACE CENTER to leave it and launch fresh when ready.";poweredFlightStarted=true;
  };
  const resumeButton=$("#resume-saved-flight",root) as HTMLButtonElement;
  if(savedFlight){resumeButton.hidden=false;resumeButton.onclick=()=>{restoreSavedFlight();resumeButton.hidden=true;};}
@@ -348,7 +348,7 @@ function launchpad(){
   if(sim)return true;
   if((!launchParts.some(p=>p.kind==="capsule")&&!launchParts.some(p=>p.kind==="remote-control"))||!launchParts.some(p=>p.kind==="engine")){host.toast("Add a command pod or remote control module, plus an engine, before flight.","error");return false;}
   debrisReleased=true;clearFlightSave();resumeButton.hidden=true;const activeWorld=world();if(activeWorld){(activeWorld.state as {activeCraftName?:string}).activeCraftName=craft.name;void host.setWorld(activeWorld);}
-  sim=new FlightSimulator(vehicle);simWorldId=world()?.id??null;sim.launch();awardCareerAchievements(sim.state,"launch",root);lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT ARMED";$("#flight-note",root).textContent="Throttle is manual. Activate an assigned group to enable its engines and systems.";return true;
+  sim=new FlightSimulator(vehicle);simWorldId=world()?.id??null;sim.launch();poweredFlightStarted=false;awardCareerAchievements(sim.state,"launch",root);lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT ARMED";$("#flight-note",root).textContent="Throttle is manual. Activate an assigned group to enable its engines and systems.";return true;
  };
  const activationParts=group.userData.activationParts as {group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[];
  const solarAssemblies=group.userData.solarAssemblies as {group:number;partId:string;hinge:THREE.Group;deployed:boolean}[];
@@ -384,7 +384,7 @@ function launchpad(){
  updateActivationControls();
  $("#recover",root).onclick=()=>{sim?.reset();sim=null;simWorldId=null;debrisReleased=false;poweredFlightStarted=false;looseGroups.forEach(debris=>{debris.object.position.x=debris.initialX;debris.velocity=0;debris.landed=false;});range.value="0";pitch.value="0";updateLabels();group.position.set(earthRadius+spawnClearanceM/1e6,0,0);group.quaternion.copy(new THREE.Quaternion(EARTH_LAUNCH_ORIENTATION.x,EARTH_LAUNCH_ORIENTATION.y,EARTH_LAUNCH_ORIENTATION.z,EARTH_LAUNCH_ORIENTATION.w));cameraDistanceMetres=FLIGHT_CAMERA_INITIAL_DISTANCE_METRES;cameraYaw=0;cameraPitch=.08;updateFlightCamera();$("#flight-status",root).textContent="PAD READY";$("#flight-note",root).textContent="Vehicle recovered. Ready for another launch."};
  $("#open-map",root).onclick=()=>nav("tracking");
- let poweredFlightStarted=!!savedFlight&&(savedFlight.state.elapsed>0||savedFlight.state.altitude>0);
+ let poweredFlightStarted=false;
  let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;const earthRotation=earthRotationAt(sim?.state.elapsed??0);earthFrame.quaternion.set(earthRotation.x,earthRotation.y,earthRotation.z,earthRotation.w);clouds.rotation.y+=(dt*.0007);highClouds.rotation.y-=dt*.00035;
   const throttleDelta=(heldKeys.has("ArrowUp")?1:0)-(heldKeys.has("ArrowDown")?1:0);if(throttleDelta)range.value=String(Math.max(0,Math.min(100,Number(range.value)+throttleDelta*45*dt)));updateLabels();
   if(debrisReleased)for(const debris of looseGroups){if(debris.landed)continue;debris.velocity-=9.81*dt;debris.object.position.x+=debris.velocity*dt/1e6;if(debris.object.position.x<=debris.groundX){debris.object.position.x=debris.groundX;debris.velocity=0;debris.landed=true;}}
