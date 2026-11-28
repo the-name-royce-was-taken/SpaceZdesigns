@@ -5,7 +5,7 @@
  * a partially initialized simulation.
  */
 import { buildOrbitlabAeroModel } from "./vehicle-adapter";
-import { engineVariants, landingLegDeploymentAngle, partCatalog, type BuildPart } from "../vehicle-builder-3d";
+import { engineVariants, partCatalog, type BuildPart } from "../vehicle-builder-3d";
 import { tankFuelCapacity } from "../vehicle-assembly";
 import { listActivationGroups, partActivationGroup } from "../activation";
 import { landingImpactCapacityForPart, type LandingSupportPart, type VehiclePhysics, type FlightEngine, type Vector3 } from "../flight-physics";
