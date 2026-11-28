@@ -133,7 +133,8 @@ describe("fixed-step flight solver",()=>{
   const surface={x:(omega.y*sim.state.position.z-omega.z*sim.state.position.y)*EARTH_ROTATION_RATE,y:(omega.z*sim.state.position.x-omega.x*sim.state.position.z)*EARTH_ROTATION_RATE,z:(omega.x*sim.state.position.y-omega.y*sim.state.position.x)*EARTH_ROTATION_RATE};
   const relative={x:sim.state.velocity.x-surface.x,y:sim.state.velocity.y-surface.y,z:sim.state.velocity.z-surface.z};
   const radialSpeed=relative.x*radial.x+relative.y*radial.y+relative.z*radial.z;
-  const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
+  const lateral={x:relative.x-radial.x*radialSpeed,y:relative.y-radial.y*radialSpeed,z:relative.z-radial.z*radialSpeed};
+  const lateralSpeed=Math.hypot(lateral.x,lateral.y,lateral.z);
   expect(sim.state.altitude).toBeGreaterThan(21);
   expect(lateralSpeed).toBeLessThan(1e-8);
  });
