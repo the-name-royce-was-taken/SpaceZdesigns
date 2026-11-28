@@ -222,7 +222,8 @@ export function createLandingLegModel(retracted=true,deploymentAngle=-2.0):THREE
  hinge.rotation.z=retracted?0:deploymentAngle;
  foot.rotation.z=-hinge.rotation.z;
  root.userData.landingLegModel=true;
- root.userData.deploymentProgress=retracted?0:1;\n root.userData.deploymentAngle=deploymentAngle;
+ root.userData.deploymentProgress=retracted?0:1;
+ root.userData.deploymentAngle=deploymentAngle;
  root.userData.deploymentTarget=retracted?0:1;
  root.userData.legs=[{hinge,piston,foot}];
  return root;
