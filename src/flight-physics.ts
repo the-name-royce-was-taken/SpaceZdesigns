@@ -63,7 +63,7 @@ export class FlightSimulator {
   const rcsTotal=v.rcsStages?.length??((v.rcsThrustKN??0)>0?1:0),rcsActive=stages(v.rcsStages,rcsTotal),rcsScale=rcsTotal?rcsActive/rcsTotal:0,rx=Math.max(-1,Math.min(1,input.translateX??0)),ry=Math.max(-1,Math.min(1,input.translateY??0)),rz=Math.max(-1,Math.min(1,input.translateZ??0)),rcsEnabled=(v.rcsThrustKN??0)>0&&s.rcsFuelTonnes>0&&rcsActive>0;
   const rcsLocal={x:rx,y:ry,z:rz},rcsDirection=length(rcsLocal)>0?unit(rotate(s.orientation,rcsLocal)):{x:0,y:0,z:0},rcsForce=rcsEnabled?scale(rcsDirection,(v.rcsThrustKN??0)*1000*rcsScale):{x:0,y:0,z:0};
   const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=add(gravity,scale(add(add(thrustForce,rcsForce),aero),1/mass));
-  const radial=unit(s.position),padRadius=EARTH_RADIUS+padAltitude,relativeRadialSpeed=dot(sub(s.velocity,atmosphereVelocity),radial),radialAcceleration=dot(acceleration,radial);
+  const radial=unit(s.position),radialAcceleration=dot(acceleration,radial);
   if(onLaunchRail){
    // Integrate launch-rail motion in the pad's rotating radial frame. Rebuilding
    // position from the exact Earth-rotated pad direction prevents tiny lateral
