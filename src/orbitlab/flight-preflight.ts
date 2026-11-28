@@ -99,7 +99,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const contactCandidates = parts.map(part => {
     const d = dimensions(part);
     const y = part.y ?? 0;
-    const lowestY = part.kind === "landing-leg" ? y - (part.retracted ? .12 : .80)
+    const lowestY = part.kind === "landing-leg" ? y - (part.retracted !== false ? .12 : .80)
       : part.kind === "wheel" ? y - (part.retracted ? .22 : .92)
       : y + (part.kind === "capsule" ? .1525 : part.kind === "engine" ? -.1 : 0) - d.height / 2;
     return { part, lowestY };
@@ -111,13 +111,15 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const landingImpactCapacityJ = supportingParts.reduce((sum, candidate) => sum + landingImpactCapacityForPart(candidate.part.kind), 0);
   const landingSupportParts: LandingSupportPart[] = parts.map(part => {
     const d = dimensions(part), x = part.x ?? 0, y = part.y ?? 0, z = part.z ?? 0;
-    const radius = part.kind === "landing-leg" ? (part.retracted !== false ? .2 : 1.02) : part.kind === "wheel" ? .32 : part.kind === "rover-wheel" ? (part.radius ?? .24) + .12 : d.radius;
-    const bottom = part.kind === "landing-leg" ? (part.retracted !== false ? -.12 : -.80)
+    const retractedLeg = part.kind === "landing-leg" && part.retracted !== false;
+    const radius = part.kind === "landing-leg" ? (retractedLeg ? .2 : 1.02) : part.kind === "wheel" ? .32 : part.kind === "rover-wheel" ? (part.radius ?? .24) + .12 : d.radius;
+    const bottom = part.kind === "landing-leg" ? (retractedLeg ? -.12 : -.80)
       : part.kind === "rover-wheel" ? -.12 - (part.radius ?? .24)
       : part.kind === "heat-shield" ? -(part.thickness ?? .16)
       : part.kind === "engine" ? -.72
       : -d.height / 2;
-    return { kind: part.kind, min: { x: x-radius, y: y+bottom, z: z-radius }, max: { x: x+radius, y: y+d.height/2, z: z+radius } };
+    const top = part.kind === "landing-leg" ? (retractedLeg ? .98 : .31) : d.height/2;
+    return { kind: part.kind, min: { x: x-radius, y: y+bottom, z: z-radius }, max: { x: x+radius, y: y+top, z: z+radius } };
   });
   const spawnClearanceM = Math.max(.08, -minY + .08);
   const engineManifest: FlightEngine[] = engines.map(part => {
