@@ -558,3 +558,11 @@ h1 em, h2 em { color: var(--cyan); font-style: normal; }
  .flight-control-row>label:not(.assist-toggle){flex-basis:100px}
  .flight-control-row .assist-toggle{font-size:7px}
 }
+
+/* True-scale tracking symbols and multi-vehicle selection */
+.rocket-list{display:grid;gap:7px;padding:11px;border:1px solid var(--line);background:rgba(3,12,21,.45)}
+.rocket-list>.panel-kicker{color:#8eddf0;font:8px var(--mono);letter-spacing:.12em}
+.rocket-list>p{margin:0;color:#8ba6b9;font:8px/1.5 var(--mono)}
+.rocket-card .body-dot{background:#e5ad63;box-shadow:0 0 8px rgba(229,173,99,.55)}
+.rocket-card.selected{border-color:var(--cyan);background:rgba(29,78,94,.42)}
+.body-card.selected{border-color:var(--cyan);background:rgba(29,78,94,.42)}
