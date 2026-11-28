@@ -23,26 +23,31 @@ describe("shared vehicle visual models", () => {
     }
   );
 
-  it("builds three hydraulic landing legs and animates their pistons and footpads", () => {
+  it("builds one side-mounted hydraulic leg that stows upward and extends down and outward", () => {
     const model = createLandingLegModel(true);
     expect(model.userData.landingLegModel).toBe(true);
-    expect(model.userData.legs).toHaveLength(3);
+    expect(model.userData.legs).toHaveLength(1);
     expect(model.userData.deploymentProgress).toBe(0);
+    const leg = (model.userData.legs as { hinge: { rotation: { z: number } }; piston: { position: { y: number } }; foot: { position: { y: number } } }[])[0]!;
+    expect(leg.hinge.rotation.z).toBeCloseTo(0);
+    expect(leg.piston.position.y).toBeCloseTo(.58);
+    expect(leg.foot.position.y).toBeCloseTo(.82);
 
     setLandingLegDeployment(model, true);
     animateLandingLegModels(model, 1);
 
     expect(model.userData.deploymentProgress).toBe(1);
-    for (const leg of model.userData.legs as { piston: { position: { y: number } }; foot: { position: { y: number } } }[]) {
-      expect(leg.piston.position.y).toBeCloseTo(-.94);
-      expect(leg.foot.position.y).toBeCloseTo(-1.19);
-    }
+    expect(leg.hinge.rotation.z).toBeCloseTo(-2.35);
+    expect(leg.piston.position.y).toBeCloseTo(.92);
+    expect(leg.foot.position.y).toBeCloseTo(1.24);
   });
 
-  it("can retract deployed hydraulic legs", () => {
+  it("can retract the hydraulic leg", () => {
     const model = createLandingLegModel(false);
     setLandingLegDeployment(model, false);
     animateLandingLegModels(model, 1);
     expect(model.userData.deploymentProgress).toBe(0);
+    const leg = (model.userData.legs as { hinge: { rotation: { z: number } } }[])[0]!;
+    expect(leg.hinge.rotation.z).toBeCloseTo(0);
   });
 });
