@@ -194,9 +194,50 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
    g.scale.setScalar(engineScale[type]);
   return g;}
-export function createLandingLegModel(retracted=false):THREE.Group{const root=new THREE.Group(),steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32}),dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38}),pistonMetal=new THREE.MeshStandardMaterial({color:0xd6e0e5,metalness:.88,roughness:.24}),footMaterial=new THREE.MeshStandardMaterial({color:0x687985,metalness:.62,roughness:.5});const legs:{hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]=[];for(let i=0;i<3;i++){const angle=i*Math.PI*2/3,leg=new THREE.Group();leg.position.set(Math.cos(angle)*.16,.13,Math.sin(angle)*.16);leg.rotation.y=-angle;root.add(leg);const mount=new THREE.Mesh(new THREE.BoxGeometry(.24,.22,.24),dark);mount.position.y=.04;leg.add(mount);const hinge=new THREE.Group();hinge.position.y=-.02;hinge.rotation.z=retracted?.95:-.42;leg.add(hinge);const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(.068,.078,.58,12),steel);sleeve.position.y=-.29;hinge.add(sleeve);const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.07,12),dark);collar.position.y=-.55;hinge.add(collar);const piston=new THREE.Mesh(new THREE.CylinderGeometry(.029,.036,.48,12),pistonMetal);piston.position.y=retracted?-.66:-.94;hinge.add(piston);const foot=new THREE.Group();foot.position.y=retracted?-.91:-1.19;foot.rotation.z=-hinge.rotation.z;hinge.add(foot);const pad=new THREE.Mesh(new THREE.BoxGeometry(.3,.065,.23),footMaterial);foot.add(pad);const toe=new THREE.Mesh(new THREE.BoxGeometry(.22,.035,.28),dark);toe.position.y=-.035;foot.add(toe);legs.push({hinge,piston,foot});}root.userData.landingLegModel=true;root.userData.deploymentProgress=retracted?0:1;root.userData.deploymentTarget=retracted?0:1;root.userData.legs=legs;return root;}
-export function setLandingLegDeployment(root:THREE.Object3D,extended=true){root.traverse(o=>{if(o.userData.landingLegModel)o.userData.deploymentTarget=extended?1:0;});}
-export function animateLandingLegModels(root:THREE.Object3D,dt:number){root.traverse(o=>{if(!o.userData.landingLegModel)return;const p0=Number(o.userData.deploymentProgress??0),t=Number(o.userData.deploymentTarget??p0),p=p0+(t-p0)*Math.min(1,Math.max(0,dt)*3.2);o.userData.deploymentProgress=Math.abs(t-p)<.002?t:p;for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){leg.hinge.rotation.z=.95-1.37*p;leg.piston.position.y=-.66-.28*p;leg.foot.position.y=-.91-.28*p;leg.foot.rotation.z=-leg.hinge.rotation.z;}});}
+export function createLandingLegModel(retracted=false):THREE.Group{
+ const root=new THREE.Group();
+ const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32});
+ const dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38});
+ const pistonMetal=new THREE.MeshStandardMaterial({color:0xd6e0e5,metalness:.88,roughness:.24});
+ const footMaterial=new THREE.MeshStandardMaterial({color:0x687985,metalness:.62,roughness:.5});
+ // The mounting plate sits against the vehicle's side; the leg stows vertically.
+ const mount=new THREE.Mesh(new THREE.BoxGeometry(.14,.38,.34),dark);
+ mount.position.set(-.035,.08,0);mount.castShadow=true;mount.receiveShadow=true;root.add(mount);
+ const hinge=new THREE.Group();hinge.position.set(.045,.12,0);root.add(hinge);
+ const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(.065,.075,.62,12),steel);
+ sleeve.position.y=.31;sleeve.castShadow=true;sleeve.receiveShadow=true;hinge.add(sleeve);
+ const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.065,12),dark);
+ collar.position.y=.59;hinge.add(collar);
+ const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.5,12),pistonMetal);
+ piston.position.y=.58+(retracted?0:.34);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
+ const foot=new THREE.Group();foot.position.y=retracted?.82:1.24;hinge.add(foot);
+ const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
+ const toe=new THREE.Mesh(new THREE.BoxGeometry(.24,.035,.3),dark);toe.position.y=-.035;foot.add(toe);
+ hinge.rotation.z=retracted?0:-2.35;
+ foot.rotation.z=-hinge.rotation.z;
+ root.userData.landingLegModel=true;
+ root.userData.deploymentProgress=retracted?0:1;
+ root.userData.deploymentTarget=retracted?0:1;
+ root.userData.legs=[{hinge,piston,foot}];
+ return root;
+}
+export function setLandingLegDeployment(root:THREE.Object3D,extended=true){
+ root.traverse(o=>{if(o.userData.landingLegModel)o.userData.deploymentTarget=extended?1:0;});
+}
+export function animateLandingLegModels(root:THREE.Object3D,dt:number){
+ root.traverse(o=>{
+  if(!o.userData.landingLegModel)return;
+  const p0=Number(o.userData.deploymentProgress??0),target=Number(o.userData.deploymentTarget??p0);
+  const p=p0+(target-p0)*Math.min(1,Math.max(0,dt)*3.2);
+  o.userData.deploymentProgress=Math.abs(target-p)<.002?target:p;
+  for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){
+   leg.hinge.rotation.z=-2.35*p;
+   leg.piston.position.y=.58+.34*p;
+   leg.foot.position.y=.82+.42*p;
+   leg.foot.rotation.z=-leg.hinge.rotation.z;
+  }
+ });
+}
 export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed:(parts:BuildPart[])=>void,economy?:{purchase:(parts:BuildPart[])=>boolean}){
  host.innerHTML=`<div class="vab-tools"><div class="vab-tool-group"><button data-tool="select" class="active">SELECT</button><button data-tool="translate">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="delete">DELETE</button></div><div class="vab-tool-group"><span class="vab-snap-status">MAGNETIC PART SNAP / ALWAYS ON · INVISIBLE 9×9 SURFACE NODES</span><label>SYMMETRY <select id="vab-symmetry"><option value="1">OFF</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div><div class="vab-tool-group"><button id="vab-undo">UNDO</button><button id="vab-redo">REDO</button><button id="vab-reset">RESET VIEW</button></div></div>
  <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span><button type="button" id="vab-blueprints-toggle" class="vab-blueprints-trigger" aria-expanded="false">BLUEPRINTS</button></div><section id="vab-blueprints-panel" class="vab-blueprints-panel" hidden><div class="vab-blueprints-head"><div><b>BLUEPRINT LIBRARY</b><small>LOCAL INDEXEDDB STORAGE</small></div><button type="button" id="vab-blueprints-close" aria-label="Close blueprints">×</button></div><div id="vab-blueprints-list" class="vab-blueprints-list"><div class="vab-blueprints-empty">Loading saved builds…</div></div><div class="vab-blueprints-footer"><button type="button" id="vab-blueprint-add" class="vab-blueprint-add">＋ NEW BLUEPRINT</button></div></section><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Payload","Other","Engines","Couplers","Controller","Structural"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click to select; Control or Command click to add or remove parts; Shift click to select a range."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title"><span>CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></span><button type="button" id="vab-activation-toggle" class="vab-activation-trigger" aria-expanded="false">ACTIVATION LIST</button></div><div class="vab-stage-summary" id="vab-stage-summary">NO ACTIVATION GROUPS / ADD A GROUP TO SEQUENCE PART ACTIONS</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div><section id="vab-activation-panel" class="vab-activation-panel" hidden><div class="vab-activation-head"><div><b>ACTIVATION LIST</b><small>ORDERED FLIGHT ACTION GROUPS</small></div><button type="button" id="vab-activation-add" aria-label="Add activation group">＋</button></div><div id="vab-activation-groups" class="vab-activation-groups"></div><div id="vab-activation-editor" class="vab-activation-editor" hidden></div></section></div></div>`;
