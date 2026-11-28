@@ -177,6 +177,12 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.crashed).toBe(false);
   expect(sim.state.landed).toBe(true);
  });
+
+ it("allows a gentle 0.8 m/s touchdown even when the weakest support is a tank",()=>{
+  const limit=landingImpactLimitMps({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"tank",landingImpactCapacityJ:landingImpactCapacityForPart("tank")});
+  expect(limit).toBeGreaterThanOrEqual(1.25);
+  expect(.8).toBeLessThan(limit);
+ });
  it("lands without exploding on a gentle contact with a resilient part",()=>{
   const sim=new FlightSimulator({...vehicle,dryMassTonnes:10,fuelTonnes:0,landingContactKind:"engine",landingImpactCapacityJ:8_000,spawnClearanceM:0,launchRailLengthM:0});sim.launch();
   const position={x:6_371_000+.005,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
