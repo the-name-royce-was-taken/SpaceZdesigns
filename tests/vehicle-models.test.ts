@@ -62,19 +62,19 @@ describe("shared vehicle visual models", () => {
     animateLandingLegModels(model, 1);
 
     expect(model.userData.deploymentProgress).toBe(1);
-    expect(leg.hinge.rotation.z).toBeCloseTo(-2.3);
+    expect(leg.hinge.rotation.z).toBeCloseTo(-(2.3+Math.PI/9));
     expect(leg.piston.position.y).toBeCloseTo(1.04);
-    expect(leg.foot.position.y).toBeCloseTo(1.36);
+    expect(leg.foot.position.y).toBeCloseTo(1.36);\n    expect(leg.piston.geometry.parameters.height).toBeCloseTo(.84);
   });
 
   it("chooses a downward, outward deployment swing for mirrored side-mounted legs", () => {
-    expect(landingLegDeploymentAngle({x:1,rz:0})).toBeCloseTo(-2.3);
-    expect(landingLegDeploymentAngle({x:-1,rz:0})).toBeCloseTo(2.3);
-    expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3);
-    expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-2.3);
+    expect(landingLegDeploymentAngle({x:1,rz:0})).toBeCloseTo(-(2.3+Math.PI/9));
+    expect(landingLegDeploymentAngle({x:-1,rz:0})).toBeCloseTo(2.3+Math.PI/9);
+    expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3+Math.PI/9);
+    expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-(2.3+Math.PI/9));
     const model=createLandingLegModel(false,landingLegDeploymentAngle({x:1,rz:Math.PI}));
     const leg=(model.userData.legs as {hinge:{rotation:{z:number}}}[])[0]!;
-    expect(leg.hinge.rotation.z).toBeCloseTo(2.3);
+    expect(leg.hinge.rotation.z).toBeCloseTo(2.3+Math.PI/9);
   });
 
   it("can retract the hydraulic leg", () => {
