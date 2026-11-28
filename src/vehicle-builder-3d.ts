@@ -195,7 +195,12 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
    g.scale.setScalar(engineScale[type]);
   return g;}
-export function createLandingLegModel(retracted=true):THREE.Group{
+export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):number{
+ const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
+ const worldDown=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation).y;
+ return worldDown(-2.0)<=worldDown(2.0)?-2.0:2.0;
+}
+export function createLandingLegModel(retracted=true,deploymentAngle=-2.0):THREE.Group{
  const root=new THREE.Group();
  const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32});
  const dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38});
@@ -214,10 +219,11 @@ export function createLandingLegModel(retracted=true):THREE.Group{
  const foot=new THREE.Group();foot.position.y=retracted?.82:1.24;hinge.add(foot);
  const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
  const toe=new THREE.Mesh(new THREE.BoxGeometry(.24,.035,.3),dark);toe.position.y=-.035;foot.add(toe);
- hinge.rotation.z=retracted?0:-2.0;
+ hinge.rotation.z=retracted?0:deploymentAngle;
  foot.rotation.z=-hinge.rotation.z;
  root.userData.landingLegModel=true;
  root.userData.deploymentProgress=retracted?0:1;
+ root.userData.deploymentAngle=deploymentAngle;
  root.userData.deploymentTarget=retracted?0:1;
  root.userData.legs=[{hinge,piston,foot}];
  return root;
@@ -232,7 +238,7 @@ export function animateLandingLegModels(root:THREE.Object3D,dt:number){
   const p=p0+(target-p0)*Math.min(1,Math.max(0,dt)*3.2);
   o.userData.deploymentProgress=Math.abs(target-p)<.002?target:p;
   for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){
-   leg.hinge.rotation.z=-2.0*p;
+   leg.hinge.rotation.z=Number(o.userData.deploymentAngle??-2.0)*p;
    leg.piston.position.y=.58+.34*p;
    leg.foot.position.y=.82+.42*p;
    leg.foot.rotation.z=-leg.hinge.rotation.z;
@@ -416,7 +422,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="fuel-line"){const a=tankPart(p.fuelLineStartId),b=tankPart(p.fuelLineEndId);if(a&&b){const route=pipeGeometry(tankWorldPosition(a),tankWorldPosition(b),a.id!,b.id!);const pipe=new THREE.MeshStandardMaterial({color:0x65aeb4,metalness:.7,roughness:.3,emissive:0x123b3e,emissiveIntensity:.35});add(route.geometry,pipe);g.position.copy(route.midpoint);} }
   else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){const geo=new THREE.BoxGeometry(s.size.x,s.size.y,s.size.z);add(geo);if(p.kind==="fin"){const fin=add(new THREE.BoxGeometry(.12,.72,.55));fin.position.set(.42,-.18,0);fin.rotation.z=-.22;}if(p.kind==="wing"){const tip=add(new THREE.BoxGeometry(.22,.12,.22));tip.position.x=.84;}}
   else if(p.kind==="solar"){const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;add(new THREE.BoxGeometry(.2,.12,.22),new THREE.MeshStandardMaterial({color:0x8799a7,metalness:.65,roughness:.38}));const hinge=new THREE.Group();hinge.position.x=.1;hinge.rotation.z=deployed?0:-Math.PI/2;const panelMaterial=new THREE.MeshStandardMaterial({color:0x2678a5,metalness:.55,roughness:.35});const gridMaterial=new THREE.MeshStandardMaterial({color:0x9be4f4,metalness:.35,roughness:.42});const panel=new THREE.Mesh(new THREE.BoxGeometry(length,.035,.72),panelMaterial);panel.position.x=length/2;panel.castShadow=true;panel.receiveShadow=true;hinge.add(panel);for(let i=1;i<8;i++){const x=length*i/8,z=-.36+.72*i/8;const vertical=new THREE.Mesh(new THREE.BoxGeometry(.012,.004,.72),gridMaterial);vertical.position.set(x,.0195,0);hinge.add(vertical);const horizontal=new THREE.Mesh(new THREE.BoxGeometry(length,.004,.012),gridMaterial);horizontal.position.set(length/2,.0195,z);hinge.add(horizontal);}g.add(hinge);}
-  else if(p.kind==="landing-leg"){g.add(createLandingLegModel(p.retracted!==false));}
+  else if(p.kind==="landing-leg"){g.add(createLandingLegModel(p.retracted!==false,landingLegDeploymentAngle(p)));}
    else if(p.kind==="wheel"){const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.72,roughness:.36}),rubber=new THREE.MeshStandardMaterial({color:0x273542,roughness:.92});const strut=add(new THREE.CylinderGeometry(.055,.07,.72,12),steel,new THREE.Vector3(0,-.12,0));strut.rotation.z=-.22;const wheel=add(new THREE.CylinderGeometry(.14,.14,.09,12),rubber,new THREE.Vector3(.22,-.48,0));wheel.rotation.z=Math.PI/2;}
    else if(p.kind==="rover-wheel"){
    const rubber=new THREE.MeshStandardMaterial({color:0x26343d,roughness:.96}),hub=new THREE.MeshStandardMaterial({color:0x9aa8ad,metalness:.7,roughness:.32}),axle=new THREE.MeshStandardMaterial({color:0x667986,metalness:.65}),radius=p.radius??.24;
@@ -600,7 +606,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group,axis?:string){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
-  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.16,part,axis);
+  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.24,part,axis);
   if(placement&&axis&&/^[XYZ]$/.test(axis)){
    const key=axis.toLowerCase() as "x"|"y"|"z";
    part[key]=placement[key];

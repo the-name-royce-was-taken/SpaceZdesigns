@@ -94,6 +94,8 @@ export function attachmentNodes(kind:PartKind,part?:BuildPart):AttachmentNode[]{
   if(kind==="remote-control"||kind==="reaction-wheel")stack.push(node("stack-top","stack",[0,.14,0],[0,1,0]),node("stack-bottom","stack",[0,-.14,0],[0,-1,0]));
   if(kind==="heat-shield"){const h=Math.max(.04,Math.min(.5,part?.thickness??.16))/2;stack.push(node("stack-top","stack",[0,h,0],[0,1,0]),node("stack-bottom","stack",[0,-h,0],[0,-1,0]));}
   if(kind==="separator")stack.push(node("stack-top","stack",[0,.1,0],[0,1,0]),node("stack-bottom","stack",[0,-.1,0],[0,-1,0]));
+  if(kind==="side-decoupler")stack.push(node("coupler-top","stack",[0,.12,0],[0,1,0]),node("coupler-bottom","stack",[0,-.12,0],[0,-1,0]),node("coupler-east","stack",[.36,0,0],[1,0,0]),node("coupler-west","stack",[-.36,0,0],[-1,0,0]));
+  if(kind==="separator-thruster")stack.push(node("thruster-top","stack",[0,.11,0],[0,1,0]),node("thruster-bottom","stack",[0,-.11,0],[0,-1,0]),node("thruster-east","stack",[.31,0,0],[1,0,0]),node("thruster-west","stack",[-.31,0,0],[-1,0,0]));
   if(kind==="strut")stack.push(node("stack-top","stack",[0,.5,0],[0,1,0]),node("stack-bottom","stack",[0,-.5,0],[0,-1,0]));
   if(kind==="structural-beam"){const half=Math.max(1,Math.min(12,Math.round(part?.structuralLength??3)))*.2;stack.push(node("beam-end-top","stack",[0,half,0],[0,1,0]),node("beam-end-bottom","stack",[0,-half,0],[0,-1,0]),node("beam-side-east","stack",[.14,0,0],[1,0,0]),node("beam-side-west","stack",[-.14,0,0],[-1,0,0]),node("beam-side-north","stack",[0,0,.14],[0,0,1]),node("beam-side-south","stack",[0,0,-.14],[0,0,-1]));}
   if(kind==="structural-angle")stack.push(node("angle-end-up","stack",[0,.38,0],[0,1,0]),node("angle-end-right","stack",[.38,0,0],[1,0,0]));
@@ -155,6 +157,7 @@ export function findAvailableAttachmentPlacement(parts:readonly BuildPart[],chil
  return null;
 }
 export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childKind:PartKind,position:readonly [number,number,number],maxDistance=.16,childPart?:BuildPart,axis?:string):AttachmentPlacement|null{
+ void axis;
  const occupied=occupiedNodes(parts),cn=attachmentNodes(childKind,childPart);
  let best:AttachmentPlacement|null=null,bestDistance=Infinity;
  for(const parent of parts){
@@ -179,12 +182,13 @@ export function findNearestAttachmentPlacement(parts:readonly BuildPart[],childK
     const co=rotatePart(c.position,childPart??{});
     const x=(parent.x??0)+po[0]-co[0],y=(parent.y??0)+po[1]-co[1],z=(parent.z??0)+po[2]-co[2];
     const delta:[number,number,number]=[x-position[0],y-position[1],z-position[2]];
-    const axisIndex=axis==="X"?0:axis==="Y"?1:axis==="Z"?2:-1;
-    const offAxisDistance=axisIndex<0?0:Math.hypot(...delta.filter((_,index)=>index!==axisIndex));
-    const distance=axisIndex<0?Math.hypot(...delta):Math.abs(delta[axisIndex as 0|1|2]!);
+    // Snapping may make a small correction perpendicular to the active gizmo
+    // axis. Requiring pre-alignment on the other axes prevented many side and
+    // structural connectors from ever reaching their magnetic attachment.
+    const distance=Math.hypot(...delta);
     const normalPenalty=p.attachmentClass==="surface"?1+(pd[0]*cd[0]+pd[1]*cd[1]+pd[2]*cd[2]):0;
     const score=distance+normalPenalty*.02;
-    if(distance<=maxDistance&&(axisIndex<0||offAxisDistance<=ATTACHMENT_GRID_CUBE_SIZE/2)&&score<bestDistance){bestDistance=score;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
+    if(distance<=maxDistance&&score<bestDistance){bestDistance=score;best={x,y,z,parentId:parent.id,parentNode:p.id,childNode:c.id,rotationY:childPart?.ry??0};}
    }
   }
  }
