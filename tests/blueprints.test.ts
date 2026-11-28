@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
 import { exportBuildz, importBuildz, validateBlueprintParts } from "../src/blueprints";
 import type { BuildPart } from "../src/vehicle-builder-3d";
+import { selectActiveCraft } from "../src/craft-selection";
 
 const sample: BuildPart[] = [
   { id: "pod-1", kind: "capsule", x: 0.25, y: 1.8, z: -0.1, ry: 0.2 },
@@ -53,3 +54,17 @@ describe("buildz blueprint archives", () => {
   });
 });
 
+
+
+describe("active craft selection", () => {
+  const older = { name: "Older build", revision: 1 };
+  const newest = { name: "Blueprint build", revision: 2 };
+
+  it("launches the explicitly selected craft instead of the first saved craft", () => {
+    expect(selectActiveCraft([newest, older], older.name)).toBe(older);
+  });
+
+  it("falls back to the most recently saved craft when no active name exists", () => {
+    expect(selectActiveCraft([newest, older])).toBe(newest);
+  });
+});
