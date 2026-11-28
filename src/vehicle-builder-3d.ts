@@ -240,7 +240,7 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
 export function landingLegDeploymentAngle(part:Pick<BuildPart,"x"|"z"|"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
  const direction=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation);
- const candidates=[-2.3,2.3].map(angle=>({angle,vector:direction(angle)}));
+ const deploymentAngle=2.3+Math.PI/9; // Existing 2.3 rad swing plus 20 degrees.\n const candidates=[-deploymentAngle,deploymentAngle].map(angle=>({angle,vector:direction(angle)}));
  const [first,second]=candidates as [{angle:number;vector:THREE.Vector3},{angle:number;vector:THREE.Vector3}];
  // First prefer the swing that points farther down in world space.
  if(Math.abs(first.vector.y-second.vector.y)>1e-6)return first.vector.y<second.vector.y?first.angle:second.angle;
@@ -251,7 +251,7 @@ export function landingLegDeploymentAngle(part:Pick<BuildPart,"x"|"z"|"rx"|"ry"|
  outward.normalize();
  return first.vector.dot(outward)>=second.vector.dot(outward)?first.angle:second.angle;
 }
-export function createLandingLegModel(retracted=true,deploymentAngle=-2.3):THREE.Group{
+export function createLandingLegModel(retracted=true,deploymentAngle=-(2.3+Math.PI/9)):THREE.Group{
  const root=new THREE.Group();
  const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32});
  const dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38});
@@ -265,7 +265,7 @@ export function createLandingLegModel(retracted=true,deploymentAngle=-2.3):THREE
  sleeve.position.y=.31;sleeve.castShadow=true;sleeve.receiveShadow=true;hinge.add(sleeve);
  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.065,12),dark);
  collar.position.y=.59;hinge.add(collar);
- const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.5,12),pistonMetal);
+ const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.84,12),pistonMetal);
  piston.position.y=.58+(retracted?0:.46);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
  const foot=new THREE.Group();foot.position.y=retracted?.82:1.36;hinge.add(foot);
  const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
