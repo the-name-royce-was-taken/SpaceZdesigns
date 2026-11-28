@@ -10,7 +10,7 @@ export interface FlightState {
  fuelTonnes:number; rcsFuelTonnes:number; elapsed:number; crashed:boolean; landed:boolean; maxQ:number; currentStage:number;
 }
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
-export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; centerOfMassM?:Vector3; engineMountM?:Vector3; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
+export interface VehiclePhysics { epochSeconds?:number; spawnClearanceM?:number; centerOfMassM?:Vector3; engineMountM?:Vector3; aeroDatumY?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; aeroTable?:AeroTable; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
 const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 export const EARTH_ROTATION_RATE=7.2921159e-5;
 export const EARTH_OBLIQUITY=23.43928*Math.PI/180;
@@ -61,7 +61,7 @@ export class FlightSimulator {
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),wheelScale=wheelCount?stages(v.reactionWheelStages,wheelCount)/wheelCount:0,surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),surfaceScale=surfaceCount?stages(v.controlSurfaceStages,surfaceCount)/surfaceCount:0;
   const rcsUse=rcsEnabled?Math.min(1,Math.hypot(rx,ry,rz)+Math.hypot(pitch,yaw,roll)*.35):0,rcsTorque=(v.rcsTorque??0)*rcsScale,torque=(v.reactionWheelTorque??0)*wheelScale,airTorque=(v.controlSurfaceAuthority??0)*surfaceScale*q*.00002;
-  const cpStation=v.aeroTable?atMach(v.aeroTable,v.aeroTable.cpX,mach):0,aeroLever=rotate(s.orientation,{x:0,y:cpStation-cg.y,z:0}),aeroLiftForce=scale(liftDirection,liftMagnitude),aeroMoment=cross(aeroLever,aeroLiftForce);
+  const cpStation=v.aeroTable?atMach(v.aeroTable,v.aeroTable.cpX,mach):0,aeroLever=rotate(s.orientation,{x:0,y:cpStation+(v.aeroDatumY??0)-cg.y,z:0}),aeroLiftForce=scale(liftDirection,liftMagnitude),aeroMoment=cross(aeroLever,aeroLiftForce);
   const localTorque={x:pitch*(torque+rcsTorque+airTorque),y:roll*(torque+rcsTorque+airTorque),z:yaw*(torque+rcsTorque+airTorque)},worldTorque=add(add(rotate(s.orientation,localTorque),engineGimbalTorque),aeroMoment),inertia=Math.max(.01,v.inertia*mass);
   s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
