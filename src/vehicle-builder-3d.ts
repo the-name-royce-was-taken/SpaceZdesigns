@@ -664,11 +664,14 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  }
  function snapMovedPartToNearbyNode(part:BuildPart,g:THREE.Group,axis?:string){
   const previous={x:part.x,y:part.y,z:part.z,rx:part.rx,ry:part.ry,rz:part.rz,parentId:part.parentId,parentNode:part.parentNode,childNode:part.childNode};
-  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],.24,part,axis);
-  if(placement&&axis&&/^[XYZ]$/.test(axis)){
-   const key=axis.toLowerCase() as "x"|"y"|"z";
-   part[key]=placement[key];
-  }else if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;}
+  const aerodynamicKinds=new Set<PartKind>(["fin","wing","control","strake","airbrake"]);
+  const hasAerodynamicContact=aerodynamicKinds.has(part.kind)||craft.some(candidate=>candidate.id!==part.id&&aerodynamicKinds.has(candidate.kind));
+  const captureRadius=hasAerodynamicContact ? .42 : .24;
+  let placement=findNearestAttachmentPlacement(craft.filter(candidate=>candidate.id!==part.id),part.kind,[part.x??0,part.y??0,part.z??0],captureRadius,part,axis);
+  // A magnetic joint is a full 3D connector alignment, including when the
+  // TransformControls drag was constrained to one axis. Keeping the other
+  // coordinates from the drag leaves aerodynamic surfaces visibly detached.
+  if(placement){part.x=placement.x;part.y=placement.y;part.z=placement.z;}
   if(placement){part.parentId=placement.parentId;part.parentNode=placement.parentNode;part.childNode=placement.childNode;}
   else{delete part.parentId;delete part.parentNode;delete part.childNode;}
   g.position.set(part.x??0,part.y??0,part.z??0);g.rotation.set(part.rx??0,part.ry??0,part.rz??0);
