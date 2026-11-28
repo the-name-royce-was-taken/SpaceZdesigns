@@ -1,0 +1,237 @@
+# Notices and third-party credits
+
+Orbitlab — Copyright 2026 Royin (ROYIN001).
+
+Orbitlab is a personal educational project by a Thai Air Force cadet studying at a military
+space academy, built from public sources. It is not a product of the Royal Thai Air Force or of
+any academy, and no service or academy name or emblem is used without written permission.
+
+## The project's own work
+
+- **Code** — everything under `src/`, `scripts/` and `tests/`, the build configuration and the
+  workflows — is licensed under the [Apache License 2.0](LICENSE).
+- **Lesson texts, worksheets and documentation** — the lessons' briefs, criteria, hints and
+  debriefs, the placement test's questions, the worksheets and their answer keys (including where
+  they are written inside source files, under `src/lessons/` and `src/worksheets/`), `README.md`
+  and everything under `docs/` — are licensed under
+  [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+  Attribute them to "Orbitlab (Royin, ROYIN001)" with a link to
+  <https://github.com/ROYIN001/Orbitlab>.
+- **The app's own pictures** — the Orbitlab mark (a delta in the Thai flag's stripes with an orbit
+  across it, drawn in `index.html`) and the icons and favicon made from it (`public/icons/`,
+  `npm run icons`), the landing page's screenshots (`public/home/`) and the link preview
+  (`public/social/preview.jpg`), taken from the app itself with `npm run shots` — are the project's
+  own work. The line icons beside the mark in `index.html` follow Lucide (below, "Interface icons"). The Earth imagery that appears in the
+  screenshots is credited below.
+
+- **The Soyuz Anatomy pages** (`public/anatomy/*.html`) — interactive 3-D models of Soyuz-2.1a
+  with the Soyuz MS or the Progress MS-26 and of Soyuz-2.1b with Fregat, each with its Thai guide
+  and its own viewer — are the owner's own work, made apart from this repository and brought in
+  unchanged (2026-10-28). The exterior meshes beside them (`public/anatomy/*.exterior.bin`) are
+  made from them by `scripts/anatomy-meshes.mjs`. Each page lists the public sources its shapes and
+  colours follow (TsENKI/Roscosmos, NASA, RKTs Progress, KBKhA and others) in its own Sources
+  section; none of those sources is reproduced in it, and its two pictures are renderings of the
+  model itself. Each page also carries, compressed, the source of its own build (its source
+  archive), including a vendored "Anatomy" drawing kit; that kit's terms are its maker's and are
+  not restated here.
+
+- **The Structure section's Soyuz-2.1b/Fregat files** (`public/structure/`) are made from the
+  Soyuz-2.1b Anatomy page above by `scripts/structure-meshes.mjs`, with the page's own code: its
+  parts, their ids, its Thai guide, facts, notes and source list, as the page has them. The
+  educational satellite EduSat-3U (`src/structure/edusat.ts`) is the project's own concept; the
+  public figures it uses are cited where they are used.
+
+How to cite the project: [CITATION.cff](CITATION.cff).
+
+Everything below is someone else's work, with its own terms. Where this file says
+"terms: see source", the licence is not stated here because it was not confirmed; the source's own
+terms apply. The data sources are named for credit and for checking; none of them endorses Orbitlab.
+
+## Software shipped in the app
+
+| What | Used for | Licence | Source |
+| --- | --- | --- | --- |
+| three.js 0.186.0 | 3-D rendering; the only runtime dependency, bundled into the build | MIT | <https://threejs.org/>, <https://github.com/mrdoob/three.js> |
+| ERFA 2.0.1.5 (liberfa), read from the pyerfa 2.0.1.5 source archive | `src/astro/base/time.ts` follows `dat.c` (the leap-second and drift tables of TAI − UTC, copied); its two-term TDB − TT is held to ERFA `dtdb` in its tests; `src/astro/base/geodesy.ts` is held to `gc2gd` and `gd2gc` in its tests; `src/astro/base/frames.ts` is ported from `pnm00b.c`, `pn00b.c`, `pn00.c`, `nut00b.c`, `pr00.c`, `obl80.c`, `bp00.c`, `bi00.c`, `numat.c`, `gst00b.c`, `gmst00.c`, `era00.c`, `ee00b.c`, `ee00.c`, `eect00.c` with `fal03.c`, `falp03.c`, `faf03.c`, `fad03.c`, `faom03.c`, `fave03.c`, `fae03.c`, `fapa03.c`, `gmst82.c`, `pom00.c`, `c2teqx.c` and the rotation helpers `ir.c`, `rx.c`, `ry.c`, `rz.c`, `rxr.c`, `tr.c`, `rxp.c`, `anp.c`, `src/astro/base/nutation-2000b.ts` holds the series tables of `nut00b.c` and `eect00.c` (copied); `src/astro/base/sun-moon.ts` is ported from `moon98.c`, `plan94.c` and the helpers `s2pv.c`, `pfw06.c`, `obl06.c`, `ir.c`, `rz.c`, `rx.c`, `rxpv.c`, `rxp.c`, `anpm.c`, and `src/astro/base/sun-moon-tables.ts` holds the series tables of `moon98.c` and the Earth–Moon barycentre's rows of `plan94.c` (copied) | BSD-3-Clause | <https://github.com/liberfa/erfa>, <https://pypi.org/project/pyerfa/> |
+
+The development tools (Vite, TypeScript, Vitest, Playwright) build and test the app and are not
+shipped in it; each carries its own licence in `node_modules/`.
+
+ERFA is derived, with permission, from the International Astronomical Union's "Standards of
+Fundamental Astronomy" library. If you wish to acknowledge the SOFA heritage, acknowledge that
+this is a library derived from SOFA, not SOFA itself. Its licence (`liberfa/erfa/LICENSE` in the
+pyerfa 2.0.1.5 archive), for the parts of it that `src/astro/base/time.ts` follows, that `src/astro/base/frames.ts`, `src/astro/base/nutation-2000b.ts` and `src/astro/base/sun-moon.ts` are ported from, and that `src/astro/base/sun-moon-tables.ts` copies its tables from (the ERFA sources named in the table above):
+
+> Copyright (C) 2013-2021, NumFOCUS Foundation. All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without modification, are permitted
+> provided that the following conditions are met:
+>
+> 1. Redistributions of source code must retain the above copyright notice, this list of
+>    conditions and the following disclaimer.
+> 2. Redistributions in binary form must reproduce the above copyright notice, this list of
+>    conditions and the following disclaimer in the documentation and/or other materials provided
+>    with the distribution.
+> 3. Neither the name of the Standards Of Fundamental Astronomy Board, the International
+>    Astronomical Union nor the names of its contributors may be used to endorse or promote
+>    products derived from this software without specific prior written permission.
+>
+> THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+> IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+> AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+> CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+> CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+> SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+> THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+> OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+> POSSIBILITY OF SUCH DAMAGE.
+
+## Media shipped in the app
+
+### Earth textures — `public/textures/`
+
+`earth_atmos_2048.jpg`, `earth_normal_2048.jpg`, `earth_specular_2048.jpg`: the planet textures
+from the three.js examples (<https://github.com/mrdoob/three.js/tree/dev/examples/textures/planets>),
+derivatives of NASA's Blue Marble imagery (<https://visibleearth.nasa.gov/>). Terms: see source.
+
+`earth_atmos_4096.jpg`: NASA Visible Earth, *Blue Marble: Land Surface, Ocean Color and Sea Ice*
+(`land_ocean_ice_8192.png`, <https://visibleearth.nasa.gov/images/57730>), reduced to 4096 × 2048
+and colour-matched to `earth_atmos_2048.jpg`. `earth_clouds_4096.jpg`: NASA Visible Earth, *Blue
+Marble: Clouds* (`cloud_combined_8192.tif`, <https://visibleearth.nasa.gov/images/57747>), reduced
+to 4096 × 2048 and its density curve matched to the three.js cloud map it replaces.
+`earth_lights_4096.jpg`: `earth_night_4096.jpg` from the same three.js examples (NASA *Black
+Marble* derivative, <https://earthobservatory.nasa.gov/features/NightLights>), colour-matched to
+the 2048 night map it replaces. NASA imagery is not protected by copyright in the United States
+(NASA Images and Media Usage Guidelines); NASA is credited as the source.
+
+Used for the Earth in every 3-D view (the 4096 maps) and the 2-D ground-track maps (the 2048
+colour map), and in the screenshots made from them.
+
+### Launch audio — `public/audio/soyuz-ms-27-nasa.mp3`
+
+NASA TV coverage of the launch of Soyuz MS-27 (NASA astronaut Jonny Kim, Roscosmos cosmonauts
+Sergey Ryzhikov and Alexey Zubritsky), Baikonur Cosmodrome, 8 April 2025: 600 s from T-60 s to
+T+540 s, mono, 48 kbit/s. Played by the Watch level in step with the Soyuz launch
+(`src/audio/soundtrack.ts`). Source: NASA Image and Video Library, video
+iss073m260980444_NASA_Astronaut_Jonny_Kim_Soyuz_MS-27_Launch_250408 (<https://images.nasa.gov>).
+NASA material is not protected by copyright in the United States (NASA Images and Media Usage
+Guidelines); the broadcast carries the
+Roscosmos launch-control loop under NASA's commentary. Details: `public/audio/CREDITS.txt`.
+
+The other launches play the simulator's own synthesised sound (`src/audio/engine-sound.ts`), or a
+recording the user adds, which stays in that browser and is not part of the project.
+
+### Launch-vehicle photographs — `public/lessons/vehicles/`
+
+Shown by the placement test and the printed worksheets (`src/lessons/assessment/photos.ts`), each
+with its author and licence. All from Wikimedia Commons, resized to at most 560 × 720 pixels; a
+resized copy stays under its original licence (for CC BY-SA, the same licence). Details:
+`public/lessons/vehicles/CREDITS.txt`.
+
+| File | Original | Author | Licence |
+| --- | --- | --- | --- |
+| `soyuz21a.jpg` | [Expedition 50 Soyuz Rollout (NHQ201611140038).jpg](https://commons.wikimedia.org/wiki/File:Expedition_50_Soyuz_Rollout_(NHQ201611140038).jpg) | NASA/Victor Zelentsov | Public domain |
+| `falcon9.jpg` | [NHQ202210010026 orig.jpg](https://commons.wikimedia.org/wiki/File:NHQ202210010026_orig.jpg) | NASA/Joel Kowsky | Public domain |
+| `falconheavy.jpg` | [Falcon Heavy cropped.jpg](https://commons.wikimedia.org/wiki/File:Falcon_Heavy_cropped.jpg) | SpaceX | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.en) |
+| `starship.jpg` | [Starship full stack with Jeep.jpg](https://commons.wikimedia.org/wiki/File:Starship_full_stack_with_Jeep.jpg) | Hotel Pika | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) |
+| `electron.jpg` | [Rocket Lab PREFIRE and Ice Launch (KSC-20240605-PH-RKL01 0004).jpg](https://commons.wikimedia.org/wiki/File:Rocket_Lab_PREFIRE_and_Ice_Launch_(KSC-20240605-PH-RKL01_0004).jpg) | NASA Kennedy Space Center / Rocket Lab | Public domain |
+| `atlasv551.jpg` | [Atlas V 551 with New Horizons on Launch Pad 41.jpg](https://commons.wikimedia.org/wiki/File:Atlas_V_551_with_New_Horizons_on_Launch_Pad_41.jpg) | NASA | Public domain |
+| `vulcan.jpg` | [Vulcan Centaur rollout (Peregrine) (cropped).jpg](https://commons.wikimedia.org/wiki/File:Vulcan_Centaur_rollout_(Peregrine)_(cropped).jpg) | NASA/Ben Smegelsky | Public domain |
+| `longmarch5.jpg` | [Long March 5 rolling out at WSLS.jpg](https://commons.wikimedia.org/wiki/File:Long_March_5_rolling_out_at_WSLS.jpg) | Xiaojun Wang, China Academy of Launch Vehicle Technology | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
+| `angaraa5.jpg` | [Launch of Angara-A5 from Plesetsk Cosmodrome (2021-12-28) 2.jpg](https://commons.wikimedia.org/wiki/File:Launch_of_Angara-A5_from_Plesetsk_Cosmodrome_(2021-12-28)_2.jpg) | Russian Ministry of Defense | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
+| `longmarch2d.jpg` | [Long March 2D launching VRSS-1.jpg](https://commons.wikimedia.org/wiki/File:Long_March_2D_launching_VRSS-1.jpg) | Cristóbal Alvarado Minic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) |
+| `protonm.jpg` | [On the launch pad.jpg](https://commons.wikimedia.org/wiki/File:On_the_launch_pad.jpg) | alexpgp | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) |
+
+### Web fonts (online mode only, not shipped)
+
+In online mode the interface asks Google Fonts for IBM Plex Sans Thai, IBM Plex Sans (Cyrillic)
+and IBM Plex Mono (`src/ui/web-fonts.ts`); offline, the default, it does not. The fonts are not bundled. They are
+served under the SIL Open Font License 1.1 (<https://fonts.google.com/>).
+
+### Interface icons — `index.html`
+
+The line icons in `index.html`'s `#logo-sprite` (`#i-launch` … `#i-lessons`, drawn in the top
+bar, and `#i-chapters`, drawn in the playback row's event-jump opener) follow Lucide
+(<https://lucide.dev>, <https://github.com/lucide-icons/lucide>): `#i-launch` (rocket), `#i-build`
+(wrench), `#i-campaign` (flag), `#i-lessons` (book-open), `#i-chapters` (list-video) and `#i-chev`
+(chevron-down) are its paths unchanged, and the others — among them `#i-structure`
+(three stacked blocks, the Structure & Assembly section's tab) — are drawn after it in the same
+style. Lucide is under the ISC License, and its Feather portions under the MIT License
+(<https://github.com/feathericons/feather/blob/main/LICENSE>):
+
+> ISC License
+>
+> Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
+> All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+>
+> Permission to use, copy, modify, and/or distribute this software for any purpose with or without
+> fee is hereby granted, provided that the above copyright notice and this permission notice
+> appear in all copies.
+>
+> THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+> SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+> AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+> WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+> NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+> OF THIS SOFTWARE.
+
+## Data shipped in the app
+
+| What | Where in Orbitlab | Terms | Source |
+| --- | --- | --- | --- |
+| Satellite element sets (GP data, TLE/OMM) | `public/data/satellites.json`; fetched online by `src/provider/satellites.ts`, at most once in two hours; the Orbit section's real satellites, passes, overflights, close approaches | Terms: see source | CelesTrak, <https://celestrak.org/NORAD/elements/> |
+| Space weather: F10.7 flux, Kp/Ap, the solar-cycle record and forecast | `public/data/space-weather.json`; fetched online by `src/provider/space-weather.ts`; the orbit-lifetime and re-entry analysis | US Government (NOAA) data; terms: see source | NOAA Space Weather Prediction Center, <https://www.swpc.noaa.gov/> |
+| Daily F10.7 and Ap since 1954 | `src/data/solar-daily.json`, made by `tests/fixtures/space-weather/make_solar_daily.py` | CC BY 4.0. Cite: Matzka, J., Bronkalla, O., Tornow, K., Elger, K. and Stolle, C. (2021), *Geomagnetic Kp index*, V. 1.0, GFZ Data Services, doi:10.5880/Kp.0001. The flux is the Dominion Radio Astrophysical Observatory's (Tapping 2013, doi:10.1002/swe.20064). The sunspot numbers in the same file (CC BY-NC 4.0) are not used. | GFZ Potsdam, <https://kp.gfz.de/>, <https://doi.org/10.5880/Kp.0001> |
+| The months that began solar cycles 19 to 25 (seven dates, the minima of the smoothed sunspot number) | `src/physics/propagator/activity.ts`, the Sun beyond NOAA's forecast in the orbit-lifetime analysis | Facts only; terms: see source | SILSO, Royal Observatory of Belgium, <https://www.sidc.be/SILSO/cyclesminmax> |
+| Earth orientation: UT1 − UTC and polar motion (Bulletin A, finals2000A) | `public/data/earth-orientation.json`; fetched online by `src/provider/earth-orientation.ts` | Terms: see source | IERS Earth Orientation Center, <https://datacenter.iers.org/> |
+| NRLMSISE-00 atmosphere: the model and its coefficients | `src/physics/propagator/msis.ts`, `src/physics/propagator/msis-data.ts` (a port of the C release of 2004-12-27 by Dominik Brodowski) | Public domain: U.S. Government material, not subject to copyright in the United States (17 U.S.C. 403); NRL's notice says "the source code is in the public domain and not licensed or under copyright"; Brodowski's C release is placed in the public domain. No endorsement by or affiliation with the Naval Research Laboratory is implied. | M. Picone, A. Hedin and D. Drob, Naval Research Laboratory |
+| Re-entry dates, masses and sizes of objects (Long March 5B core stages, NAPA-2, the re-entry cases) | `src/data/cz5b.ts`, `src/data/napa2.ts`, the re-entry lessons and worksheets | CC BY 4.0. Cite: McDowell, J., *General Catalog of Artificial Space Objects* | GCAT, <https://planet4589.org/space/gcat/> |
+| Thailand's satellites (THEOS, THEOS-2, NAPA-1, NAPA-2, Thaicom) | `src/data/thai-satellites.ts`, each fact with its source | Facts only, each linked; terms: see source | eoPortal, Airbus, ISISPACE, Thaicom, Arianespace, Gunter's Space Page, Bangkok Post, Shephard, SatTrackCam Leiden, Wikipedia, the CelesTrak SATCAT |
+
+## Published figures the model is built on and checked against
+
+Vehicle, engine, site and satellite figures are facts taken from public documents, rounded and
+recorded with their sources in `src/data/` and `docs/`. No manual, press kit or paper is bundled.
+Terms: see each source.
+
+- **Launch vehicles** (masses, thrust, specific impulse, timelines): SpaceX (Falcon 9, Falcon
+  Heavy, <https://www.spacex.com/vehicles/falcon-9/>); Rocket Lab (Electron,
+  <https://www.rocketlabusa.com/launch/electron/>, press kits and Payload User's Guide); ESA and
+  Avio (Vega-C, <https://www.esa.int/Enabling_Support/Space_Transportation/Vega>); Arianespace
+  (Ariane 64 launch kit, Soyuz CSG User's Manual); United Launch Alliance (Atlas V, Vulcan);
+  International Launch Services (Proton-M); JAXA (H3 and H-IIA,
+  <https://global.jaxa.jp/projects/rockets/h3/>); CGWIC (Long March user manuals,
+  <http://www.cgwic.com/LaunchServices/LaunchVehicle/LM.html>); Roscosmos and RKTs Progress
+  (Soyuz-2, <https://www.samspace.ru/products/launch_vehicles/rn_soyuz_2/>); ISRO (PSLV,
+  <https://www.isro.gov.in/PSLV.html>); secondary sources as `docs/VALIDATION.md` and
+  `docs/SIXDOF-VEHICLE-DATA.md` name them (Spaceflight Now, RussianSpaceWeb, Wikipedia).
+- **Physics references**: US Standard Atmosphere 1976 (NASA-TM-X-74335,
+  <https://ntrs.nasa.gov/citations/19770009539>); NASA Glenn, rocket thrust and the ideal rocket
+  equation (<https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-thrust-equation/>);
+  NASA, flight equations and reference frames (<https://ntrs.nasa.gov/citations/20160002944>);
+  NASA, dynamics of variable-mass systems (<https://ntrs.nasa.gov/citations/19980210404>);
+  ECSS-E-ST-10-04C (space environment).
+- **Astrodynamics**: D. A. Vallado, *Fundamentals of Astrodynamics and Applications*, its worked
+  examples and test vectors (<https://celestrak.org/software/vallado-sw.php>); H. D. Curtis,
+  *Orbital Mechanics for Engineering Students*, worked examples; Vallado, Crawford, Hujsak and
+  Kelso, "Revisiting Spacetrack Report #3", AIAA 2006-6753, whose reference implementation
+  `src/orbit/sgp4.ts` follows (<https://celestrak.org/publications/AIAA/2006-6753/>).
+- **Earth observation and missions**: eoPortal (<https://www.eoportal.org/>), USGS (Landsat,
+  <https://www.usgs.gov/landsat-missions>), ESA (Sentinel missions), NASA — instrument swaths,
+  fields of view, revisit periods and local times.
+- **Studies cited for estimates**: Flohrer et al. 2008, Levit & Marshall 2011 and Kelso 2007
+  (element-set accuracy); Klinkrad 2013 (re-entry windows); Shepperd, AMOS 2023 (the Iridium 33 –
+  Cosmos 2251 conjunction); Alfano 2009 (test conjunctions); Kelso, AAS 09-368.
+
+## Test fixtures (in the repository, not shipped in the app)
+
+| What | Where | Terms | Source |
+| --- | --- | --- | --- |
+| SGP4 verification cases `SGP4-VER.TLE` and `tcppver.out` (AIAA 2006-6753) | `tests/fixtures/sgp4/` | As distributed with the `sgp4` package 2.27 (MIT licence) | <https://pypi.org/project/sgp4/>, <https://celestrak.org/publications/AIAA/2006-6753/> |
+| The ISS element set in CelesTrak's six formats | `tests/fixtures/gp/` | Terms: see source | CelesTrak, <https://celestrak.org/NORAD/documentation/gp-data-formats.php> |
+| Passes computed by Skyfield 1.55 with JPL DE421 | `tests/fixtures/passes/` | Skyfield: MIT licence; the fixture is its output | <https://rhodesmill.org/skyfield/> |
+| NRLMSISE-00 reference points from NRL's Fortran via pymsis 0.13.0 | `tests/fixtures/msis/` | pymsis: MIT licence; NRLMSISE-00 as above | <https://github.com/SWxTREC/pymsis> |
+| NASA CARA test conjunctions (the numbers only) | `tests/fixtures/conjunction/` | CARA Analysis Tools: NASA Open Source Agreement | <https://github.com/nasa/CARA_Analysis_Tools> |
+| Re-entries of 1985–2004 with NORAD's element sets | `tests/fixtures/reentry/` | Re-entry dates: GCAT, CC BY 4.0. Element sets: J. McDowell's archive of historical element sets, only sets of NORAD origin before 2004, distributed without restriction; bundled with the owner's approval of 2026-09-27 | <https://planet4589.org/space/gcat/>, <https://planet4589.org/space/ele.html> |
+| Seven spheres: element sets, masses and sizes, re-entries | `tests/fixtures/space-weather/spheres.json` | Element sets: CelesTrak, terms: see source; masses and sizes: Gunter's Space Page, Wikipedia, NASA ILRS documents, terms: see source; re-entries: GCAT, CC BY 4.0 | See `tests/fixtures/space-weather/README.md` |
+| Rocket stages re-entered 2023–2025 | `tests/fixtures/reentry/stages.json` | GCAT, CC BY 4.0; CelesTrak's first element sets, terms: see source | See `tests/fixtures/space-weather/README.md` |
