@@ -48,3 +48,10 @@ export function differentialGravityAt(spacecraftPosition:Vector3,referencePositi
  const atCraft=gravityAt(spacecraftPosition,perturbers),atReference=gravityAt(referencePosition,perturbers);
  return{x:atCraft.x-atReference.x,y:atCraft.y-atReference.y,z:atCraft.z-atReference.z};
 }
+
+/** Time to the next occurrence of a required relative orbital phase. */
+export function secondsUntilPhase(currentPhaseRadians:number,requiredPhaseRadians:number,relativeMeanMotion:number):number{
+ if(!Number.isFinite(currentPhaseRadians)||!Number.isFinite(requiredPhaseRadians)||!Number.isFinite(relativeMeanMotion)||Math.abs(relativeMeanMotion)<1e-14)return Infinity;
+ const recurrence=2*Math.PI/Math.abs(relativeMeanMotion),raw=(requiredPhaseRadians-currentPhaseRadians)/relativeMeanMotion;
+ return((raw%recurrence)+recurrence)%recurrence;
+}
