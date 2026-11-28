@@ -43,6 +43,37 @@ describe("launch rail constraint", () => {
     expect(Math.hypot(relative.x, relative.y, relative.z)).toBeLessThan(.01);
   });
 
+  it("keeps the rocket aligned with the rotating launch site through rail exit", () => {
+    const sim = new FlightSimulator({ ...vehicle, dryMassTonnes: 10, fuelTonnes: 2, thrustKN: 1000 });
+    sim.launch();
+    // Let the pad rotate for a minute before ignition. A rail-fixed vehicle
+    // must follow the launch site's inertial orientation rather than remain
+    // pointed at the original, now-stale radial direction.
+    for (let i = 0; i < 60 * 120; i++) sim.step(1 / 120, { throttle: 0, pitch: 0 });
+    sim.step(1 / 120, { throttle: 1, pitch: 0 });
+    for (let i = 0; i < 240; i++) sim.step(1 / 120, { throttle: 1, pitch: 0 });
+    expect(sim.state.altitude).toBeGreaterThan(21);
+    const radius = Math.hypot(sim.state.position.x, sim.state.position.y, sim.state.position.z);
+    const radial = { x: sim.state.position.x / radius, y: sim.state.position.y / radius, z: sim.state.position.z / radius };
+    const forwardQ = sim.state.orientation;
+    const forward = {
+      x: 2 * (forwardQ.x * forwardQ.y + forwardQ.w * forwardQ.z),
+      y: 1 - 2 * (forwardQ.x * forwardQ.x + forwardQ.z * forwardQ.z),
+      z: 2 * (forwardQ.y * forwardQ.z - forwardQ.w * forwardQ.x)
+    };
+    const alignmentError = Math.hypot(
+      forward.y * radial.z - forward.z * radial.y,
+      forward.z * radial.x - forward.x * radial.z,
+      forward.x * radial.y - forward.y * radial.x
+    );
+    expect(alignmentError).toBeLessThan(.002);
+    const air = atmosphereVelocity(sim.state.position);
+    const relative = { x: sim.state.velocity.x - air.x, y: sim.state.velocity.y - air.y, z: sim.state.velocity.z - air.z };
+    const radialSpeed = relative.x * radial.x + relative.y * radial.y + relative.z * radial.z;
+    const lateralSpeed = Math.sqrt(Math.max(0, relative.x ** 2 + relative.y ** 2 + relative.z ** 2 - radialSpeed ** 2));
+    expect(lateralSpeed).toBeLessThan(.1);
+  });
+
   it("constrains lateral motion and attitude while the rocket is on the launch rail", () => {
     const sim = new FlightSimulator(vehicle);
     sim.launch();
