@@ -128,7 +128,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     referenceArea: aero.referenceArea, aeroTable: aero.table,
     dragCoefficient: aero.dragCoefficient, liftSlope: aero.liftSlope,
     inertia: mass.inertiaRadiusSquared,
-    centerOfMassM: mass.centerOfMassM, engineMountM,
+    centerOfMassM: mass.centerOfMassM, engineMountM, aeroDatumY: minY,
     reactionWheelTorque: wheels.length * 3.8,
     rcsTorque: rcs.length * 1.5, rcsThrustKN: rcs.length * .35,
     rcsFuelTonnes,
