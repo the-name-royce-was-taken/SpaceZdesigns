@@ -115,6 +115,88 @@ function catalogCard(p:PartSpec){
  return '<button type="button" class="vab-part-card" data-add="'+p.kind+'">'+previewSvg(p.kind,p.color)+'<span><b>'+p.name+'</b><small>'+p.mass.toFixed(2)+' t'+(p.fuel? ' · '+p.fuel+' fuel':'')+'<br><strong>'+p.cost.toLocaleString()+' cr</strong></small></span></button>';
 }
 
+export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE.Group();const add=(geometry:THREE.BufferGeometry,material:THREE.Material,position=new THREE.Vector3())=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.copy(position);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;};
+   
+   const steel=new THREE.MeshStandardMaterial({color:0x9aa8ae,roughness:.34,metalness:.82});
+   const gold=new THREE.MeshStandardMaterial({color:0xc49a55,roughness:.38,metalness:.76});
+   const bellMaterial=new THREE.MeshStandardMaterial({color:0x8e9da4,roughness:.3,metalness:.84,side:THREE.DoubleSide});
+   const band=(radius:number,y:number,tube=.014,material=steel)=>{const ring=add(new THREE.TorusGeometry(radius,tube,5,12),material,new THREE.Vector3(0,y,0));ring.rotation.x=Math.PI/2;return ring;};
+   const pipe=(points:THREE.Vector3[],radius=.018,material=gold)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,radius,5,false),material);
+   const continuousCore=(profile:THREE.Vector2[])=>add(new THREE.LatheGeometry(profile,12),bellMaterial);
+   if(type==="solid"){
+    // One closed pressure-case/nozzle shell: the domed head, case and throat are a single surface.
+    continuousCore([
+     new THREE.Vector2(0,.46),new THREE.Vector2(.12,.445),new THREE.Vector2(.205,.39),new THREE.Vector2(.245,.31),
+     new THREE.Vector2(.245,-.08),new THREE.Vector2(.23,-.18),new THREE.Vector2(.18,-.26),new THREE.Vector2(.27,-.49),
+     new THREE.Vector2(.245,-.49),new THREE.Vector2(.15,-.27),new THREE.Vector2(.105,-.18),new THREE.Vector2(.105,.25),
+     new THREE.Vector2(.08,.34),new THREE.Vector2(0,.34)
+    ]);
+    for(const y of [-.08,.2])band(.248,y,.022,steel);
+    band(.258,-.475,.02,gold);
+    band(.075,.425,.012,gold);
+   }else if(type==="ion"){
+    // The barrel, mounting flange and emitter plate share one continuous solid profile.
+    continuousCore([
+     new THREE.Vector2(0,.40),new THREE.Vector2(.255,.40),new THREE.Vector2(.255,.36),new THREE.Vector2(.29,.36),
+     new THREE.Vector2(.29,.29),new THREE.Vector2(.255,.29),new THREE.Vector2(.255,-.10),new THREE.Vector2(.285,-.10),
+     new THREE.Vector2(.285,-.18),new THREE.Vector2(.235,-.18),new THREE.Vector2(.235,-.195),new THREE.Vector2(0,-.195)
+    ]);
+    for(const radius of [.11,.17,.22])band(radius,-.194,.008,gold);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*.205,z=Math.sin(a)*.205;add(new THREE.CylinderGeometry(.014,.014,.045,6),gold,new THREE.Vector3(x,-.155,z));}
+    for(let i=0;i<4;i++){const a=i*Math.PI/2,x=Math.cos(a)*.277,z=Math.sin(a)*.277;add(new THREE.CylinderGeometry(.022,.022,.16,8),steel,new THREE.Vector3(x,.12,z));}
+   }else if(type==="hydrolox"){
+    // A single thin-wall cryogenic chamber, throat and high-expansion vacuum bell.
+    continuousCore([
+     new THREE.Vector2(0,.46),new THREE.Vector2(.225,.46),new THREE.Vector2(.225,.39),new THREE.Vector2(.145,.37),
+     new THREE.Vector2(.145,.18),new THREE.Vector2(.12,.09),new THREE.Vector2(.105,-.035),new THREE.Vector2(.16,-.22),
+     new THREE.Vector2(.27,-.49),new THREE.Vector2(.375,-.72),new THREE.Vector2(.356,-.72),new THREE.Vector2(.255,-.48),
+     new THREE.Vector2(.145,-.20),new THREE.Vector2(.09,-.035),new THREE.Vector2(.095,.10),new THREE.Vector2(.105,.29),
+     new THREE.Vector2(.105,.36),new THREE.Vector2(0,.36)
+    ]);
+    for(const side of [-1,1]){
+     add(new THREE.CylinderGeometry(.075,.085,.19,8),steel,new THREE.Vector3(side*.205,.285,0));
+     add(new THREE.CylinderGeometry(.075,.09,.09,8),gold,new THREE.Vector3(side*.205,.16,0));
+     pipe([new THREE.Vector3(side*.2,.38,0),new THREE.Vector3(side*.32,.29,0),new THREE.Vector3(side*.29,.12,0),new THREE.Vector3(side*.13,.04,0)],.014,gold);
+    }
+    band(.375,-.705,.016,steel);band(.13,-.16,.014,gold);
+    for(const y of [.27,.32])band(.147,y,.008,gold);
+   }else if(type==="methalox"){
+    // Continuous stout chamber, converging throat and regeneratively cooled bell shell.
+    continuousCore([
+     new THREE.Vector2(0,.46),new THREE.Vector2(.235,.46),new THREE.Vector2(.235,.385),new THREE.Vector2(.17,.385),
+     new THREE.Vector2(.17,.20),new THREE.Vector2(.145,.09),new THREE.Vector2(.105,-.035),new THREE.Vector2(.15,-.20),
+     new THREE.Vector2(.245,-.43),new THREE.Vector2(.345,-.62),new THREE.Vector2(.326,-.62),new THREE.Vector2(.23,-.42),
+     new THREE.Vector2(.135,-.18),new THREE.Vector2(.09,-.035),new THREE.Vector2(.11,.10),new THREE.Vector2(.12,.30),
+     new THREE.Vector2(.12,.36),new THREE.Vector2(0,.36)
+    ]);
+    for(const side of [-1,1]){
+     add(new THREE.CylinderGeometry(.07,.09,.2,8),gold,new THREE.Vector3(side*.22,.27,0));
+     add(new THREE.CylinderGeometry(.075,.09,.085,8),steel,new THREE.Vector3(side*.22,.13,0));
+     pipe([new THREE.Vector3(side*.2,.4,0),new THREE.Vector3(side*.31,.31,0),new THREE.Vector3(side*.31,.08,0),new THREE.Vector3(side*.13,-.02,0)],.016,gold);
+    }
+    for(let row=0;row<4;row++){const y=-.245-row*.09,r=.17+row*.043;band(r,y,.009,gold);}
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;const brace=add(new THREE.BoxGeometry(.025,.16,.025),steel,new THREE.Vector3(Math.cos(a)*.175,.34,Math.sin(a)*.175));brace.rotation.z=-Math.cos(a)*.16;brace.rotation.x=Math.sin(a)*.16;}
+    band(.345,-.605,.016,steel);
+   }else{
+    // Conventional pump-fed kerolox engine with a continuous smooth-bell chamber/nozzle shell.
+    continuousCore([
+     new THREE.Vector2(0,.46),new THREE.Vector2(.255,.46),new THREE.Vector2(.255,.385),new THREE.Vector2(.17,.385),
+     new THREE.Vector2(.17,.20),new THREE.Vector2(.145,.09),new THREE.Vector2(.105,-.035),new THREE.Vector2(.16,-.22),
+     new THREE.Vector2(.27,-.49),new THREE.Vector2(.375,-.68),new THREE.Vector2(.356,-.68),new THREE.Vector2(.255,-.48),
+     new THREE.Vector2(.145,-.20),new THREE.Vector2(.09,-.035),new THREE.Vector2(.11,.10),new THREE.Vector2(.12,.30),
+     new THREE.Vector2(.12,.36),new THREE.Vector2(0,.36)
+    ]);
+    band(.14,-.19,.016,steel);band(.375,-.665,.016,steel);
+    for(let i=0;i<4;i++){const angle=i*Math.PI/2,strut=add(new THREE.BoxGeometry(.035,.19,.035),steel,new THREE.Vector3(Math.cos(angle)*.175,.34,Math.sin(angle)*.175));strut.rotation.z=-Math.cos(angle)*.18;strut.rotation.x=Math.sin(angle)*.18;}
+    pipe([new THREE.Vector3(.16,.36,0),new THREE.Vector3(.25,.25,.02),new THREE.Vector3(.22,.02,.02),new THREE.Vector3(.13,-.08,0)],.014,gold);
+   }
+   // Scale engine families to believable proportions relative to the 0.9 m tank body.
+   const engineScale:Record<EngineType,number>={liquid:.76,solid:.78,ion:.72,methalox:.78,hydrolox:.84};
+   g.scale.setScalar(engineScale[type]);
+  return g;}
+export function createLandingLegModel(retracted=false):THREE.Group{const root=new THREE.Group(),steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32}),dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38}),pistonMetal=new THREE.MeshStandardMaterial({color:0xd6e0e5,metalness:.88,roughness:.24}),footMaterial=new THREE.MeshStandardMaterial({color:0x687985,metalness:.62,roughness:.5});const legs:{hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]=[];for(let i=0;i<3;i++){const angle=i*Math.PI*2/3,leg=new THREE.Group();leg.position.set(Math.cos(angle)*.16,.13,Math.sin(angle)*.16);leg.rotation.y=-angle;root.add(leg);const mount=new THREE.Mesh(new THREE.BoxGeometry(.24,.22,.24),dark);mount.position.y=.04;leg.add(mount);const hinge=new THREE.Group();hinge.position.y=-.02;hinge.rotation.z=retracted?.95:-.42;leg.add(hinge);const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(.068,.078,.58,12),steel);sleeve.position.y=-.29;hinge.add(sleeve);const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.07,12),dark);collar.position.y=-.55;hinge.add(collar);const piston=new THREE.Mesh(new THREE.CylinderGeometry(.029,.036,.48,12),pistonMetal);piston.position.y=retracted?-.66:-.94;hinge.add(piston);const foot=new THREE.Group();foot.position.y=retracted?-.91:-1.19;foot.rotation.z=-hinge.rotation.z;hinge.add(foot);const pad=new THREE.Mesh(new THREE.BoxGeometry(.3,.065,.23),footMaterial);foot.add(pad);const toe=new THREE.Mesh(new THREE.BoxGeometry(.22,.035,.28),dark);toe.position.y=-.035;foot.add(toe);legs.push({hinge,piston,foot});}root.userData.landingLegModel=true;root.userData.deploymentProgress=retracted?0:1;root.userData.deploymentTarget=retracted?0:1;root.userData.legs=legs;return root;}
+export function setLandingLegDeployment(root:THREE.Object3D,extended=true){root.traverse(o=>{if(o.userData.landingLegModel)o.userData.deploymentTarget=extended?1:0;});}
+export function animateLandingLegModels(root:THREE.Object3D,dt:number){root.traverse(o=>{if(!o.userData.landingLegModel)return;const p0=Number(o.userData.deploymentProgress??0),t=Number(o.userData.deploymentTarget??p0),p=p0+(t-p0)*Math.min(1,Math.max(0,dt)*3.2);o.userData.deploymentProgress=Math.abs(t-p)<.002?t:p;for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){leg.hinge.rotation.z=.95-1.37*p;leg.piston.position.y=-.66-.28*p;leg.foot.position.y=-.91-.28*p;leg.foot.rotation.z=-leg.hinge.rotation.z;}});}
 export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed:(parts:BuildPart[])=>void,economy?:{purchase:(parts:BuildPart[])=>boolean}){
  host.innerHTML=`<div class="vab-tools"><div class="vab-tool-group"><button data-tool="select" class="active">SELECT</button><button data-tool="translate">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="delete">DELETE</button></div><div class="vab-tool-group"><span class="vab-snap-status">MAGNETIC PART SNAP / ALWAYS ON · INVISIBLE 9×9 SURFACE NODES</span><label>SYMMETRY <select id="vab-symmetry"><option value="1">OFF</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div><div class="vab-tool-group"><button id="vab-undo">UNDO</button><button id="vab-redo">REDO</button><button id="vab-reset">RESET VIEW</button></div></div>
  <div class="vab-workspace"><div class="builder-toolbar"><span>VEHICLE ASSEMBLY BUILDING / 3D EDITOR</span><span>SELECT · ATTACH · MOVE · ROTATE</span><button type="button" id="vab-blueprints-toggle" class="vab-blueprints-trigger" aria-expanded="false">BLUEPRINTS</button></div><section id="vab-blueprints-panel" class="vab-blueprints-panel" hidden><div class="vab-blueprints-head"><div><b>BLUEPRINT LIBRARY</b><small>LOCAL INDEXEDDB STORAGE</small></div><button type="button" id="vab-blueprints-close" aria-label="Close blueprints">×</button></div><div id="vab-blueprints-list" class="vab-blueprints-list"><div class="vab-blueprints-empty">Loading saved builds…</div></div><div class="vab-blueprints-footer"><button type="button" id="vab-blueprint-add" class="vab-blueprint-add">＋ NEW BLUEPRINT</button></div></section><aside class="vab-catalog"><div class="vab-section-title">PARTS <small>SELECT TO ADD</small></div><label class="vab-category-label" for="vab-category-select">CATEGORY</label><select id="vab-category-select" class="vab-category-select" aria-label="Part category">${["Power","Aerodynamics","Payload","Other","Engines","Couplers","Controller","Structural"].map((name,i)=>`<option value="${name}" ${i===0?"selected":""}>${name.toUpperCase()}</option>`).join("")}</select><div class="vab-catalog-items" id="vab-catalog-items"></div></aside><div class="vab-workarea"><div class="builder-viewport vab-viewport"><canvas id="vehicle-3d-canvas" tabindex="0" aria-label="3D vehicle builder. Click to select; Control or Command click to add or remove parts; Shift click to select a range."></canvas><div class="builder-hud" id="vab-status">SELECT A PART OR ADD FROM THE CATALOG</div><div class="vab-axis">X / Y / Z</div></div><div class="vab-lower"><section><div class="vab-section-title"><span>CRAFT HIERARCHY <small id="vab-part-count">0 PARTS</small></span><button type="button" id="vab-activation-toggle" class="vab-activation-trigger" aria-expanded="false">ACTIVATION LIST</button></div><div class="vab-stage-summary" id="vab-stage-summary">NO ACTIVATION GROUPS / ADD A GROUP TO SEQUENCE PART ACTIONS</div><div class="builder-stack" id="builder-stack"></div><div class="vab-inspector" id="vab-inspector"><b>NO PART SELECTED</b><small>Select a component to inspect its placement.</small></div></section></div><section id="vab-activation-panel" class="vab-activation-panel" hidden><div class="vab-activation-head"><div><b>ACTIVATION LIST</b><small>ORDERED FLIGHT ACTION GROUPS</small></div><button type="button" id="vab-activation-add" aria-label="Add activation group">＋</button></div><div id="vab-activation-groups" class="vab-activation-groups"></div><div id="vab-activation-editor" class="vab-activation-editor" hidden></div></section></div></div>`;
@@ -224,43 +306,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  scene.add(new THREE.HemisphereLight(0xc5e6ff,0x263448,2));
  const key=new THREE.DirectionalLight(0xffedcf,3);key.position.set(5,10,7);key.castShadow=true;scene.add(key);
  const grid=new THREE.GridHelper(40,80,0x3a718a,0x1b354b);grid.visible=false;scene.add(grid);
- const craftGroup=new THREE.Group();scene.add(craftGroup);
- const transform=new TransformControls(camera,renderer.domElement);transform.setMode("translate");transform.setSpace("world");const multiSelectionPivot=new THREE.Group();multiSelectionPivot.name="multi-selection-transform-pivot";scene.add(multiSelectionPivot);let multiSelectionActive=false;
- const helper=transform.getHelper();scene.add(helper);
- let craft=clone(initial),selected:THREE.Group|null=null,selectedId:string|null=null,selectedIds=new Set<string>(),selectionAnchorId:string|null=null,tool="translate",alive=true;
- let activationEditGroup:number|null=null,activationOrder:number[]=[];
- const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
- let fuelLineStartId:string|null=null;
- let fuelLineDrawing=false;
- const fuelLinePreview=new THREE.Group();fuelLinePreview.visible=false;scene.add(fuelLinePreview);
- const fuelLineValidMaterial=new THREE.MeshStandardMaterial({color:0x65d6c8,emissive:0x168f83,emissiveIntensity:1.2,roughness:.25,metalness:.55});
- const fuelLineInvalidMaterial=new THREE.MeshStandardMaterial({color:0xff3b45,emissive:0xff0018,emissiveIntensity:2.4,roughness:.2,metalness:.25});
- function tankPart(id:string|null|undefined){if(!id)return undefined;return craft.find(p=>p.id===id&&p.kind==="tank");}
- function pipeGeometry(a:THREE.Vector3,b:THREE.Vector3,startId:string,endId:string){const delta=b.clone().sub(a),dir=delta.clone().normalize();const start=a.clone().add(dir.clone().multiplyScalar(.46)),end=b.clone().sub(dir.clone().multiplyScalar(.46)),mid=start.clone().add(end).multiplyScalar(.5);const obstacles=craft.filter(p=>p.id!==startId&&p.id!==endId&&p.kind!=="fuel-line").map(p=>{const center=new THREE.Vector3(p.x??0,p.y??0,p.z??0),size=spec(p.kind).size;return new THREE.Box3(center.clone().sub(size.clone().multiplyScalar(.5)),center.clone().add(size.clone().multiplyScalar(.5))).expandByScalar(.16);});const makeCurve=(points:THREE.Vector3[])=>new THREE.CatmullRomCurve3(points,false,"centripetal",.5);const directMid=mid.clone();directMid.y-=Math.min(.65,Math.max(.22,delta.length()*.18));const candidates:THREE.CatmullRomCurve3[]=[makeCurve([start,start.clone().lerp(directMid,.55),directMid,end.clone().lerp(directMid,.55),end])];const blocked=(curve:THREE.CatmullRomCurve3)=>{for(let i=0;i<=64;i++){const point=curve.getPoint(i/64);if(obstacles.some(box=>box.containsPoint(point)))return true;}return false;};let clear=!blocked(candidates[0]!);if(!clear){const horizontal=new THREE.Vector3(-dir.z,0,dir.x);if(horizontal.lengthSq()<.01)horizontal.set(1,0,0);horizontal.normalize();const sides=[horizontal,horizontal.clone().negate(),new THREE.Vector3(0,0,1),new THREE.Vector3(0,0,-1)];let best:THREE.CatmullRomCurve3|null=null,bestLength=Infinity;for(const side of sides){const required=Math.max(.8,...obstacles.map(box=>{const center=box.getCenter(new THREE.Vector3()),half=box.getSize(new THREE.Vector3()).multiplyScalar(.5);return Math.abs(center.clone().sub(mid).dot(side))+Math.abs(side.x)*half.x+Math.abs(side.y)*half.y+Math.abs(side.z)*half.z+.28;}));for(let offset=required;offset<=required+5;offset+=.35){const shift=side.clone().multiplyScalar(offset),curve=makeCurve([start,start.clone().add(shift),end.clone().add(shift),end]);if(!blocked(curve)){const length=curve.getLength();if(length<bestLength){best=curve;bestLength=length;}break;}}}if(best){candidates[0]=best;clear=true;}}const curve=candidates[0]!;const localPoints=curve.getPoints(64).map(point=>point.sub(mid));return {geometry:new THREE.TubeGeometry(new THREE.CatmullRomCurve3(localPoints),64,.045,8,false),midpoint:mid,clear};}
- function tankWorldPosition(p:BuildPart){return new THREE.Vector3(p.x??0,p.y??0,p.z??0);}
- function updateFuelLinePreview(target:THREE.Object3D|null,valid:boolean){fuelLinePreview.children.forEach(child=>{const mesh=child as THREE.Mesh;mesh.geometry.dispose();});fuelLinePreview.clear();if(!fuelLineStartId)return;const start=tankPart(fuelLineStartId);if(!start)return;let endPart:BuildPart|undefined; if(target){let root=target;while(root.parent&&root.parent!==craftGroup)root=root.parent;endPart=craft.find(p=>p.id===root.userData.partId);}
-  if(!endPart){fuelLinePreview.visible=false;return;}const a=tankWorldPosition(start),b=tankWorldPosition(endPart);const route=pipeGeometry(a,b,start.id!,endPart.id!);const line=new THREE.Mesh(route.geometry,valid&&route.clear?fuelLineValidMaterial:fuelLineInvalidMaterial);fuelLinePreview.add(line);fuelLinePreview.position.copy(route.midpoint);fuelLinePreview.visible=true;}
- function beginFuelLineDrawing(){fuelLineDrawing=true;fuelLineStartId=null;fuelLinePreview.visible=false;select(null);status.textContent="FUEL PIPE MODE / CLICK A FUEL TANK";orbit.enabled=true;}
- const history:BuildPart[][]=[clone(craft)];let historyIndex=0,dragged=false;
- const status=host.querySelector<HTMLElement>("#vab-status")!;
- const uid=()=>`part-${Math.random().toString(36).slice(2,10)}`;
- const spec=(kind:PartKind)=>parts.find(p=>p.kind===kind)!;
- function makeMesh(p:BuildPart){
-  const s=spec(p.kind),mat=new THREE.MeshStandardMaterial({color:s.color,roughness:.48,metalness:.24,flatShading:false,side:THREE.DoubleSide});
-  const g=new THREE.Group();g.userData.partId=p.id;
-  const add=(geo:THREE.BufferGeometry,m:THREE.Material=mat,pos:THREE.Vector3=new THREE.Vector3())=>{const mesh=new THREE.Mesh(geo,m);mesh.position.copy(pos);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;};
-  if(p.kind==="capsule"){
-   const shell=new THREE.MeshStandardMaterial({color:0xe2e9ed,roughness:.34,metalness:.42});
-   const dark=new THREE.MeshStandardMaterial({color:0x435b6c,roughness:.28,metalness:.55});
-   const glass=new THREE.MeshStandardMaterial({color:0x4bb6d4,roughness:.18,metalness:.58});
-   add(new THREE.CylinderGeometry(.43,.49,.62,32,3,false),shell,new THREE.Vector3(0,-.08,0));
-   add(new THREE.ConeGeometry(.43,.52,32,3,false),new THREE.MeshStandardMaterial({color:0xcbd7df,roughness:.3,metalness:.38}),new THREE.Vector3(0,.49,0));
-   add(new THREE.SphereGeometry(.135,24,16),glass,new THREE.Vector3(0,.02,.425));
-   add(new THREE.CylinderGeometry(.49,.49,.08,32),dark,new THREE.Vector3(0,-.405,0));
-  }
-  else if(p.kind==="tank"){
-   const alloy=new THREE.MeshStandardMaterial({color:0xc5d0d8,roughness:.4,metalness:.38});
-   const seam=new THREE.MeshStandardMaterial({color:0x536b7d,roughness:.36,metalness:.68});
+ const craftGrouelse if(p.kind==="engine"){g.add(createEngineModel(p.engineType??"liquid"));}6,metalness:.68});
    const topRadius=Math.max(.08,Math.min(.9,p.topRadius??.44)),bottomRadius=Math.max(.08,Math.min(.9,p.bottomRadius??.44)),height=Math.max(.25,Math.min(3,p.height??.96)),half=height/2;
    add(new THREE.CylinderGeometry(topRadius,bottomRadius,height,48,12,false),alloy);
    for(const t of [.16,.5,.84]){const y=(t-.5)*height,radius=bottomRadius+(topRadius-bottomRadius)*t;const band=add(new THREE.TorusGeometry(radius+.006,.014,8,48),seam,new THREE.Vector3(0,y,0));band.rotation.x=Math.PI/2;}
@@ -371,11 +417,9 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
   else if(p.kind==="fuel-line"){const a=tankPart(p.fuelLineStartId),b=tankPart(p.fuelLineEndId);if(a&&b){const route=pipeGeometry(tankWorldPosition(a),tankWorldPosition(b),a.id!,b.id!);const pipe=new THREE.MeshStandardMaterial({color:0x65aeb4,metalness:.7,roughness:.3,emissive:0x123b3e,emissiveIntensity:.35});add(route.geometry,pipe);g.position.copy(route.midpoint);} }
   else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){const geo=new THREE.BoxGeometry(s.size.x,s.size.y,s.size.z);add(geo);if(p.kind==="fin"){const fin=add(new THREE.BoxGeometry(.12,.72,.55));fin.position.set(.42,-.18,0);fin.rotation.z=-.22;}if(p.kind==="wing"){const tip=add(new THREE.BoxGeometry(.22,.12,.22));tip.position.x=.84;}}
   else if(p.kind==="solar"){const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;add(new THREE.BoxGeometry(.2,.12,.22),new THREE.MeshStandardMaterial({color:0x8799a7,metalness:.65,roughness:.38}));const hinge=new THREE.Group();hinge.position.x=.1;hinge.rotation.z=deployed?0:-Math.PI/2;const panelMaterial=new THREE.MeshStandardMaterial({color:0x2678a5,metalness:.55,roughness:.35});const gridMaterial=new THREE.MeshStandardMaterial({color:0x9be4f4,metalness:.35,roughness:.42});const panel=new THREE.Mesh(new THREE.BoxGeometry(length,.035,.72),panelMaterial);panel.position.x=length/2;panel.castShadow=true;panel.receiveShadow=true;hinge.add(panel);for(let i=1;i<8;i++){const x=length*i/8,z=-.36+.72*i/8;const vertical=new THREE.Mesh(new THREE.BoxGeometry(.012,.004,.72),gridMaterial);vertical.position.set(x,.0195,0);hinge.add(vertical);const horizontal=new THREE.Mesh(new THREE.BoxGeometry(length,.004,.012),gridMaterial);horizontal.position.set(length/2,.0195,z);hinge.add(horizontal);}g.add(hinge);}
-  else if(p.kind==="wheel"||p.kind==="landing-leg"){
-   const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.72,roughness:.36}),rubber=new THREE.MeshStandardMaterial({color:0x273542,roughness:.92}),retracted=!!p.retracted;
-   for(let i=0;i<3;i++){const a=i*Math.PI*2/3,dx=Math.cos(a),dz=Math.sin(a),pivot=new THREE.Vector3(dx*.12,retracted?.08:-.22,dz*.12),foot=new THREE.Vector3(dx*(retracted?.2:.58),retracted?-.08:-.78,dz*(retracted?.2:.58)),delta=foot.clone().sub(pivot),strut=add(new THREE.CylinderGeometry(.035,.045,delta.length(),8),steel,pivot.clone().add(foot).multiplyScalar(.5));strut.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());const wheel=add(new THREE.CylinderGeometry(.14,.14,.09,12),rubber,foot);wheel.rotation.z=Math.PI/2;}
-   add(new THREE.CylinderGeometry(.09,.12,.12,10),steel,new THREE.Vector3(0,.28,0));
-  }else if(p.kind==="rover-wheel"){
+  else if(p.kind==="landing-leg"){g.add(createLandingLegModel(!!p.retracted));}
+   else if(p.kind==="wheel"){const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.72,roughness:.36}),rubber=new THREE.MeshStandardMaterial({color:0x273542,roughness:.92});const strut=add(new THREE.CylinderGeometry(.055,.07,.72,12),steel,new THREE.Vector3(0,-.12,0));strut.rotation.z=-.22;const wheel=add(new THREE.CylinderGeometry(.14,.14,.09,12),rubber,new THREE.Vector3(.22,-.48,0));wheel.rotation.z=Math.PI/2;}
+   else if(p.kind==="rover-wheel"){
    const rubber=new THREE.MeshStandardMaterial({color:0x26343d,roughness:.96}),hub=new THREE.MeshStandardMaterial({color:0x9aa8ad,metalness:.7,roughness:.32}),axle=new THREE.MeshStandardMaterial({color:0x667986,metalness:.65}),radius=p.radius??.24;
    add(new THREE.BoxGeometry(.58,.12,.24),axle,new THREE.Vector3(0,.16,0));
    for(const side of [-1,1]){const tire=add(new THREE.CylinderGeometry(radius,radius,.18,16,1),rubber,new THREE.Vector3(side*.22,-.12,0));tire.rotation.z=Math.PI/2;const rim=add(new THREE.CylinderGeometry(radius*.58,radius*.58,.19,12),hub,new THREE.Vector3(side*.22,-.12,0));rim.rotation.z=Math.PI/2;for(let i=0;i<16;i++){const a=i*Math.PI/8;const lug=add(new THREE.BoxGeometry(.2,.045,.045),rubber,new THREE.Vector3(side*.22,-.12+Math.cos(a)*(radius+.006),Math.sin(a)*(radius+.006)));lug.rotation.x=a;}}
