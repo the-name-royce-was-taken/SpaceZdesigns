@@ -4,7 +4,7 @@ import { mountVehicleBuilder, partCatalog, partCost, engineVariants, isFairingKi
 import { tankFuelCapacity } from "./vehicle-assembly";
 import { prepareSpaceZFlight } from "./orbitlab/flight-preflight";
 import { deleteBlueprint, exportBuildz, listBlueprints, renameBlueprint, saveBlueprint } from "./blueprints";
-import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, FlightSimulator, type FlightState, type LandingSupportPart, type VehiclePhysics } from "./flight-physics";
+import { EARTH_LAUNCH_ORIENTATION, EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, FlightSimulator, type FlightState, type VehiclePhysics } from "./flight-physics";
 import { FLIGHT_CAMERA_INITIAL_DISTANCE_METRES, FLIGHT_CAMERA_MAX_DISTANCE_METRES, FLIGHT_CAMERA_MIN_DISTANCE_METRES, flightCameraDistance } from "./flight-camera";
 import { listActivationGroups, normalizeActivationAssignments, partActivationGroup } from "./activation";
 import { CAREER_ACHIEVEMENTS, getNewCareerAchievements, type CareerEvent } from "./career";
@@ -229,7 +229,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
   }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(!!p.retracted);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
-   else if(p.kind==="heat-shield"){
+   }else if(p.kind==="heat-shield"){
    const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
    add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-thickness/2,p.z??0);
    const edge=add(new THREE.TorusGeometry(radius*.97,.025,6,32),rim,p.x??0,y-thickness-.002,p.z??0);edge.rotation.x=Math.PI/2;
@@ -322,7 +322,6 @@ function launchpad(){
  const group=makeRocket(launchParts);group.scale.setScalar(1e-6);group.updateMatrixWorld(true);
  const launchBounds=new THREE.Box3();group.traverse(object=>{if((object as THREE.Mesh).isMesh&&!object.userData.engineExhaust&&!object.userData.rcsExhaust&&!object.parent?.userData.engineExhaust)launchBounds.expandByObject(object);});
  const actualMinY=Number.isFinite(launchBounds.min.y)?launchBounds.min.y*1e6:-.5;
- const actualSupportParts:LandingSupportPart[]=[];group.traverse(object=>{const kind=object.userData.partKind as string|undefined;if(!kind)return;const bounds=new THREE.Box3().setFromObject(object);if(!bounds.isEmpty())actualSupportParts.push({kind,min:{x:bounds.min.x*1e6,y:bounds.min.y*1e6,z:bounds.min.z*1e6},max:{x:bounds.max.x*1e6,y:bounds.max.y*1e6,z:bounds.max.z*1e6}});});
  spawnClearanceM=Math.max(.08,-actualMinY+.08);vehicleBottomClearanceM=spawnClearanceM+actualMinY;preparedVehicle.spawnClearanceM=spawnClearanceM;
  const earthRadius=6.371,earthFrame=new THREE.Group();earthFrame.position.set(-earthRadius,0,0);scene.add(earthFrame);const earthSpin=new THREE.Group();earthFrame.add(earthSpin);const earthTexture=createFlightEarthTexture(),earth=new THREE.Mesh(new THREE.SphereGeometry(earthRadius,128,80),new THREE.MeshStandardMaterial({color:0xffffff,map:earthTexture,roughness:.96}));earthSpin.add(earth);
  const cloudTexture=createFlightCloudTexture(),clouds=new THREE.Mesh(new THREE.SphereGeometry(earthRadius*1.006,128,80),new THREE.MeshBasicMaterial({map:cloudTexture,transparent:true,opacity:.62,depthWrite:false,side:THREE.FrontSide}));earthSpin.add(clouds);
@@ -347,7 +346,6 @@ function launchpad(){
  const onFlightKeyDown=(event:KeyboardEvent)=>{if(!flightKeys.has(event.code))return;const target=event.target as HTMLElement|null;if(target&&(/INPUT|TEXTAREA|SELECT/.test(target.tagName)||target.isContentEditable))return;event.preventDefault();heldKeys.add(event.code);if((event.code==="KeyE"||event.code==="Space")&&!event.repeat)activateNextFlightGroup();};
  const onFlightKeyUp=(event:KeyboardEvent)=>{heldKeys.delete(event.code);};
  const onFlightBlur=()=>heldKeys.clear();window.addEventListener("keydown",onFlightKeyDown);window.addEventListener("keyup",onFlightKeyUp);window.addEventListener("blur",onFlightBlur);flightInputCleanup=()=>{window.removeEventListener("keydown",onFlightKeyDown);window.removeEventListener("keyup",onFlightKeyUp);window.removeEventListener("blur",onFlightBlur);};
- let poweredFlightStarted=false;
  let lastPersist=performance.now();
  const beginFlight=()=>{
   if(sim)return true;
@@ -388,7 +386,7 @@ function launchpad(){
  };
  root.querySelectorAll<HTMLButtonElement>("[data-flight-activation]").forEach(button=>button.onclick=()=>activateFlightGroup(Number(button.dataset.flightActivation)));
  updateActivationControls();
- range.oninput=()=>{updateLabels();if(currentThrottle<=0)return;if(!sim)beginFlight();const next=activationGroups.find(groupId=>groupId>(sim?.state.currentStage??0));if(sim&&next!==undefined&&engineManifest.some(engine=>engine.stage===next))activateFlightGroup(next);};
+ range.oninput=()=>{updateLabels();if(currentThrottle<=0)return;if(!sim)beginFlight();if(sim?.state.currentStage===0){const first=activationGroups[0];if(first!==undefined&&engineManifest.some(engine=>engine.stage===first))activateFlightGroup(first);}};
  const recoverToLaunch=()=>nav("flight");
  $("#recover",root).onclick=recoverToLaunch;
  $("#crash-build",root).onclick=()=>nav("build");
@@ -405,7 +403,7 @@ function launchpad(){
    if(effect.kind==="fire")effect.mesh.scale.multiplyScalar(1+dt*2.2);if(effect.kind==="smoke")effect.mesh.scale.multiplyScalar(1+dt*.8);
    if(effect.life<=0){scene.remove(effect.mesh);effect.mesh.geometry.dispose();material.dispose();impactEffects.splice(i,1);}
   }
-  if(sim){const s=sim.state,keyboardPitch=(heldKeys.has("KeyW")?1:0)-(heldKeys.has("KeyS")?1:0),keyboardYaw=(heldKeys.has("KeyA")?1:0)-(heldKeys.has("KeyD")?1:0),desiredPitch=Math.max(-1,Math.min(1,Number(pitch.value)/30+keyboardPitch)),hasActiveEngine=engineManifest.some(engine=>engine.stage>0&&engine.stage<=s.currentStage);sim.step(dt,{throttle:Number(range.value)/100,pitch:desiredPitch,yaw:keyboardYaw,roll:(heldKeys.has("KeyC")?1:0)-(heldKeys.has("KeyQ")?1:0),translateZ:(heldKeys.has("ArrowRight")?1:0)-(heldKeys.has("ArrowLeft")?1:0)});awardCareerAchievements(s,undefined,root);
+  if(sim){const s=sim.state,keyboardPitch=(heldKeys.has("KeyW")?1:0)-(heldKeys.has("KeyS")?1:0),keyboardYaw=(heldKeys.has("KeyA")?1:0)-(heldKeys.has("KeyD")?1:0),desiredPitch=Math.max(-1,Math.min(1,Number(pitch.value)/30+keyboardPitch));sim.step(dt,{throttle:Number(range.value)/100,pitch:desiredPitch,yaw:keyboardYaw,roll:(heldKeys.has("KeyC")?1:0)-(heldKeys.has("KeyQ")?1:0),translateZ:(heldKeys.has("ArrowRight")?1:0)-(heldKeys.has("ArrowLeft")?1:0)});awardCareerAchievements(s,undefined,root);
    const renderRotation=new THREE.Quaternion(-earthRotation.x,-earthRotation.y,-earthRotation.z,earthRotation.w);const renderPosition=new THREE.Vector3(s.position.x,s.position.y,s.position.z).applyQuaternion(renderRotation);group.position.copy(renderPosition).multiplyScalar(1e-6).sub(new THREE.Vector3(earthRadius,0,0));group.quaternion.copy(renderRotation).multiply(new THREE.Quaternion(s.orientation.x,s.orientation.y,s.orientation.z,s.orientation.w));updateFlightCamera();
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),position=new THREE.Vector3(s.position.x,s.position.y,s.position.z),omega=new THREE.Vector3(EARTH_SPIN_AXIS.x,EARTH_SPIN_AXIS.y,EARTH_SPIN_AXIS.z),atmosphereVelocity=omega.cross(position).multiplyScalar(EARTH_ROTATION_RATE),airVelocity=new THREE.Vector3(s.velocity.x,s.velocity.y,s.velocity.z).sub(atmosphereVelocity),q=.5*rho*airVelocity.lengthSq();
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
