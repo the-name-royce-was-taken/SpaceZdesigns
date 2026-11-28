@@ -118,6 +118,14 @@ describe("fixed-step flight solver",()=>{
   const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
   expect(lateralSpeed).toBeLessThan(.1);
  });
+ it("lifts a starter-class vehicle after its default engine stage is activated",()=>{
+  const starter:VehiclePhysics={dryMassTonnes:2.7,fuelTonnes:.12,thrustKN:34,ispSeconds:285,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1,spawnClearanceM:1,launchRailLengthM:20,engines:[{stage:1,thrustKN:34,ispSeconds:285}],activationGroups:[1]};
+  const sim=new FlightSimulator(starter);sim.launch();
+  expect(sim.activateNextStage()).toBe(true);
+  for(let i=0;i<1200&&sim.state.altitude<21&&!sim.state.crashed;i++)sim.step(1/120,{throttle:1,pitch:0});
+  expect(sim.state.altitude).toBeGreaterThan(21);
+  expect(sim.state.crashed).toBe(false);
+ });
  it("keeps launch-rail position and velocity locked to the rotating pad radial",()=>{
   const launchVehicle:VehiclePhysics={...vehicle,spawnClearanceM:1,launchRailLengthM:20,dryMassTonnes:10,fuelTonnes:2,thrustKN:1000};
   const sim=new FlightSimulator(launchVehicle);sim.launch();
