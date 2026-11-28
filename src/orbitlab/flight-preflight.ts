@@ -8,7 +8,7 @@ import { buildOrbitlabAeroModel } from "./vehicle-adapter";
 import { engineVariants, partCatalog, type BuildPart } from "../vehicle-builder-3d";
 import { tankFuelCapacity } from "../vehicle-assembly";
 import { listActivationGroups, partActivationGroup } from "../activation";
-import type { VehiclePhysics, FlightEngine, Vector3 } from "../flight-physics";
+import { landingImpactCapacityForPart, type VehiclePhysics, type FlightEngine, type Vector3 } from "../flight-physics";
 
 const G0 = 9.80665;
 const surfaceKinds = new Set(["fin", "wing", "control", "strake"]);
@@ -105,8 +105,10 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     return { part, lowestY };
   }).sort((a, b) => a.lowestY - b.lowestY);
   const minY = contactCandidates[0]!.lowestY;
-  const landingContactKind = contactCandidates[0]!.part.kind;
-  const landingGearCount = parts.filter(part => part.kind === "wheel" || (part.kind === "landing-leg" && !part.retracted)).length;
+  const supportingParts = contactCandidates.filter(candidate => candidate.lowestY <= minY + .08);
+  const landingContactKind = supportingParts[0]!.part.kind;
+  const landingGearCount = supportingParts.filter(candidate => candidate.part.kind === "landing-leg" || candidate.part.kind === "wheel" || candidate.part.kind === "rover-wheel").length;
+  const landingImpactCapacityJ = supportingParts.reduce((sum, candidate) => sum + landingImpactCapacityForPart(candidate.part.kind), 0);
   const spawnClearanceM = Math.max(.08, -minY + .08);
   const engineManifest: FlightEngine[] = engines.map(part => {
     const variant = engineVariants.find(item => item.id === (part.engineType ?? "liquid")) ?? engineVariants[0]!;
@@ -128,7 +130,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
   const rcsFuelTonnes = rcs.length * .012;
   const vehicle: VehiclePhysics = {
     epochSeconds, spawnClearanceM, launchRailLengthM: 20,
-    landingContactKind, landingGearCount,
+    landingContactKind, landingGearCount, landingImpactCapacityJ,
     dryMassTonnes: mass.dryMassTonnes,
     fuelTonnes: mass.propellantTonnes,
     thrustKN: totalThrust, ispSeconds,
