@@ -7,6 +7,16 @@ const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:
  return{x:v.x+2*(q.w*p.x+cross.x),y:v.y+2*(q.w*p.y+cross.y),z:v.z+2*(q.w*p.z+cross.z)};
 };
 describe("fixed-step flight solver",()=>{
+ it("holds the vehicle on the launch pad until thrust exceeds its weight",()=>{
+  const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5});sim.launch();
+  for(let i=0;i<240;i++)sim.step(1/120,{throttle:.2,pitch:0});
+  expect(sim.state.landed).toBe(false);
+  expect(sim.state.crashed).toBe(false);
+  expect(sim.state.altitude).toBeCloseTo(.5,3);
+  for(let i=0;i<240;i++)sim.step(1/120,{throttle:1,pitch:0});
+  expect(sim.state.altitude).toBeGreaterThan(.5);
+ });
+
  it("provides a co-rotating launch-site orientation at Earth's spin rate",()=>{
   const elapsed=120,rotation=earthRotationAt(elapsed),angle=EARTH_ROTATION_RATE*elapsed,sine=Math.sin(angle/2);
   expect(Math.hypot(rotation.x,rotation.y,rotation.z,rotation.w)).toBeCloseTo(1,10);
