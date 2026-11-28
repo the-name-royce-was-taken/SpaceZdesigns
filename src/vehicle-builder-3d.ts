@@ -7,12 +7,12 @@ import { groundDropDistance, groundSnapOffset, leftwardClearanceOffset, sideSpaw
 
 export type EngineType = "liquid" | "solid" | "ion" | "methalox" | "hydrolox";
 export const rotationSnapForShift=(shift:boolean)=>shift?Math.PI/8:null;
-export const engineVariants: {id:EngineType;name:string;description:string;accent:number;thrustKN:number;ispSeconds:number;cost:number}[] = [
- {id:"liquid",name:"Liquid Fuel",description:"Restartable liquid propellant",accent:0xd28a4f,thrustKN:34,ispSeconds:285,cost:175000},
- {id:"solid",name:"Solid Rocket",description:"Simple solid-propellant motor",accent:0xb95d3e,thrustKN:34,ispSeconds:285,cost:45000},
- {id:"ion",name:"Ion Drive",description:"Electric propulsion package",accent:0x4f9bd0,thrustKN:34,ispSeconds:285,cost:220000},
- {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,thrustKN:34,ispSeconds:285,cost:160000},
- {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,thrustKN:34,ispSeconds:285,cost:230000}
+export const engineVariants: {id:EngineType;name:string;description:string;accent:number;massTonnes:number;thrustKN:number;ispSeconds:number;cost:number}[] = [
+ {id:"liquid",name:"Liquid Fuel",description:"Restartable liquid propellant",accent:0xd28a4f,massTonnes:.18,thrustKN:75,ispSeconds:310,cost:175000},
+ {id:"solid",name:"Solid Rocket",description:"Simple solid-propellant motor",accent:0xb95d3e,massTonnes:.24,thrustKN:90,ispSeconds:245,cost:45000},
+ {id:"ion",name:"Ion Drive",description:"Electric propulsion package",accent:0x4f9bd0,massTonnes:.06,thrustKN:.0004,ispSeconds:3000,cost:220000},
+ {id:"methalox",name:"Methalox Engine",description:"Methane and oxygen cycle",accent:0x71a78e,massTonnes:.22,thrustKN:110,ispSeconds:350,cost:160000},
+ {id:"hydrolox",name:"Hydrolox Engine",description:"Hydrogen and oxygen cycle",accent:0x91c8d8,massTonnes:.24,thrustKN:95,ispSeconds:440,cost:230000}
 ];
 export type PartKind = "capsule" | "tank" | "engine" | "separator" | "side-decoupler" | "separator-thruster" | "fuel-line" | "fin" | "solar" | "wing" | "control" | "wheel" | "dock" | "battery" | "remote-control" | "reaction-wheel" | "rcs" | "strut" | "nose-cone" | "fairing" | "conical-fairing" | "interstage-fairing" | "clam-shell-fairing" | "airbrake" | "strake" | "landing-leg" | "heat-shield" | "rover-wheel" | "structural-beam" | "structural-angle" | "structural-hub";
 export interface BuildPart {
@@ -43,8 +43,8 @@ const parts:PartSpec[]=[
  {kind:"capsule",name:"Command pod",category:"Controller",mass:1.2,fuel:0,thrust:0,cost:240000,color:0xdce8ef,size:new THREE.Vector3(.9,.9,.9)},
  {kind:"remote-control",name:"Remote control module",category:"Controller",mass:.16,fuel:0,thrust:0,cost:35000,color:0x6fa7bd,size:new THREE.Vector3(.56,.28,.56)},
  {kind:"reaction-wheel",name:"Reaction wheel",category:"Controller",mass:.22,fuel:0,thrust:0,cost:18000,color:0xb8c2ca,size:new THREE.Vector3(.56,.28,.56)},
- {kind:"tank",name:"Fuel tank",category:"Power",mass:.8,fuel:120,thrust:0,cost:65000,color:0xb7c8d5,size:new THREE.Vector3(.9,1.1,.9)},
- {kind:"engine",name:"Liquid engine",category:"Engines",mass:.7,fuel:0,thrust:34,cost:175000,color:0xe6a65e,size:new THREE.Vector3(.85,.8,.85)},
+ {kind:"tank",name:"Fuel tank",category:"Power",mass:.12,fuel:120,thrust:0,cost:65000,color:0xb7c8d5,size:new THREE.Vector3(.9,1.1,.9)},
+ {kind:"engine",name:"Liquid engine",category:"Engines",mass:.18,fuel:0,thrust:75,cost:175000,color:0xe6a65e,size:new THREE.Vector3(.85,.8,.85)},
  {kind:"separator",name:"Stack decoupler",category:"Couplers",mass:.15,fuel:0,thrust:0,cost:12000,color:0xe5c56d,size:new THREE.Vector3(1,.22,1)},
  {kind:"side-decoupler",name:"Side decoupler",category:"Couplers",mass:.18,fuel:0,thrust:0,cost:15000,color:0xe2bd68,size:new THREE.Vector3(.72,.28,.32)},
  {kind:"separator-thruster",name:"Separation thruster",category:"Couplers",mass:.08,fuel:0,thrust:2,cost:8000,color:0xd68a62,size:new THREE.Vector3(.38,.24,.3)},
@@ -73,6 +73,15 @@ const parts:PartSpec[]=[
  {kind:"strake",name:"Body strake",category:"Aerodynamics",mass:.07,fuel:0,thrust:0,cost:4500,color:0x7898ad,size:new THREE.Vector3(.18,.8,.42)}
 ];
 export const partCatalog=parts;
+export function partMassTonnes(part:Pick<BuildPart,"kind"|"engineType">):number{
+ if(part.kind==="engine")return engineVariants.find(engine=>engine.id===(part.engineType??"liquid"))?.massTonnes??engineVariants[0]!.massTonnes;
+ return parts.find(item=>item.kind===part.kind)?.mass??0;
+}
+export function engineGimbalRotation(pitch:number,yaw:number):{x:number;z:number}{
+ const limit=Math.PI/30,clamp=(value:number)=>Math.max(-1,Math.min(1,Number.isFinite(value)?value:0));
+ return {x:-clamp(pitch)*limit,z:-clamp(yaw)*limit};
+}
+
 export const partCost=(kind:PartKind,engineType:EngineType="liquid")=>kind==="engine"?(engineVariants.find(engine=>engine.id===engineType)?.cost??engineVariants[0]!.cost):(parts.find(part=>part.kind===kind)?.cost??0);
 export const isFairingKind=(kind:PartKind)=>kind==="fairing"||kind==="conical-fairing"||kind==="interstage-fairing"||kind==="clam-shell-fairing";
 export const defaultFairingHeight=(kind:PartKind)=>isFairingKind(kind)?1.15:.8;
