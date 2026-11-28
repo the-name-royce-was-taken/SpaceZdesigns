@@ -55,12 +55,12 @@ export function landingLegBounds(part: BuildPart, extended: boolean) {
   const addBox=(center:Vector3,half:Vector3)=>{for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])points.push(rotateLegPoint({x:center.x+x*half.x,y:center.y+y*half.y,z:center.z+z*half.z},part));};
   addBox({x:-.035,y:.08,z:0},{x:.07,y:.19,z:.17});
   addBox({x:0,y:.43,z:0},{x:.08,y:.31,z:.08});
+  const footY=extended?1.36:.82,pistonEndY=footY+.01,pistonLength=pistonEndY-.58;
+  addBox({x:0,y:.58+pistonLength/2,z:0},{x:.04,y:pistonLength/2,z:.04});
   if(extended){
-    addBox({x:0,y:1.04,z:0},{x:.04,y:.42,z:.04});
     const angle=landingLegDeploymentAngle(part),footCenter={x:.045-Math.sin(angle)*1.36,y:.12+Math.cos(angle)*1.36,z:0};
     addBox(footCenter,{x:.19,y:.09,z:.19});
   }else{
-    addBox({x:0,y:.58,z:0},{x:.04,y:.42,z:.04});
     addBox({x:.045,y:.94,z:0},{x:.19,y:.09,z:.19});
   }
   return {
