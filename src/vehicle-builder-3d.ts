@@ -146,8 +146,8 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    const pipe=(points:THREE.Vector3[],radius=.018,material=gold)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,radius,5,false),material);
    const continuousCore=(profile:THREE.Vector2[])=>{
     const isLocalMinimum=(index:number)=>profile[index]!.x<=profile[index-1]!.x&&profile[index]!.x<=profile[index+1]!.x&&(profile[index]!.x<profile[index-1]!.x||profile[index]!.x<profile[index+1]!.x);
-    const outerThroat=profile.findIndex((point,index)=>index>0&&index<profile.length-1&&isLocalMinimum(index));
-    const innerThroat=outerThroat>=0?profile.findIndex((point,index)=>index>outerThroat+1&&index<profile.length-1&&isLocalMinimum(index)):-1;
+    const outerThroat=profile.findIndex((_,index)=>index>0&&index<profile.length-1&&isLocalMinimum(index));
+    const innerThroat=outerThroat>=0?profile.findIndex((_,index)=>index>outerThroat+1&&index<profile.length-1&&isLocalMinimum(index)):-1;
     if(outerThroat<0||innerThroat<0){
      add(new THREE.LatheGeometry(profile,12),bellMaterial);
      return;
