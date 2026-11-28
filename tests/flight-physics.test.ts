@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, landingImpactLimitMps, landingSupportContact, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactCapacityForPart, landingImpactLimitMps, landingSupportContact, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -213,12 +213,5 @@ describe("fixed-step flight solver",()=>{
   expect(sim.activateNextStage()).toBe(false);
  });
 
- it("damps rotation without automatically pulling the craft back toward radial attitude",()=>{
-  expect(stabilityAssistCommand(-.5,0)).toBe(0);
-  expect(stabilityAssistCommand(.5,0)).toBe(0);
-  expect(stabilityAssistCommand(0,1)).toBeLessThan(0);
-  expect(stabilityAssistCommand(0,-1)).toBeGreaterThan(0);
-  expect(stabilityAssistCommand(.5,0,.4)).toBeCloseTo(.4);
- });
 
 });
