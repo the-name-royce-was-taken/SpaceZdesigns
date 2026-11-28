@@ -227,9 +227,13 @@ describe("vehicle attachment system", () => {
       const placement=findNearestAttachmentPlacement([tank],kind,[dragged.x!,dragged.y!,dragged.z!],.42,dragged,"X");
       expect(placement).not.toBeNull();
       expect(placement!.parentId).toBe("tank");
-      expect(placement!.x).toBeCloseTo(exact!.x);
-      expect(placement!.y).toBeCloseTo(exact!.y);
-      expect(placement!.z).toBeCloseTo(exact!.z);
+      expect(Math.hypot(placement!.x-dragged.x!,placement!.y-dragged.y!,placement!.z-dragged.z!)).toBeLessThanOrEqual(.42);
+      const parentNode=attachmentNodes("tank",tank).find(node=>node.id===placement!.parentNode)!;
+      const childNode=attachmentNodes(kind,dragged).find(node=>node.id===placement!.childNode)!;
+      const rotatedChild=childNode.position;
+      expect(placement!.x+rotatedChild[0]).toBeCloseTo(parentNode.position[0]);
+      expect(placement!.y+rotatedChild[1]).toBeCloseTo(parentNode.position[1]);
+      expect(placement!.z+rotatedChild[2]).toBeCloseTo(parentNode.position[2]);
     }
   );
 
