@@ -55,6 +55,6 @@ export class FlightSimulator {
   s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
-  if(length(s.position)<=EARTH_RADIUS){const radial=unit(s.position),surfaceVelocity={x:EARTH_ROTATION*s.position.z,y:0,z:-EARTH_ROTATION*s.position.x},relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,EARTH_RADIUS);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
+  const contactRadius=EARTH_RADIUS+(v.spawnClearanceM??.5);if(length(s.position)<=contactRadius){const radial=unit(s.position),surfaceVelocity={x:EARTH_ROTATION*s.position.z,y:0,z:-EARTH_ROTATION*s.position.x},relativeVelocity=sub(s.velocity,surfaceVelocity),normalSpeed=dot(relativeVelocity,radial),tangent=sub(relativeVelocity,scale(radial,normalSpeed));if(normalSpeed< -18||length(tangent)>24||aoa>.9)s.crashed=true;else s.landed=true;s.position=scale(radial,contactRadius);s.velocity=sub(s.velocity,scale(radial,normalSpeed));this.syncTelemetry();}
  }
 }
