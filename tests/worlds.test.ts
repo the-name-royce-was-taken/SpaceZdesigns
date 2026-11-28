@@ -23,7 +23,10 @@ const sampleWorld: WorldRecord = {
         { id: "engine-1", kind: "engine", x: 0, y: 0, z: 0, activationGroup: 2, engineStage: 2 },
         { id: "solar-1", kind: "solar", x: 1, y: 1, z: 0, activationGroup: 3 }
       ] }],
-    missions: [],
+    missions: [
+      { kind: "spacez-flight-record", id: "flight-001", craftName: "Heavy Lifter", status: "landed", savedAt: "2026-01-02T01:00:00.000Z", throttle: 0, pitch: 0, vehicle: { dryMassTonnes: 2, fuelTonnes: 0, thrustKN: 4, ispSeconds: 280, referenceArea: 1, dragCoefficient: 0.4, liftSlope: 0.1, inertia: 1 }, state: { altitude: 120000, x: 10, vx: 0, vy: 7500, fuelTonnes: 0, rcsFuelTonnes: 0, angle: 0, angularVelocityScalar: 0, elapsed: 1200, maxQ: 20000, currentStage: 1, landed: true, crashed: false, position: { x: 1, y: 6371000, z: 0 }, velocity: { x: 0, y: 7500, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 }, angularVelocity: { x: 0, y: 0, z: 0 } } },
+      { kind: "spacez-flight-record", id: "flight-002", craftName: "Heavy Lifter", status: "in-flight", savedAt: "2026-01-02T02:00:00.000Z", throttle: 0.6, pitch: 2, vehicle: { dryMassTonnes: 2, fuelTonnes: 0.2, thrustKN: 4, ispSeconds: 280, referenceArea: 1, dragCoefficient: 0.4, liftSlope: 0.1, inertia: 1 }, state: { altitude: 20000, x: 20, vx: 0, vy: 1200, fuelTonnes: 0.1, rcsFuelTonnes: 0, angle: 0.1, angularVelocityScalar: 0, elapsed: 300, maxQ: 30000, currentStage: 1, landed: false, crashed: false, position: { x: 1, y: 6391000, z: 0 }, velocity: { x: 0, y: 1200, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 }, angularVelocity: { x: 0, y: 0, z: 0 } } }
+    ],
     research: [],
     achievements: ["first-launch", "space-100km"],
     purchasedParts: ["part-owned-001"],
@@ -54,6 +57,7 @@ describe(".spaze world archives", () => {
     expect(imported.state.craft).toEqual(sampleWorld.state.craft);
     expect(imported.state.achievements).toEqual(sampleWorld.state.achievements);
     expect(imported.state.purchasedParts).toEqual(sampleWorld.state.purchasedParts);
+    expect(imported.state.missions).toEqual(sampleWorld.state.missions);
   });
 
   it("stores blueprint records as a separate file inside the .spaze ZIP", () => {
@@ -62,6 +66,7 @@ describe(".spaze world archives", () => {
     expect(JSON.parse(new TextDecoder().decode(files["world/blueprints.json"]))).toEqual(sampleWorld.state.blueprints);
     const worldData = JSON.parse(new TextDecoder().decode(files["world/world.json"]));
     expect(worldData.state.craft).toEqual(sampleWorld.state.craft);
+    expect(worldData.state.missions).toEqual(sampleWorld.state.missions);
     expect(worldData.state.craft[0].parts.filter((part: { activationGroup?: number }) => part.activationGroup).map((part: { activationGroup: number }) => part.activationGroup)).toEqual([1, 2, 3]);
   });
 
