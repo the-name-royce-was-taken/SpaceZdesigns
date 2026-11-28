@@ -52,7 +52,7 @@ function rotateLegPoint(point: Vector3, part: BuildPart): Vector3 {
 
 function landingLegBounds(part: BuildPart, extended: boolean) {
   const corners=extended
-    ? [[-.12,-.44,-.18],[1.35,-.44,-.18],[-.12,.31,.18],[1.35,.31,.18]]
+    ? [[-1.2,-1.05,-.18],[1.2,-1.05,-.18],[-1.2,.31,.18],[1.2,.31,.18]]
     : [[-.12,-.12,-.18],[.12,-.12,-.18],[-.12,.98,.18],[.12,.98,.18]];
   const points=corners.map(([x,y,z])=>rotateLegPoint({x:x!,y:y!,z:z!},part));
   return {
@@ -131,7 +131,7 @@ export function prepareSpaceZFlight(parts: readonly BuildPart[], craftName: stri
     const d = dimensions(part), x = part.x ?? 0, y = part.y ?? 0, z = part.z ?? 0;
     const retractedLeg = part.kind === "landing-leg" && part.retracted !== false;
     const radius = part.kind === "landing-leg" ? .18 : part.kind === "wheel" ? .32 : part.kind === "rover-wheel" ? (part.radius ?? .24) + .12 : d.radius;
-    const bottom = part.kind === "landing-leg" ? (retractedLeg ? -.12 : -.44)
+    const bottom = part.kind === "landing-leg" ? (retractedLeg ? -.12 : -1.05)
       : part.kind === "rover-wheel" ? -.12 - (part.radius ?? .24)
       : part.kind === "heat-shield" ? -(part.thickness ?? .16)
       : part.kind === "engine" ? -.72
