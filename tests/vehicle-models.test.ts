@@ -53,7 +53,7 @@ describe("shared vehicle visual models", () => {
     expect(model.userData.landingLegModel).toBe(true);
     expect(model.userData.legs).toHaveLength(1);
     expect(model.userData.deploymentProgress).toBe(0);
-    const leg = (model.userData.legs as { hinge: { rotation: { z: number } }; piston: { position: { y: number } }; foot: { position: { y: number } } }[])[0]!;
+    const leg = (model.userData.legs as { hinge: { rotation: { z: number } }; piston: { position: { y: number }; geometry: { parameters: { height: number } } }; foot: { position: { y: number } } }[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(0);
     expect(leg.piston.position.y).toBeCloseTo(.58);
     expect(leg.foot.position.y).toBeCloseTo(.82);
@@ -62,19 +62,20 @@ describe("shared vehicle visual models", () => {
     animateLandingLegModels(model, 1);
 
     expect(model.userData.deploymentProgress).toBe(1);
-    expect(leg.hinge.rotation.z).toBeCloseTo(-2.3);
+    expect(leg.hinge.rotation.z).toBeCloseTo(-(2.3+Math.PI/9));
     expect(leg.piston.position.y).toBeCloseTo(1.04);
     expect(leg.foot.position.y).toBeCloseTo(1.36);
+    expect(leg.piston.geometry.parameters.height).toBeCloseTo(.84);
   });
 
   it("chooses a downward, outward deployment swing for mirrored side-mounted legs", () => {
-    expect(landingLegDeploymentAngle({x:1,rz:0})).toBeCloseTo(-2.3);
-    expect(landingLegDeploymentAngle({x:-1,rz:0})).toBeCloseTo(2.3);
-    expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3);
-    expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-2.3);
+    expect(landingLegDeploymentAngle({x:1,rz:0})).toBeCloseTo(-(2.3+Math.PI/9));
+    expect(landingLegDeploymentAngle({x:-1,rz:0})).toBeCloseTo(2.3+Math.PI/9);
+    expect(landingLegDeploymentAngle({x:1,rz:Math.PI})).toBeCloseTo(2.3+Math.PI/9);
+    expect(landingLegDeploymentAngle({x:-1,rz:Math.PI})).toBeCloseTo(-(2.3+Math.PI/9));
     const model=createLandingLegModel(false,landingLegDeploymentAngle({x:1,rz:Math.PI}));
     const leg=(model.userData.legs as {hinge:{rotation:{z:number}}}[])[0]!;
-    expect(leg.hinge.rotation.z).toBeCloseTo(2.3);
+    expect(leg.hinge.rotation.z).toBeCloseTo(2.3+Math.PI/9);
   });
 
   it("can retract the hydraulic leg", () => {
