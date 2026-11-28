@@ -290,7 +290,7 @@ function launchpad(){
  const engineManifest=preparedVehicle.engines??[],activationGroups=preparedVehicle.activationGroups??listActivationGroups(launchParts);
  root.innerHTML=`<div class="flight-sim-shell">
  <canvas id="flight-3d-canvas" aria-label="Live 3D vehicle flight view"></canvas>
- <div class="flight-topbar"><button class="flight-exit" data-action="return-world">← SPACE CENTER</button><span class="flight-title">FLIGHT OPERATIONS / ${esc(craft.name)}</span><span class="live-tag" id="flight-status">PAD READY</span></div>
+ <div class="flight-topbar"><button class="flight-exit" data-action="return-world">← SPACE CENTER</button><span class="flight-title">FLIGHT OPERATIONS / ${esc(craft.name)}</span><button id="resume-saved-flight" class="flight-exit" hidden>RESUME SAVED FLIGHT</button><span class="live-tag" id="flight-status">PAD READY</span></div>
  <div class="flight-hud-left"><div class="flight-hud-kicker">LIVE TELEMETRY</div><div class="flight-telemetry-grid">
  <div><small>ALTITUDE</small><b id="altitude">0.00 km</b></div><div><small>VERTICAL SPEED</small><b id="velocity">0.0 m/s</b></div>
  <div><small>HORIZONTAL SPEED</small><b id="horizontal-speed">0.0 m/s</b></div><div><small>PROPELLANT</small><b id="fuel">${m.fuel.toFixed(0)} u</b></div>
@@ -333,12 +333,21 @@ function launchpad(){
  const onFlightKeyUp=(event:KeyboardEvent)=>{heldKeys.delete(event.code);};
  const onFlightBlur=()=>heldKeys.clear();window.addEventListener("keydown",onFlightKeyDown);window.addEventListener("keyup",onFlightKeyUp);window.addEventListener("blur",onFlightBlur);flightInputCleanup=()=>{window.removeEventListener("keydown",onFlightKeyDown);window.removeEventListener("keyup",onFlightKeyUp);window.removeEventListener("blur",onFlightBlur);};
  const savedFlight=(world()?.state.missions??[]).find((entry):entry is SavedFlight=>!!entry&&typeof entry==="object"&&(entry as {kind?:string}).kind==="spacez-flight-save"&&(entry as {craftName?:string}).craftName===craft.name);
- if(savedFlight){debrisReleased=true;sim=new FlightSimulator(savedFlight.vehicle);simWorldId=world()?.id??null;const restored=structuredClone(savedFlight.state) as FlightState&{position?:{x:number;y:number;z:number};velocity?:{x:number;y:number;z:number};orientation?:{x:number;y:number;z:number;w:number};angularVelocity?:{x:number;y:number;z:number}};if(!restored.position){restored.position={x:restored.x,y:6_371_000+restored.altitude,z:0};restored.velocity={x:restored.vx,y:restored.vy,z:0};restored.orientation={x:0,y:0,z:Math.sin(restored.angle/2),w:Math.cos(restored.angle/2)};restored.angularVelocity={x:0,y:0,z:restored.angularVelocityScalar??0};}Object.assign(sim.state,restored);range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Restored the most recently saved flight state from this world.";}
+ const restoreSavedFlight=()=>{
+  if(!savedFlight||sim)return;
+  debrisReleased=true;sim=new FlightSimulator(savedFlight.vehicle);simWorldId=world()?.id??null;
+  const restored=structuredClone(savedFlight.state) as FlightState&{position?:{x:number;y:number;z:number};velocity?:{x:number;y:number;z:number};orientation?:{x:number;y:number;z:number;w:number};angularVelocity?:{x:number;y:number;z:number}};
+  if(!restored.position){restored.position={x:restored.x,y:6_371_000+restored.altitude,z:0};restored.velocity={x:restored.vx,y:restored.vy,z:0};restored.orientation={x:0,y:0,z:Math.sin(restored.angle/2),w:Math.cos(restored.angle/2)};restored.angularVelocity={x:0,y:0,z:restored.angularVelocityScalar??0};}
+  Object.assign(sim.state,restored);range.value=String(savedFlight.throttle*100);pitch.value=String(savedFlight.pitch);updateLabels();lastFrame=performance.now();
+  $("#flight-status",root).textContent="FLIGHT RESTORED";$("#flight-note",root).textContent="Resumed the saved flight. Use SPACE CENTER to leave it and launch fresh when ready.";
+ };
+ const resumeButton=$("#resume-saved-flight",root) as HTMLButtonElement;
+ if(savedFlight){resumeButton.hidden=false;resumeButton.onclick=()=>{restoreSavedFlight();resumeButton.hidden=true;};}
  let lastPersist=performance.now();
  const beginFlight=()=>{
   if(sim)return true;
   if((!launchParts.some(p=>p.kind==="capsule")&&!launchParts.some(p=>p.kind==="remote-control"))||!launchParts.some(p=>p.kind==="engine")){host.toast("Add a command pod or remote control module, plus an engine, before flight.","error");return false;}
-  debrisReleased=true;const activeWorld=world();if(activeWorld){(activeWorld.state as {activeCraftName?:string}).activeCraftName=craft.name;void host.setWorld(activeWorld);}
+  debrisReleased=true;clearFlightSave();resumeButton.hidden=true;const activeWorld=world();if(activeWorld){(activeWorld.state as {activeCraftName?:string}).activeCraftName=craft.name;void host.setWorld(activeWorld);}
   sim=new FlightSimulator(vehicle);simWorldId=world()?.id??null;sim.launch();awardCareerAchievements(sim.state,"launch",root);lastFrame=performance.now();$("#flight-status",root).textContent="FLIGHT ARMED";$("#flight-note",root).textContent="Throttle is manual. Activate an assigned group to enable its engines and systems.";return true;
  };
  const activationParts=group.userData.activationParts as {group:number;kind:BuildPart["kind"];object:THREE.Group;plume?:THREE.Mesh;hinge?:THREE.Group}[];
