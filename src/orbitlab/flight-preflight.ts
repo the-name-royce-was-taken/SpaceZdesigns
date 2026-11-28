@@ -63,8 +63,7 @@ function massProperties(parts: readonly BuildPart[]) {
     const massKg = dryKg + fuelKg;
     const x = part.x ?? 0, y = part.y ?? 0, z = part.z ?? 0;
     const transverse = massKg * (3 * d.radius * d.radius + d.height * d.height) / 12;
-    const axial = .5 * massKg * d.radius * d.radius;
-    return { massKg, x, y, z, transverse, axial };
+      return { massKg, x, y, z, transverse, axial };
   });
   const totalKg = bodies.reduce((sum, body) => sum + body.massKg, 0);
   if (!(totalKg > 0) || !Number.isFinite(totalKg)) throw new Error("Vehicle mass must be greater than zero.");
