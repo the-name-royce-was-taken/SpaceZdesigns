@@ -43,7 +43,7 @@ export class FlightSimulator {
   const forward=unit(rotate(s.orientation,{x:0,y:1,z:0})),flightDirection=speed>1?unit(airVelocity):forward,cosAoA=Math.max(-1,Math.min(1,dot(forward,flightDirection))),aoa=Math.acos(cosAoA);
   const throttle=Math.max(0,Math.min(1,input.throttle)),active=v.engines?.filter(e=>e.stage<=s.currentStage)??[],hasManifest=Array.isArray(v.engines),thrustKN=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN,0):v.thrustKN,mdot=hasManifest?active.reduce((sum,e)=>sum+e.thrustKN*1000/(e.ispSeconds*G0),0):v.thrustKN*1000/(v.ispSeconds*G0);
   const thrust=s.fuelTonnes>0?thrustKN*1000*throttle:0;s.fuelTonnes-=Math.min(s.fuelTonnes,mdot*throttle*dt/1000);
-  const thrustForce=scale(forward,thrust);
+  const gimbalAngle=6*Math.PI/180,gimbalPitch=Math.max(-1,Math.min(1,input.pitch))*gimbalAngle,gimbalYaw=Math.max(-1,Math.min(1,input.yaw??0))*gimbalAngle,localThrustDirection=unit({x:-Math.sin(gimbalYaw)*Math.cos(gimbalPitch),y:Math.cos(gimbalYaw)*Math.cos(gimbalPitch),z:Math.sin(gimbalPitch)}),thrustForce=scale(rotate(s.orientation,localThrustDirection),thrust),engineLever={x:0,y:-.55,z:0},engineGimbalTorque=rotate(s.orientation,cross(engineLever,scale(localThrustDirection,thrust)));
   const dragMagnitude=q*v.referenceArea*v.dragCoefficient,drag= speed>1?scale(flightDirection,-dragMagnitude):{x:0,y:0,z:0};
   const liftAxis=sub(forward,scale(flightDirection,dot(forward,flightDirection))),liftDirection=length(liftAxis)>1e-8?unit(liftAxis):{x:0,y:0,z:0},liftMagnitude=q*v.referenceArea*v.liftSlope*Math.min(.7,aoa);
   const aero=add(drag,scale(liftDirection,liftMagnitude));
@@ -55,7 +55,7 @@ export class FlightSimulator {
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),wheelScale=wheelCount?stages(v.reactionWheelStages,wheelCount)/wheelCount:0,surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),surfaceScale=surfaceCount?stages(v.controlSurfaceStages,surfaceCount)/surfaceCount:0;
   const rcsUse=rcsEnabled?Math.min(1,Math.hypot(rx,ry,rz)+Math.hypot(pitch,yaw,roll)*.35):0,rcsTorque=(v.rcsTorque??0)*rcsScale,torque=(v.reactionWheelTorque??0)*wheelScale,airTorque=(v.controlSurfaceAuthority??0)*surfaceScale*q*.00002;
-  const localTorque={x:pitch*(torque+rcsTorque+airTorque),y:roll*(torque+rcsTorque+airTorque),z:yaw*(torque+rcsTorque+airTorque)},worldTorque=rotate(s.orientation,localTorque),inertia=Math.max(.01,v.inertia*mass);
+  const localTorque={x:pitch*(torque+rcsTorque+airTorque),y:roll*(torque+rcsTorque+airTorque),z:yaw*(torque+rcsTorque+airTorque)},worldTorque=add(rotate(s.orientation,localTorque),engineGimbalTorque),inertia=Math.max(.01,v.inertia*mass);
   s.angularVelocity=add(s.angularVelocity,scale(worldTorque,dt/inertia));s.angularVelocity=scale(s.angularVelocity,Math.exp(-.35*dt));s.orientation=integrateOrientation(s.orientation,s.angularVelocity,dt);
   if(rcsUse>0){const force=(v.rcsThrustKN??0)*1000*rcsScale,used=Math.min(s.rcsFuelTonnes,force/(RCS_ISP*G0)*rcsUse*dt/1000);s.rcsFuelTonnes-=used;}
   s.elapsed+=dt;this.syncTelemetry();
