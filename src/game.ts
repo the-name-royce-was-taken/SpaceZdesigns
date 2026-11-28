@@ -22,7 +22,7 @@ const $=<T extends HTMLElement>(s:string,r:ParentNode=document)=>{const e=r.quer
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const world=()=>host.getWorld();
 const PLANET_TEXTURES:Record<string,string>={
- Earth:"https://spaceengine.solarsystemscope.com/textures/download/2k_earth_daymap.jpg",
+ Earth:"/textures/earth.svg",
  Luna:"https://spaceengine.solarsystemscope.com/textures/download/2k_moon.jpg",
  Mars:"https://spaceengine.solarsystemscope.com/textures/download/2k_mars.jpg",
  Jupiter:"https://spaceengine.solarsystemscope.com/textures/download/2k_jupiter.jpg",
