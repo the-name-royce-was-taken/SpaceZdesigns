@@ -237,10 +237,19 @@ export function createEngineModel(type:EngineType):THREE.Group{const g=new THREE
    g.scale.setScalar(engineScale[type]);
    g.userData.hasGimballedBell=hasGimballedBell;
   return g;}
-export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):number{
+export function landingLegDeploymentAngle(part:Pick<BuildPart,"x"|"z"|"rx"|"ry"|"rz">):number{
  const rotation=new THREE.Euler(part.rx??0,part.ry??0,part.rz??0,"XYZ");
- const worldDown=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation).y;
- return worldDown(-2.3)<=worldDown(2.3)?-2.3:2.3;
+ const direction=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation);
+ const candidates=[-2.3,2.3].map(angle=>({angle,vector:direction(angle)}));
+ const [first,second]=candidates as [{angle:number;vector:THREE.Vector3},{angle:number;vector:THREE.Vector3}];
+ // First prefer the swing that points farther down in world space.
+ if(Math.abs(first.vector.y-second.vector.y)>1e-6)return first.vector.y<second.vector.y?first.angle:second.angle;
+ // When both swings descend equally (common for mirrored side mounts), swing away
+ // from the vehicle centre instead of choosing the same local direction on both sides.
+ const outward=new THREE.Vector3(part.x??0,0,part.z??0);
+ if(outward.lengthSq()<1e-8)return -2.3;
+ outward.normalize();
+ return first.vector.dot(outward)>=second.vector.dot(outward)?first.angle:second.angle;
 }
 export function createLandingLegModel(retracted=true,deploymentAngle=-2.3):THREE.Group{
  const root=new THREE.Group();
