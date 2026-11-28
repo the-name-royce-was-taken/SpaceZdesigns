@@ -213,7 +213,7 @@ export function createLandingLegModel(retracted=true):THREE.Group{
  const foot=new THREE.Group();foot.position.y=retracted?.82:1.24;hinge.add(foot);
  const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
  const toe=new THREE.Mesh(new THREE.BoxGeometry(.24,.035,.3),dark);toe.position.y=-.035;foot.add(toe);
- hinge.rotation.z=retracted?0:-2.35;
+ hinge.rotation.z=retracted?0:-2.0;
  foot.rotation.z=-hinge.rotation.z;
  root.userData.landingLegModel=true;
  root.userData.deploymentProgress=retracted?0:1;
@@ -231,7 +231,7 @@ export function animateLandingLegModels(root:THREE.Object3D,dt:number){
   const p=p0+(target-p0)*Math.min(1,Math.max(0,dt)*3.2);
   o.userData.deploymentProgress=Math.abs(target-p)<.002?target:p;
   for(const leg of o.userData.legs as {hinge:THREE.Group;piston:THREE.Mesh;foot:THREE.Group}[]){
-   leg.hinge.rotation.z=-2.35*p;
+   leg.hinge.rotation.z=-2.0*p;
    leg.piston.position.y=.58+.34*p;
    leg.foot.position.y=.82+.42*p;
    leg.foot.rotation.z=-leg.hinge.rotation.z;
@@ -326,7 +326,7 @@ export function mountVehicleBuilder(host:HTMLElement,initial:BuildPart[],changed
  const craneY=14.72,craneZ=-5.5;
  hangarBox(2.25,.24,.72,-1.7,craneY,craneZ,hangarSteel);
  hangarBox(1.35,.14,.82,-1.7,craneY-.2,craneZ,hangarOrange);
- for(const x of [-2.35,-1.05]){
+ for(const x of [-2.0,-1.05]){
   hangarCylinder(.34,.2,x,craneY-.52,craneZ,hangarCable,"z");
   hangarCylinder(.23,.22,x,craneY-.52,craneZ,hangarBrass,"z");
   hangarRope([new THREE.Vector3(x,craneY-.62,craneZ),new THREE.Vector3(x,10.25,craneZ)],.035,hangarCable);
