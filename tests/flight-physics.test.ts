@@ -59,6 +59,19 @@ describe("fixed-step flight solver",()=>{
   expect(pitchTorque).toBeGreaterThan(0);
   expect(yawTorque).toBeGreaterThan(0);
  });
+
+ it("applies thrust along the saved rotated engine axis",()=>{
+  const axis={x:1,y:0,z:0};
+  const alignedVehicle={...vehicle,engineThrustDirection:axis,engineMountM:{x:0,y:0,z:0},centerOfMassM:{x:0,y:0,z:0},dragCoefficient:0,liftSlope:0};
+  const powered=new FlightSimulator(alignedVehicle),coasting=new FlightSimulator(alignedVehicle);
+  powered.launch();coasting.launch();powered.state.position.x+=1000;coasting.state.position.x+=1000;
+  powered.step(1/120,{throttle:1,pitch:0});coasting.step(1/120,{throttle:0,pitch:0});
+  const delta={x:powered.state.velocity.x-coasting.state.velocity.x,y:powered.state.velocity.y-coasting.state.velocity.y,z:powered.state.velocity.z-coasting.state.velocity.z};
+  const expected=rotateByQuaternion(powered.state.orientation,axis);
+  expect(delta.x/Math.hypot(delta.x,delta.y,delta.z)).toBeCloseTo(expected.x,5);
+  expect(delta.y/Math.hypot(delta.x,delta.y,delta.z)).toBeCloseTo(expected.y,5);
+  expect(delta.z/Math.hypot(delta.x,delta.y,delta.z)).toBeCloseTo(expected.z,5);
+ });
  it("produces powered ascent and consumes propellant",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();
   for(let i=0;i<240;i++)sim.step(1/120,{throttle:1,pitch:0});

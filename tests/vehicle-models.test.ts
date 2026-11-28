@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landingLegBounds } from "../src/orbitlab/flight-preflight";
+import { engineThrustDirection, landingLegBounds } from "../src/orbitlab/flight-preflight";
 import {
   animateLandingLegModels,
   createEngineModel,
@@ -78,6 +78,14 @@ describe("shared vehicle visual models", () => {
     const leg=(model.userData.legs as {hinge:{rotation:{z:number}};foot:{children:{geometry:{type:string}}[]}}[])[0]!;
     expect(leg.hinge.rotation.z).toBeCloseTo(2.3+Math.PI/9);
     expect(leg.foot.children.some(child=>child.geometry.type==="CylinderGeometry")).toBe(true);
+  });
+
+
+  it("compiles the saved XYZ rotation into the craft-local engine thrust axis", () => {
+    const axis = engineThrustDirection([{ kind: "engine", rx: 0, ry: 0, rz: Math.PI / 2 }]);
+    expect(axis.x).toBeCloseTo(-1, 8);
+    expect(axis.y).toBeCloseTo(0, 8);
+    expect(axis.z).toBeCloseTo(0, 8);
   });
 
   it("uses the deployed landing foot as the lowest physical support bounds", () => {

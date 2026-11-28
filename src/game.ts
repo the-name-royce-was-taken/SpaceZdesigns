@@ -246,8 +246,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    const sepRing=add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);sepRing.rotation.x=Math.PI/2;
   }else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){
    const size=p.kind==="wing"?[1.7,.12,1.1]:p.kind==="fin"?[.9,.7,.18]:[1,.1,.42];
-   const surface=add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
-   surface.rotation.y=p.ry??0;
+   add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
   }else if(p.kind==="solar"){
    const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;
    add(new THREE.BoxGeometry(.2,.12,.22),mat(0x8799a7,.65),p.x??0,y,p.z??0);
@@ -258,7 +257,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
-  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false,landingLegDeploymentAngle(p));landingLeg.position.set(p.x??0,y,p.z??0);landingLeg.rotation.set(p.rx??0,p.ry??0,p.rz??0);g.add(landingLeg);
+  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false,landingLegDeploymentAngle(p));landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
    }else if(p.kind==="heat-shield"){
    const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
    add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-thickness/2,p.z??0);
