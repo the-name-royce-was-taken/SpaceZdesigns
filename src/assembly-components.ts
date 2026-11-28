@@ -1,7 +1,7 @@
 import type { BuildPart } from "./vehicle-builder-3d";
 export interface PartComponent { partIds:string[]; parts:BuildPart[]; commandable:boolean; }
 const DIMENSIONS:Record<BuildPart["kind"],[number,number,number]>={
- capsule:[.98,1.25,.98],tank:[.88, .96,.88],engine:[.75,1.36,.75],separator:[1,.2,1],"side-decoupler":[.72,.34,.38],"separator-thruster":[.38,.24,.3],"fuel-line":[.12,.12,.12],fin:[.9,.7,.18],solar:[2.4,.12,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.5,.72,.5],dock:[.56,.28,.56],battery:[.6,.35,.6],"remote-control":[.56,.28,.56],"reaction-wheel":[.56,.28,.56],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.18,1],"rover-wheel":[.65,.55,.3],"structural-beam":[.28,1.2,.28],"structural-angle":[.55,.55,.22],"structural-hub":[.48,.48,.48]
+ capsule:[.98,1.195,.98],tank:[.88, .96,.88],engine:[.75,1.16,.75],separator:[1,.2,1],"side-decoupler":[.72,.34,.38],"separator-thruster":[.38,.24,.3],"fuel-line":[.12,.12,.12],fin:[.9,.7,.18],solar:[2.4,.12,.72],wing:[1.7,.12,1.1],control:[1,.1,.42],wheel:[.5,.72,.5],dock:[.56,.28,.56],battery:[.6,.35,.6],"remote-control":[.56,.28,.56],"reaction-wheel":[.56,.28,.56],rcs:[.4,.32,.4],strut:[.12,1,.12],"nose-cone":[.88,.8,.88],fairing:[.88,1.15,.88],"conical-fairing":[.88,1.15,.88],"interstage-fairing":[.88,1.15,.88],"clam-shell-fairing":[.88,1.15,.88],airbrake:[.7,.5,.5],strake:[.18,.8,.42],"landing-leg":[.3,1.05,.3],"heat-shield":[1,.18,1],"rover-wheel":[.65,.55,.3],"structural-beam":[.28,1.2,.28],"structural-angle":[.55,.55,.22],"structural-hub":[.48,.48,.48]
 };
 function halfExtents(p:BuildPart):[number,number,number]{
  const d=[...DIMENSIONS[p.kind]] as [number,number,number];
@@ -15,7 +15,7 @@ function halfExtents(p:BuildPart):[number,number,number]{
 }
 function touching(a:BuildPart,b:BuildPart,tolerance:number):boolean{
  if(a.kind==="fuel-line"||b.kind==="fuel-line")return false;
- const ah=halfExtents(a),bh=halfExtents(b),ax=a.x??0,ay=a.y??0,az=a.z??0,bx=b.x??0,by=b.y??0,bz=b.z??0;
+ const ah=halfExtents(a),bh=halfExtents(b),offsetY=(p:BuildPart)=>p.kind==="capsule"?.1525:p.kind==="engine"?-.1:0,ax=a.x??0,ay=(a.y??0)+offsetY(a),az=a.z??0,bx=b.x??0,by=(b.y??0)+offsetY(b),bz=b.z??0;
  return Math.abs(ax-bx)<=ah[0]+bh[0]+tolerance&&Math.abs(ay-by)<=ah[1]+bh[1]+tolerance&&Math.abs(az-bz)<=ah[2]+bh[2]+tolerance;
 }
 /** Returns physically connected rigid groups. Saved attachment links count as joints; coincident touching hulls also connect. */
