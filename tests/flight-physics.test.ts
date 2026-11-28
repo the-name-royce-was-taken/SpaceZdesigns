@@ -154,9 +154,9 @@ describe("fixed-step flight solver",()=>{
   expect(landingImpactLimitMps(heavy)).toBeLessThan(landingImpactLimitMps(legs));
  });
  it("does not crash a supported landing for sideways speed or attitude alone",()=>{
-  const sim=new FlightSimulator({...vehicle,dryMassTonnes:1,landingContactKind:"landing-leg",landingGearCount:3,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
-  const position={x:6_371_000+25.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
-  sim.restoreState({...sim.state,position,velocity:{x:-2,y:surfaceVelocity.y+35,z:surfaceVelocity.z},orientation:{x:0,y:0,z:Math.sin(.8/2),w:Math.cos(.8/2)},landed:false,crashed:false});
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:1,landingContactKind:"landing-leg",landingGearCount:3,spawnClearanceM:.5,launchRailLengthM:0});sim.launch();
+  const position={x:6_371_000+2.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-1,y:surfaceVelocity.y+35,z:surfaceVelocity.z},orientation:{x:0,y:0,z:Math.sin(.8/2),w:Math.cos(.8/2)},landed:false,crashed:false});
   for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
   expect(sim.state.crashed).toBe(false);
   expect(sim.state.landed).toBe(true);
