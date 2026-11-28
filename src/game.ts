@@ -228,7 +228,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
   }else if(p.kind==="dock"){
    add(new THREE.CylinderGeometry(.22,.28,.22,32,2,false),mat(0xb9c7d0,.78),p.x??0,y,p.z??0);
    const dockRing=add(new THREE.TorusGeometry(.22,.04,10,32),mat(0x5b768b,.72),p.x??0,y+.13,p.z??0);dockRing.rotation.x=Math.PI/2;
-  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(!!p.retracted);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
+  }else if(p.kind==="landing-leg"){const landingLeg=createLandingLegModel(p.retracted!==false);landingLeg.position.set(p.x??0,y,p.z??0);g.add(landingLeg);
    }else if(p.kind==="heat-shield"){
    const radius=p.radius??.62,thickness=p.thickness??.16,ablative=mat(0x9a6548,.08),rim=mat(0xc2a18a,.35);
    add(new THREE.CylinderGeometry(radius*.96,radius,thickness,32,2,false),ablative,p.x??0,y-thickness/2,p.z??0);
@@ -363,7 +363,7 @@ function launchpad(){
    if(part.kind==="solar"&&part.hinge){const deploy=Math.abs(part.hinge.rotation.z)>.1;part.hinge.rotation.z=deploy?0:-Math.PI/2;const panel=solarAssemblies.find(item=>item.partId===part.object.userData.partId);if(panel)panel.deployed=deploy;return;}
    if(part.kind==="separator-thruster"&&part.plume){part.plume.visible=true;window.setTimeout(()=>{part.plume!.visible=false;},450);return;}
    if(part.kind==="separator"||part.kind==="side-decoupler"||part.kind==="fairing"||part.kind==="conical-fairing"||part.kind==="interstage-fairing"||part.kind==="clam-shell-fairing"||part.kind==="heat-shield"){part.object.visible=false;return;}
-   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);return;}
+   if(part.kind==="landing-leg"){part.object.visible=true;setLandingLegDeployment(part.object,true);const sourceIndex=launchParts.findIndex(source=>source.id===part.object.userData.partId),sourcePart=launchParts[sourceIndex],support=vehicle.landingSupportParts?.[sourceIndex];if(sourcePart&&support){const x=sourcePart.x??0,y=sourcePart.y??0,z=sourcePart.z??0;support.min={x:x-.12,y:y-.44,z:z-.18};support.max={x:x+1.35,y:y+.31,z:z+.18};}return;}
     if(part.kind==="wheel"||part.kind==="rover-wheel"||part.kind==="airbrake"||part.kind==="control"||part.kind==="rcs"||part.kind==="reaction-wheel"||part.kind==="dock"){part.object.visible=true;return;}
    part.object.visible=true;
   });
@@ -393,7 +393,7 @@ function launchpad(){
  $("#crash-relaunch",root).onclick=recoverToLaunch;
  $("#crash-station",root).onclick=()=>nav("return-world");
  $("#open-map",root).onclick=()=>nav("tracking");
- let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;const earthRotation=earthRotationAt(sim?.state.elapsed??0);earthSpin.quaternion.set(earthRotation.x,earthRotation.y,earthRotation.z,earthRotation.w);clouds.rotation.y+=(dt*.0007);highClouds.rotation.y-=dt*.00035;
+ let alive=true;const animate=(now:number)=>{if(!alive)return;const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;clouds.rotation.y+=(dt*.0007);highClouds.rotation.y-=dt*.00035;
   const throttleDelta=(heldKeys.has("ArrowUp")?1:0)-(heldKeys.has("ArrowDown")?1:0);if(throttleDelta)range.value=String(Math.max(0,Math.min(100,Number(range.value)+throttleDelta*45*dt)));updateLabels();
   if(debrisReleased)for(const debris of looseGroups){if(debris.landed)continue;debris.velocity-=9.81*dt;debris.object.position.x+=debris.velocity*dt/1e6;if(debris.object.position.x<=debris.groundX){debris.object.position.x=debris.groundX;debris.velocity=0;debris.landed=true;}}
   for(let i=impactEffects.length-1;i>=0;i--){
@@ -404,6 +404,8 @@ function launchpad(){
    if(effect.life<=0){scene.remove(effect.mesh);effect.mesh.geometry.dispose();material.dispose();impactEffects.splice(i,1);}
   }
   if(sim){const s=sim.state,keyboardPitch=(heldKeys.has("KeyW")?1:0)-(heldKeys.has("KeyS")?1:0),keyboardYaw=(heldKeys.has("KeyA")?1:0)-(heldKeys.has("KeyD")?1:0),desiredPitch=Math.max(-1,Math.min(1,Number(pitch.value)/30+keyboardPitch));sim.step(dt,{throttle:Number(range.value)/100,pitch:desiredPitch,yaw:keyboardYaw,roll:(heldKeys.has("KeyC")?1:0)-(heldKeys.has("KeyQ")?1:0),translateZ:(heldKeys.has("ArrowRight")?1:0)-(heldKeys.has("ArrowLeft")?1:0)});awardCareerAchievements(s,undefined,root);
+   // The scene is already expressed in the rotating launch-site frame. Earth must stay fixed in that frame.
+   const earthRotation=earthRotationAt(s.elapsed);
    const renderRotation=new THREE.Quaternion(-earthRotation.x,-earthRotation.y,-earthRotation.z,earthRotation.w);const renderPosition=new THREE.Vector3(s.position.x,s.position.y,s.position.z).applyQuaternion(renderRotation);group.position.copy(renderPosition).multiplyScalar(1e-6).sub(new THREE.Vector3(earthRadius,0,0));group.quaternion.copy(renderRotation).multiply(new THREE.Quaternion(s.orientation.x,s.orientation.y,s.orientation.z,s.orientation.w));updateFlightCamera();
    const rho=1.225*Math.exp(-Math.max(0,s.altitude)/8500),position=new THREE.Vector3(s.position.x,s.position.y,s.position.z),omega=new THREE.Vector3(EARTH_SPIN_AXIS.x,EARTH_SPIN_AXIS.y,EARTH_SPIN_AXIS.z),atmosphereVelocity=omega.cross(position).multiplyScalar(EARTH_ROTATION_RATE),airVelocity=new THREE.Vector3(s.velocity.x,s.velocity.y,s.velocity.z).sub(atmosphereVelocity),q=.5*rho*airVelocity.lengthSq();
    $("#altitude",root).textContent=(s.altitude/1000).toFixed(2)+" km";$("#velocity",root).textContent=s.vy.toFixed(1)+" m/s";$("#horizontal-speed",root).textContent=Math.abs(s.vx).toFixed(1)+" m/s";$("#fuel",root).textContent=(s.fuelTonnes*1000).toFixed(1)+" u";$("#rcs-fuel",root).textContent=(s.rcsFuelTonnes*1000).toFixed(1)+" kg";$("#dynamic-pressure",root).textContent=(q/1000).toFixed(1)+" kPa";$("#max-q",root).textContent=(s.maxQ/1000).toFixed(1)+" kPa";$("#angle",root).textContent=(s.angle*180/Math.PI).toFixed(1)+"°";$("#mission-time",root).textContent="T+ "+Math.floor(s.elapsed/60).toString().padStart(2,"0")+":"+Math.floor(s.elapsed%60).toString().padStart(2,"0");
