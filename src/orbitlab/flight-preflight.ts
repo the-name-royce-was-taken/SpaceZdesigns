@@ -5,7 +5,7 @@
  * a partially initialized simulation.
  */
 import { buildOrbitlabAeroModel } from "./vehicle-adapter";
-import { engineVariants, partCatalog, partMassTonnes, type BuildPart } from "../vehicle-builder-3d";
+import { engineVariants, partCatalog, partMassTonnes, landingLegDeploymentAngle, type BuildPart } from "../vehicle-builder-3d";
 import { tankFuelCapacity } from "../vehicle-assembly";
 import { listActivationGroups, partActivationGroup } from "../activation";
 import { landingImpactCapacityForPart, type LandingSupportPart, type VehiclePhysics, type FlightEngine, type Vector3 } from "../flight-physics";
@@ -50,11 +50,19 @@ function rotateLegPoint(point: Vector3, part: BuildPart): Vector3 {
     z:(sx*sz-cx*sy*cz)*point.x+(sx*cz+cx*sy*sz)*point.y+cx*cy*point.z};
 }
 
-function landingLegBounds(part: BuildPart, extended: boolean) {
-  const corners=extended
-    ? [[-1.2,-1.05,-.18],[1.2,-1.05,-.18],[-1.2,.31,.18],[1.2,.31,.18]]
-    : [[-.12,-.12,-.18],[.12,-.12,-.18],[-.12,.98,.18],[.12,.98,.18]];
-  const points=corners.map(([x,y,z])=>rotateLegPoint({x:x!,y:y!,z:z!},part));
+export function landingLegBounds(part: BuildPart, extended: boolean) {
+  const points:Vector3[]=[];
+  const addBox=(center:Vector3,half:Vector3)=>{for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])points.push(rotateLegPoint({x:center.x+x*half.x,y:center.y+y*half.y,z:center.z+z*half.z},part));};
+  addBox({x:-.035,y:.08,z:0},{x:.07,y:.19,z:.17});
+  addBox({x:0,y:.43,z:0},{x:.08,y:.31,z:.08});
+  if(extended){
+    addBox({x:0,y:1.04,z:0},{x:.04,y:.42,z:.04});
+    const angle=landingLegDeploymentAngle(part),footCenter={x:.045-Math.sin(angle)*1.36,y:.12+Math.cos(angle)*1.36,z:0};
+    addBox(footCenter,{x:.19,y:.09,z:.19});
+  }else{
+    addBox({x:0,y:.58,z:0},{x:.04,y:.42,z:.04});
+    addBox({x:.045,y:.94,z:0},{x:.19,y:.09,z:.19});
+  }
   return {
     min:{x:Math.min(...points.map(point=>point.x)),y:Math.min(...points.map(point=>point.y)),z:Math.min(...points.map(point=>point.z))},
     max:{x:Math.max(...points.map(point=>point.x)),y:Math.max(...points.map(point=>point.y)),z:Math.max(...points.map(point=>point.z))}
