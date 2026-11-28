@@ -46,10 +46,15 @@ describe("launch rail constraint", () => {
   it("keeps the rocket aligned with the rotating launch site through rail exit", () => {
     const sim = new FlightSimulator({ ...vehicle, dryMassTonnes: 10, fuelTonnes: 2, thrustKN: 1000 });
     sim.launch();
-    // Let the pad rotate for a minute before ignition. A rail-fixed vehicle
-    // must follow the launch site's inertial orientation rather than remain
-    // pointed at the original, now-stale radial direction.
+    const initialPosition = { ...sim.state.position };
+    // Let the pad rotate for a minute before ignition. A resting vehicle must
+    // co-rotate in inertial space, then point along the launch site's new radial.
     for (let i = 0; i < 60 * 120; i++) sim.step(1 / 120, { throttle: 0, pitch: 0 });
+    expect(Math.hypot(
+      sim.state.position.x - initialPosition.x,
+      sim.state.position.y - initialPosition.y,
+      sim.state.position.z - initialPosition.z
+    )).toBeGreaterThan(100);
     sim.step(1 / 120, { throttle: 1, pitch: 0 });
     for (let i = 0; i < 240; i++) sim.step(1 / 120, { throttle: 1, pitch: 0 });
     expect(sim.state.altitude).toBeGreaterThan(21);
