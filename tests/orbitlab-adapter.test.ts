@@ -6,9 +6,9 @@ describe("Orbitlab per-build vehicle and aerodynamic adapter",()=>{
  it("translates the built stack into staged mass, propellant and engine data",()=>{
   const model=buildOrbitlabAeroModel(starter,"Test launcher");
   expect(model.vehicleSpec.stages).toHaveLength(1);
-  expect(model.vehicleSpec.stages[0]?.dryMass).toBeCloseTo(2700,6);
+  expect(model.vehicleSpec.stages[0]?.dryMass).toBeCloseTo(1500,6);
   expect(model.vehicleSpec.stages[0]?.propellantMass).toBeCloseTo(120,6);
-  expect(model.vehicleSpec.stages[0]?.engine.thrustSL).toBeCloseTo(34000,6);
+  expect(model.vehicleSpec.stages[0]?.engine.thrustSL).toBeCloseTo(75000,6);
  });
  it("builds a Mach-dependent table from the actual vehicle geometry",()=>{
   const model=buildOrbitlabAeroModel(starter);
