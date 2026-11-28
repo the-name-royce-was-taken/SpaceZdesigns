@@ -64,7 +64,8 @@ describe("shared vehicle visual models", () => {
     expect(model.userData.deploymentProgress).toBe(1);
     expect(leg.hinge.rotation.z).toBeCloseTo(-(2.3+Math.PI/9));
     expect(leg.piston.position.y).toBeCloseTo(1.04);
-    expect(leg.foot.position.y).toBeCloseTo(1.36);\n    expect(leg.piston.geometry.parameters.height).toBeCloseTo(.84);
+    expect(leg.foot.position.y).toBeCloseTo(1.36);
+    expect(leg.piston.geometry.parameters.height).toBeCloseTo(.84);
   });
 
   it("chooses a downward, outward deployment swing for mirrored side-mounted legs", () => {
