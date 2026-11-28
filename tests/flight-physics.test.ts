@@ -89,6 +89,26 @@ describe("fixed-step flight solver",()=>{
  it("accelerates out of the orbital plane with a three-axis RCS command",()=>{const sim=new FlightSimulator({...vehicle,rcsThrustKN:.35,rcsFuelTonnes:.02,rcsStages:[1],activationGroups:[1]});sim.launch();sim.activateNextStage();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:0,translateZ:1});expect(Math.abs(sim.state.velocity.z)).toBeGreaterThan(0);expect(sim.state.position.z).not.toBe(0);});
  it("steers with gimballed engine thrust even without reaction wheels or RCS",()=>{const sim=new FlightSimulator(vehicle),straight=new FlightSimulator(vehicle);sim.launch();straight.launch();sim.state.position.x+=1000;straight.state.position.x+=1000;sim.step(1/120,{throttle:1,pitch:1,yaw:1});straight.step(1/120,{throttle:1,pitch:0,yaw:0});expect(Math.hypot(sim.state.velocity.x-straight.state.velocity.x,sim.state.velocity.y-straight.state.velocity.y,sim.state.velocity.z-straight.state.velocity.z)).toBeGreaterThan(0);expect(Math.abs(sim.state.angularVelocity.x)+Math.abs(sim.state.angularVelocity.z)).toBeGreaterThan(0);});
  it("integrates a full 3D attitude quaternion under yaw and roll inputs",()=>{const sim=new FlightSimulator({...vehicle,reactionWheelTorque:5});sim.launch();sim.state.position.x+=1000;sim.step(1/120,{throttle:0,pitch:.5,yaw:1,roll:1});expect(Math.abs(sim.state.orientation.x)+Math.abs(sim.state.orientation.y)+Math.abs(sim.state.orientation.z)).toBeGreaterThan(0);expect(Math.hypot(sim.state.orientation.x,sim.state.orientation.y,sim.state.orientation.z,sim.state.orientation.w)).toBeCloseTo(1,8);});
+ it("keeps a pad-held vehicle co-rotating with Earth and launches radially",()=>{
+  const launchVehicle:VehiclePhysics={...vehicle,spawnClearanceM:1,launchRailLengthM:20,dryMassTonnes:10,fuelTonnes:2,thrustKN:1000};
+  const sim=new FlightSimulator(launchVehicle);sim.launch();const initial={...sim.state.position};
+  for(let i=0;i<60*120;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(Math.hypot(sim.state.position.x-initial.x,sim.state.position.y-initial.y,sim.state.position.z-initial.z)).toBeGreaterThan(100);
+  sim.step(1/120,{throttle:1,pitch:0});
+  for(let i=0;i<240;i++)sim.step(1/120,{throttle:1,pitch:0});
+  expect(sim.state.altitude).toBeGreaterThan(21);
+  const radius=Math.hypot(sim.state.position.x,sim.state.position.y,sim.state.position.z);
+  const radial={x:sim.state.position.x/radius,y:sim.state.position.y/radius,z:sim.state.position.z/radius};
+  const forward=rotateByQuaternion(sim.state.orientation,{x:0,y:1,z:0});
+  const alignmentError=Math.hypot(forward.y*radial.z-forward.z*radial.y,forward.z*radial.x-forward.x*radial.z,forward.x*radial.y-forward.y*radial.x);
+  expect(alignmentError).toBeLessThan(.002);
+  const omega={x:EARTH_SPIN_AXIS.x,y:EARTH_SPIN_AXIS.y,z:EARTH_SPIN_AXIS.z};
+  const air={x:(omega.y*sim.state.position.z-omega.z*sim.state.position.y)*EARTH_ROTATION_RATE,y:(omega.z*sim.state.position.x-omega.x*sim.state.position.z)*EARTH_ROTATION_RATE,z:(omega.x*sim.state.position.y-omega.y*sim.state.position.x)*EARTH_ROTATION_RATE};
+  const relative={x:sim.state.velocity.x-air.x,y:sim.state.velocity.y-air.y,z:sim.state.velocity.z-air.z};
+  const radialSpeed=relative.x*radial.x+relative.y*radial.y+relative.z*radial.z;
+  const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
+  expect(lateralSpeed).toBeLessThan(.1);
+ });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
   expect(sim.state.altitude).toBe(0);expect(sim.state.fuelTonnes).toBe(vehicle.fuelTonnes);expect(sim.state.landed).toBe(true);
