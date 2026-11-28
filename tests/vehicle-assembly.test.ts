@@ -216,6 +216,23 @@ describe("vehicle attachment system", () => {
     expect(findNearestAttachmentPlacement(parts, "wing", [exact.x + 2, exact.y, exact.z], 0.5)).toBeNull();
   });
 
+  it.each(["fin","wing","control","strake","airbrake"] as const)(
+    "magnetically snaps %s aerodynamic surfaces to a tank with a wider capture radius",
+    kind => {
+      const tank:BuildPart={id:"tank",kind:"tank"};
+      const aerodynamicPart:BuildPart={id:"aero",kind,x:0,y:0,z:0};
+      const exact=findAttachmentPlacement([tank],"tank",kind,0,[],aerodynamicPart);
+      expect(exact).not.toBeNull();
+      const dragged={...aerodynamicPart,x:exact!.x+.34,y:exact!.y,z:exact!.z};
+      const placement=findNearestAttachmentPlacement([tank],kind,[dragged.x!,dragged.y!,dragged.z!],.42,dragged,"X");
+      expect(placement).not.toBeNull();
+      expect(placement!.parentId).toBe("tank");
+      expect(placement!.x).toBeCloseTo(exact!.x);
+      expect(placement!.y).toBeCloseTo(exact!.y);
+      expect(placement!.z).toBeCloseTo(exact!.z);
+    }
+  );
+
   it("scales the centered fixed-pitch attachment lattice with editable curved geometry", () => {
     const tank = attachmentNodes("tank", { kind:"tank", topRadius:.72, bottomRadius:.28, height:2.4 });
     const tankWall = tank.filter(n=>n.id.startsWith("surface-wall-"));
