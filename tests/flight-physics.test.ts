@@ -17,6 +17,15 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.altitude).toBeGreaterThan(.5);
  });
 
+ it("integrates world-space angular velocity as a world-space rotation",()=>{
+  const sim=new FlightSimulator(vehicle);sim.launch();
+  const position={x:6_371_100,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  const initial={...sim.state.orientation},initialForward=rotateByQuaternion(initial,{x:0,y:1,z:0});
+  sim.restoreState({...sim.state,position,velocity:surfaceVelocity,angularVelocity:{x:0,y:0,z:1},landed:false,crashed:false});sim.step(1/120,{throttle:0,pitch:0});
+  const half=.5*(1/120)*Math.exp(-.35/120),worldDelta={x:0,y:0,z:Math.sin(half),w:Math.cos(half)};
+  const expected=rotateByQuaternion(worldDelta,initialForward),actual=rotateByQuaternion(sim.state.orientation,{x:0,y:1,z:0});
+  expect(Math.hypot(actual.x-expected.x,actual.y-expected.y,actual.z-expected.z)).toBeLessThan(1e-7);
+ });
  it("provides a co-rotating launch-site orientation at Earth's spin rate",()=>{
   const elapsed=120,rotation=earthRotationAt(elapsed),angle=EARTH_ROTATION_RATE*elapsed,sine=Math.sin(angle/2);
   expect(Math.hypot(rotation.x,rotation.y,rotation.z,rotation.w)).toBeCloseTo(1,10);
@@ -108,6 +117,14 @@ describe("fixed-step flight solver",()=>{
   const radialSpeed=relative.x*radial.x+relative.y*radial.y+relative.z*radial.z;
   const lateralSpeed=Math.sqrt(Math.max(0,relative.x**2+relative.y**2+relative.z**2-radialSpeed**2));
   expect(lateralSpeed).toBeLessThan(.1);
+ });
+ it("records impact speed and crashes on a high-speed ground collision",()=>{
+  const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
+  const position={x:6_371_000+25.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
+  sim.restoreState({...sim.state,position,velocity:{x:-50,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
+  expect(sim.state.crashed).toBe(true);
+  expect(sim.state.impactSpeedMps).toBeGreaterThan(18);
  });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
