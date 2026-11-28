@@ -10,7 +10,7 @@ export interface FlightState {
 }
 export interface FlightEngine { stage:number; thrustKN:number; ispSeconds:number; }
 export interface VehiclePhysics { epochSeconds?:number; dryMassTonnes:number; fuelTonnes:number; thrustKN:number; ispSeconds:number; referenceArea:number; dragCoefficient:number; liftSlope:number; inertia:number; reactionWheelTorque?:number; rcsTorque?:number; rcsThrustKN?:number; rcsFuelTonnes?:number; controlSurfaceAuthority?:number; rcsStages?:number[]; reactionWheelStages?:number[]; controlSurfaceStages?:number[]; engines?:FlightEngine[]; activationGroups?:number[]; }
-const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
+const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,EARTH_ROTATION=7.2921159e-5,SEA_LEVEL_DENSITY=1.225,SCALE_HEIGHT=8500,FIXED_DT=1/120,MAX_SUBSTEPS=24,RCS_ISP=220;
 const add=(a:Vector3,b:Vector3):Vector3=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
 const sub=(a:Vector3,b:Vector3):Vector3=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
 const scale=(a:Vector3,k:number):Vector3=>({x:a.x*k,y:a.y*k,z:a.z*k});
@@ -24,7 +24,7 @@ const integrateOrientation=(q:Quaternion,omega:Vector3,dt:number):Quaternion=>{c
 const gravityEarth=(p:Vector3):Vector3=>{const r=Math.max(length(p),EARTH_RADIUS),factor=-EARTH_MU/(r*r*r);return scale(p,factor);};
 export class FlightSimulator {
  readonly state:FlightState; private accumulator=0;
- constructor(readonly vehicle:VehiclePhysics){this.state={position:{x:0,y:EARTH_RADIUS+.2,z:0},velocity:{x:0,y:0,z:0},orientation:{x:0,y:0,z:0,w:1},angularVelocity:{x:0,y:0,z:0},x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocityScalar:0,fuelTonnes:vehicle.fuelTonnes,rcsFuelTonnes:vehicle.rcsFuelTonnes??0,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0};}
+ constructor(readonly vehicle:VehiclePhysics){this.state={position:{x:EARTH_RADIUS+.2,y:0,z:0},velocity:{x:0,y:0,z:-EARTH_ROTATION*EARTH_RADIUS},orientation:{x:0,y:0,z:-Math.SQRT1_2,w:Math.SQRT1_2},angularVelocity:{x:0,y:0,z:0},x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocityScalar:0,fuelTonnes:vehicle.fuelTonnes,rcsFuelTonnes:vehicle.rcsFuelTonnes??0,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0};}
  launch(){this.state.landed=false;this.state.crashed=false;this.state.elapsed=0;this.state.maxQ=0;const first=(this.vehicle.activationGroups??[]).filter(n=>Number.isInteger(n)&&n>0).sort((a,b)=>a-b)[0];this.state.currentStage=first??0;}
  reset(){Object.assign(this.state,{position:{x:0,y:EARTH_RADIUS+.2,z:0},velocity:{x:0,y:0,z:0},orientation:{x:0,y:0,z:0,w:1},angularVelocity:{x:0,y:0,z:0},x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocityScalar:0,fuelTonnes:this.vehicle.fuelTonnes,rcsFuelTonnes:this.vehicle.rcsFuelTonnes??0,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0});this.accumulator=0;}
  activateNextStage(){const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(e=>e.stage),next=stages.filter(n=>n>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
