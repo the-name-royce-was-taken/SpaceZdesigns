@@ -10,7 +10,7 @@ const G0=9.80665,EARTH_MU=3.986004418e14,EARTH_RADIUS=6_371_000,SEA_LEVEL_DENSIT
 export class FlightSimulator {
  readonly state:FlightState; private accumulator=0;
  constructor(readonly vehicle:VehiclePhysics){this.state={x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:vehicle.fuelTonnes,rcsFuelTonnes:vehicle.rcsFuelTonnes??0,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0};}
- launch(){this.state.landed=false;this.state.crashed=false;this.state.elapsed=0;this.state.maxQ=0;}
+ launch(){this.state.landed=false;this.state.crashed=false;this.state.elapsed=0;this.state.maxQ=0;const firstStage=(this.vehicle.activationGroups??[]).filter(stage=>Number.isInteger(stage)&&stage>0).sort((a,b)=>a-b)[0];this.state.currentStage=firstStage??0;}
  reset(){Object.assign(this.state,{x:0,altitude:0,vx:0,vy:0,angle:0,angularVelocity:0,fuelTonnes:this.vehicle.fuelTonnes,rcsFuelTonnes:this.vehicle.rcsFuelTonnes??0,elapsed:0,crashed:false,landed:true,maxQ:0,currentStage:0});this.accumulator=0;}
  activateNextStage(){const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(stage=>stage>this.state.currentStage).sort((a,b)=>a-b)[0];if(next===undefined)return false;this.state.currentStage=next;return true;}
  activateStage(stage:number){if(!Number.isInteger(stage)||stage<=this.state.currentStage)return false;const stages=this.vehicle.activationGroups??(this.vehicle.engines??[]).map(engine=>engine.stage);const next=stages.filter(value=>value>this.state.currentStage).sort((a,b)=>a-b)[0];if(next!==stage)return false;this.state.currentStage=stage;return true;}
@@ -23,7 +23,7 @@ export class FlightSimulator {
   const speed=Math.hypot(s.vx,s.vy),q=.5*rho*speed*speed;s.maxQ=Math.max(s.maxQ,q);
   const flightAngle=speed>1?Math.atan2(s.vx,s.vy):Math.PI/2;let aoa=Math.atan2(Math.sin(s.angle-flightAngle),Math.cos(s.angle-flightAngle));aoa=Math.max(-.7,Math.min(.7,aoa));
   const drag=q*v.referenceArea*v.dragCoefficient,lift=q*v.referenceArea*v.liftSlope*aoa,throttle=Math.max(0,Math.min(1,input.throttle));
-  const activeEngines=v.engines?.filter(engine=>engine.stage===s.currentStage)??[],hasManifest=Array.isArray(v.engines);
+  const activeEngines=v.engines?.filter(engine=>engine.stage<=s.currentStage)??[],hasManifest=Array.isArray(v.engines);
   const thrustKN=hasManifest?activeEngines.reduce((sum,e)=>sum+e.thrustKN,0):v.thrustKN;
   const mdotPerThrottle=hasManifest?activeEngines.reduce((sum,e)=>sum+e.thrustKN*1000/(e.ispSeconds*G0),0):v.thrustKN*1000/(v.ispSeconds*G0);
   const thrust=s.fuelTonnes>0?thrustKN*1000*throttle:0,mdot=mdotPerThrottle*throttle;
