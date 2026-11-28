@@ -1,5 +1,5 @@
 export const TRACKING_METRES_PER_UNIT = 1e9;
-export const EARTH_SURFACE_CAMERA_ALTITUDE_METRES = 250_000;
+export const EARTH_SURFACE_CAMERA_ALTITUDE_METRES = 10_000;
 
 /** Camera distance in tracking-scene units for a low-altitude Earth surface view. */
 export function earthSurfaceCameraDistance(): number {
