@@ -1,7 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
+const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
+ const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
+ const cross={x:q.y*p.z-q.z*p.y,y:q.z*p.x-q.x*p.z,z:q.x*p.y-q.y*p.x};
+ return{x:v.x+2*(q.w*p.x+cross.x),y:v.y+2*(q.w*p.y+cross.y),z:v.z+2*(q.w*p.z+cross.z)};
+};
 describe("fixed-step flight solver",()=>{
+ it("starts with a normalized attitude that points the rocket's forward axis radially upward",()=>{
+  const sim=new FlightSimulator(vehicle),q=sim.state.orientation,forward=rotateByQuaternion(q,{x:0,y:1,z:0});
+  expect(Math.hypot(q.x,q.y,q.z,q.w)).toBeCloseTo(1,8);
+  expect(forward.x).toBeCloseTo(1,7);
+  expect(forward.y).toBeCloseTo(0,7);
+  expect(forward.z).toBeCloseTo(0,7);
+ });
+ it("directs ignition thrust away from Earth rather than sideways",()=>{
+  const powered=new FlightSimulator(vehicle),coasting=new FlightSimulator(vehicle);
+  powered.launch();coasting.launch();powered.state.position.x+=1000;coasting.state.position.x+=1000;
+  powered.step(1/120,{throttle:1,pitch:0});coasting.step(1/120,{throttle:0,pitch:0});
+  const dv={x:powered.state.velocity.x-coasting.state.velocity.x,y:powered.state.velocity.y-coasting.state.velocity.y,z:powered.state.velocity.z-coasting.state.velocity.z};
+  expect(dv.x).toBeGreaterThan(0);
+  expect(Math.abs(dv.y)).toBeLessThan(dv.x*1e-6);
+  expect(Math.abs(dv.z)).toBeLessThan(dv.x*1e-6);
+ });
+ it("gimballed steering torque follows the commanded pitch and yaw directions",()=>{
+  const sim=new FlightSimulator(vehicle);sim.launch();
+  const localX=rotateByQuaternion(sim.state.orientation,{x:1,y:0,z:0}),localZ=rotateByQuaternion(sim.state.orientation,{x:0,y:0,z:1});
+  sim.step(1/120,{throttle:1,pitch:1,yaw:1});
+  const pitchTorque=sim.state.angularVelocity.x*localX.x+sim.state.angularVelocity.y*localX.y+sim.state.angularVelocity.z*localX.z;
+  const yawTorque=sim.state.angularVelocity.x*localZ.x+sim.state.angularVelocity.y*localZ.y+sim.state.angularVelocity.z*localZ.z;
+  expect(pitchTorque).toBeGreaterThan(0);
+  expect(yawTorque).toBeGreaterThan(0);
+ });
  it("produces powered ascent and consumes propellant",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();
   for(let i=0;i<240;i++)sim.step(1/120,{throttle:1,pitch:0});
