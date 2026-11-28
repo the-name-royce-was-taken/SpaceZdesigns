@@ -119,8 +119,7 @@ describe("fixed-step flight solver",()=>{
  });
  it("records impact speed and crashes on a high-speed ground collision",()=>{
   const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
-  sim.state.position.x=6_371_000+25.5;
-  sim.state.velocity={x:-50,y:0,z:0};
+  sim.restoreState({...sim.state,position:{x:6_371_000+25.5,y:0,z:0},velocity:{x:-50,y:0,z:0},landed:false,crashed:false});
   for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
   expect(sim.state.crashed).toBe(true);
   expect(sim.state.impactSpeedMps).toBeGreaterThan(18);
