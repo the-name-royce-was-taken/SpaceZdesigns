@@ -65,20 +65,19 @@ export class FlightSimulator {
   const mass=Math.max(1,(v.dryMassTonnes+s.fuelTonnes+s.rcsFuelTonnes)*1000),acceleration=add(gravity,scale(add(add(thrustForce,rcsForce),aero),1/mass));
   const radial=unit(s.position),padRadius=EARTH_RADIUS+padAltitude,relativeRadialSpeed=dot(sub(s.velocity,atmosphereVelocity),radial),radialAcceleration=dot(acceleration,radial);
   if(onLaunchRail){
-   // The launch rail constrains lateral translation and attitude until the
-   // vehicle has cleared the pad. Only positive/negative radial motion is
-   // integrated here; otherwise tiny thrust or off-axis engine placement can
-   // inject an enormous sideways velocity before the craft has room to fly.
-   const nextRadialSpeed=relativeRadialSpeed+radialAcceleration*dt;
-   if(nextRadialSpeed<=1e-8&&altitude<=padAltitude+.05){
-    // A vehicle resting on the pad must still move in inertial space with
-    // Earth's rotation. Holding position fixed while assigning surface
-    // velocity lets the launch site rotate away underneath the rocket.
-    const coRotatedPosition=add(s.position,scale(atmosphereVelocity,dt));
-    s.position=scale(unit(coRotatedPosition),padRadius);
-    s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);
-   }else{s.velocity=add(atmosphereVelocity,scale(radial,nextRadialSpeed));s.position=add(s.position,scale(s.velocity,dt));if(length(s.position)<=padRadius&&nextRadialSpeed<0){const groundRadial=unit(s.position);s.position=scale(groundRadial,padRadius);s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);}}
-   if(length(s.position)-EARTH_RADIUS>padAltitude+railLength)this.hasClearedPad=true;
+   // Integrate launch-rail motion in the pad's rotating radial frame. Rebuilding
+   // position from the exact Earth-rotated pad direction prevents tiny lateral
+   // errors from accumulating while the vehicle is held or riding the rail.
+   const padDirection=unit(rotate(earthRotationAt(s.elapsed),{x:1,y:0,z:0}));
+   const radialSpeed=dot(sub(s.velocity,atmosphereVelocity),padDirection);
+   const nextRadialSpeed=radialSpeed+radialAcceleration*dt;
+   const heldOnPad=nextRadialSpeed<=1e-8&&altitude<=padAltitude+.05;
+   const nextAltitude=heldOnPad?padAltitude:Math.max(padAltitude,altitude+nextRadialSpeed*dt);
+   const nextDirection=unit(rotate(earthRotationAt(s.elapsed+dt),{x:1,y:0,z:0}));
+   s.position=scale(nextDirection,EARTH_RADIUS+nextAltitude);
+   const nextAtmosphereVelocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);
+   s.velocity=add(nextAtmosphereVelocity,heldOnPad?{x:0,y:0,z:0}:scale(nextDirection,nextRadialSpeed));
+   if(nextAltitude-padAltitude>=railLength)this.hasClearedPad=true;
   }else{s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));}
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
   const wheelCount=v.reactionWheelStages?.length??((v.reactionWheelTorque??0)>0?1:0),wheelScale=wheelCount?stages(v.reactionWheelStages,wheelCount)/wheelCount:0,surfaceCount=v.controlSurfaceStages?.length??((v.controlSurfaceAuthority??0)>0?1:0),surfaceScale=surfaceCount?stages(v.controlSurfaceStages,surfaceCount)/surfaceCount:0;
