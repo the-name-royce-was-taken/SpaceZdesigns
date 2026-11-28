@@ -1,8 +1,9 @@
 import {describe,expect,it} from "vitest";
-import {AU,ephemerisAt,gravityAt,hohmannTransferWindow,SOLAR_SYSTEM} from "../src/celestial";
+import {AU,differentialGravityAt,ephemerisAt,gravityAt,hohmannTransferWindow,SOLAR_SYSTEM} from "../src/celestial";
 describe("physical solar-system model",()=>{
  it("uses measured planetary radii and orbital distances in metres",()=>{const earth=SOLAR_SYSTEM.find(b=>b.id==="earth")!;expect(earth.radiusM).toBe(6_371_000);expect(earth.orbitRadiusM).toBe(AU);});
  it("places Earth one AU from the Sun and Luna relative to Earth",()=>{const bodies=ephemerisAt(0),sun=bodies.find(b=>b.id==="sun")!,earth=bodies.find(b=>b.id==="earth")!,moon=bodies.find(b=>b.id==="moon")!;expect(Math.hypot(earth.position.x-sun.position.x,earth.position.z-sun.position.z)).toBeCloseTo(AU,0);expect(Math.hypot(moon.position.x-earth.position.x,moon.position.z-earth.position.z)).toBeCloseTo(384_400_000,0);});
  it("computes inverse-square gravity with the correct surface acceleration",()=>{const earth=SOLAR_SYSTEM.find(b=>b.id==="earth")!;const a=gravityAt({x:earth.radiusM,y:0,z:0},[{massKg:earth.massKg,radiusM:earth.radiusM,position:{x:0,y:0,z:0}}]);expect(Math.hypot(a.x,a.y,a.z)).toBeCloseTo(9.82,1);});
+ it("includes differential solar and lunar tidal gravity in an Earth-centred frame",()=>{const earth=ephemerisAt(0).find(b=>b.id==="earth")!;const a=differentialGravityAt({x:earth.position.x+6_771_000,y:0,z:earth.position.z},{x:earth.position.x,y:0,z:earth.position.z},0);expect(Math.hypot(a.x,a.y,a.z)).toBeGreaterThan(0);expect(Number.isFinite(a.x+a.y+a.z)).toBe(true);});
  it("returns a finite Hohmann transfer window",()=>{const sun=SOLAR_SYSTEM[0]!,earth=SOLAR_SYSTEM.find(b=>b.id==="earth")!,mars=SOLAR_SYSTEM.find(b=>b.id==="mars")!;const result=hohmannTransferWindow(earth.orbitRadiusM,mars.orbitRadiusM,6.67430e-11*sun.massKg,2*Math.PI/mars.periodSeconds);expect(result.transferSeconds).toBeGreaterThan(100*86400);expect(result.deltaVDepartureMps).toBeGreaterThan(0);});
 });
