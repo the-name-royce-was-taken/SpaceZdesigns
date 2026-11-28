@@ -216,7 +216,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    const exitLip=add(new THREE.TorusGeometry(.365,.012,8,32),steel,p.x??0,y-.675,p.z??0);exitLip.rotation.x=Math.PI/2;
    const engineDetails=mat(0x273946,.72);
    for(let i=0;i<8;i++){const angle=i*Math.PI/4;add(new THREE.SphereGeometry(.018,8,6),engineDetails,(p.x??0)+Math.cos(angle)*.252,y+.44,(p.z??0)+Math.sin(angle)*.252);}
-   const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Number.MAX_SAFE_INTEGER;flame.userData.engineExhaust=true;flame.userData.engineType=engine.id;
+   const flame=new THREE.Group();flame.position.set(p.x??0,y-.68,p.z??0);flame.rotation.x=Math.PI;flame.visible=false;flame.userData.stage=partActivationGroup(p)??Math.max(1,Math.floor(p.engineStage??1));flame.userData.engineExhaust=true;flame.userData.engineType=engine.id;
    const flameMaterial=(color:number,opacity:number)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
    const flameProfiles:Record<string,[number,number,number,number][] >={
     liquid:[[.30,1.45,0xff4b19,.28],[.20,1.12,0xff9a32,.56],[.105,.82,0xfff2cf,.88]],
