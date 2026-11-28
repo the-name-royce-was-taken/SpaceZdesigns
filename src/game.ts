@@ -246,7 +246,7 @@ function makeRocket(parts:BuildPart[]=craft.parts):THREE.Group{
    const sepRing=add(new THREE.TorusGeometry(.5,.032,10,40),mat(0xffd77c,.55),p.x??0,y+.09,p.z??0);sepRing.rotation.x=Math.PI/2;
   }else if(p.kind==="fin"||p.kind==="wing"||p.kind==="control"){
    const size=p.kind==="wing"?[1.7,.12,1.1]:p.kind==="fin"?[.9,.7,.18]:[1,.1,.42];
-   const surface=add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
+   add(new THREE.BoxGeometry(size[0],size[1],size[2]),mat(p.kind==="control"?0xd1a66b:0x759bb7,.32),p.x??0,y,p.z??0);
   }else if(p.kind==="solar"){
    const length=Math.max(.8,Math.min(8,p.solarLength??2.4)),deployed=p.solarDeployed===true;
    add(new THREE.BoxGeometry(.2,.12,.22),mat(0x8799a7,.65),p.x??0,y,p.z??0);
