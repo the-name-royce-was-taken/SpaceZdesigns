@@ -68,8 +68,14 @@ export class FlightSimulator {
    // integrated here; otherwise tiny thrust or off-axis engine placement can
    // inject an enormous sideways velocity before the craft has room to fly.
    const nextRadialSpeed=relativeRadialSpeed+radialAcceleration*dt;
-   if(nextRadialSpeed<=1e-8&&altitude<=padAltitude+.05){s.position=scale(radial,padRadius);s.velocity=atmosphereVelocity;}
-   else{s.velocity=add(atmosphereVelocity,scale(radial,nextRadialSpeed));s.position=add(s.position,scale(s.velocity,dt));if(length(s.position)<=padRadius&&nextRadialSpeed<0){const groundRadial=unit(s.position);s.position=scale(groundRadial,padRadius);s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);}}
+   if(nextRadialSpeed<=1e-8&&altitude<=padAltitude+.05){
+    // A vehicle resting on the pad must still move in inertial space with
+    // Earth's rotation. Holding position fixed while assigning surface
+    // velocity lets the launch site rotate away underneath the rocket.
+    const coRotatedPosition=add(s.position,scale(atmosphereVelocity,dt));
+    s.position=scale(unit(coRotatedPosition),padRadius);
+    s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);
+   }else{s.velocity=add(atmosphereVelocity,scale(radial,nextRadialSpeed));s.position=add(s.position,scale(s.velocity,dt));if(length(s.position)<=padRadius&&nextRadialSpeed<0){const groundRadial=unit(s.position);s.position=scale(groundRadial,padRadius);s.velocity=scale(cross(EARTH_SPIN_AXIS,s.position),EARTH_ROTATION_RATE);}}
    if(length(s.position)-EARTH_RADIUS>padAltitude+railLength)this.hasClearedPad=true;
   }else{s.velocity=add(s.velocity,scale(acceleration,dt));s.position=add(s.position,scale(s.velocity,dt));}
   const pitch=Math.max(-1,Math.min(1,input.pitch)),yaw=Math.max(-1,Math.min(1,input.yaw??0)),roll=Math.max(-1,Math.min(1,input.roll??0));
