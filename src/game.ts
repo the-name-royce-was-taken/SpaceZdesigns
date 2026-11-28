@@ -44,7 +44,7 @@ function createFlightEarthTexture(){
  for(let i=0;i<24;i++){const x=950+(i%6)*22,y=410+Math.floor(i/6)*48;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+18,y+10,x+10,y+27);ctx.stroke();}
  // Add low-amplitude bathymetry and terrain variation without relying on remote image assets.
  const pixels=ctx.getImageData(0,0,2048,1024),data=pixels.data;
- for(let y=0;y<1024;y++)for(let x=0;x<2048;x++){const i=(y*2048+x)*4,n=(Math.sin(x*.071+Math.sin(y*.031)*2.1)+Math.cos(y*.093+x*.017)+Math.sin((x+y)*.041))*.5,land=data[i+1]!>data[i]!*.98&&data[i+1]!>data[i+2]!*.92;const amount=land?n*8:n*4;data[i]=Math.max(0,Math.min(255,data[i]!+amount*.72));data[i+1]=Math.max(0,Math.min(255,data[i+1]!+amount));data[i+2]=Math.max(0,Math.min(255,data[i+2]!+amount*.62);}
+ for(let y=0;y<1024;y++)for(let x=0;x<2048;x++){const i=(y*2048+x)*4,r=data[i]??0,g=data[i+1]??0,b=data[i+2]??0,n=(Math.sin(x*.071+Math.sin(y*.031)*2.1)+Math.cos(y*.093+x*.017)+Math.sin((x+y)*.041))*.5,land=g>r*.98&&g>b*.92,amount=land?n*8:n*4;data[i]=Math.max(0,Math.min(255,r+amount*.72));data[i+1]=Math.max(0,Math.min(255,g+amount));data[i+2]=Math.max(0,Math.min(255,b+amount*.62));}
  ctx.putImageData(pixels,0,0);
  // Mountain chains and broad terrain relief.
  ctx.save();ctx.globalAlpha=.24;ctx.lineCap="round";
