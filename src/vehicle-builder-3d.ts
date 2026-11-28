@@ -200,7 +200,7 @@ export function landingLegDeploymentAngle(part:Pick<BuildPart,"rx"|"ry"|"rz">):n
  const worldDown=(angle:number)=>new THREE.Vector3(-Math.sin(angle),Math.cos(angle),0).applyEuler(rotation).y;
  return worldDown(-2.3)<=worldDown(2.3)?-2.3:2.3;
 }
-export function createLandingLegModel(retracted=true,deploymentAngle=-2.0):THREE.Group{
+export function createLandingLegModel(retracted=true,deploymentAngle=-2.3):THREE.Group{
  const root=new THREE.Group();
  const steel=new THREE.MeshStandardMaterial({color:0x9aa9b2,metalness:.78,roughness:.32});
  const dark=new THREE.MeshStandardMaterial({color:0x536b78,metalness:.72,roughness:.38});
@@ -215,8 +215,8 @@ export function createLandingLegModel(retracted=true,deploymentAngle=-2.0):THREE
  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.082,.082,.065,12),dark);
  collar.position.y=.59;hinge.add(collar);
  const piston=new THREE.Mesh(new THREE.CylinderGeometry(.031,.038,.5,12),pistonMetal);
- piston.position.y=.58+(retracted?0:.34);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
- const foot=new THREE.Group();foot.position.y=retracted?.82:1.24;hinge.add(foot);
+ piston.position.y=.58+(retracted?0:.46);piston.castShadow=true;piston.receiveShadow=true;hinge.add(piston);
+ const foot=new THREE.Group();foot.position.y=retracted?.82:1.36;hinge.add(foot);
  const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.065,.26),footMaterial);pad.castShadow=true;pad.receiveShadow=true;foot.add(pad);
  const toe=new THREE.Mesh(new THREE.BoxGeometry(.24,.035,.3),dark);toe.position.y=-.035;foot.add(toe);
  hinge.rotation.z=retracted?0:deploymentAngle;
