@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
+import { EARTH_ROTATION_RATE, EARTH_SPIN_AXIS, earthRotationAt, landingImpactLimitMps, stabilityAssistCommand, FlightSimulator, type VehiclePhysics } from "../src/flight-physics";
 const vehicle:VehiclePhysics={dryMassTonnes:2,fuelTonnes:.2,thrustKN:40,ispSeconds:300,referenceArea:.8,dragCoefficient:.5,liftSlope:2,inertia:1};
 const rotateByQuaternion=(q:{x:number;y:number;z:number;w:number},v:{x:number;y:number;z:number})=>{
  const p={x:q.y*v.z-q.z*v.y,y:q.z*v.x-q.x*v.z,z:q.x*v.y-q.y*v.x};
@@ -146,13 +146,20 @@ describe("fixed-step flight solver",()=>{
   expect(sim.state.altitude).toBeGreaterThan(21);
   expect(lateralSpeed).toBeLessThan(1e-8);
  });
- it("records impact speed and crashes on a high-speed ground collision",()=>{
-  const sim=new FlightSimulator({...vehicle,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
+ it("uses the supporting part and vehicle mass to set vertical impact tolerance",()=>{
+  const bare:VehiclePhysics={...vehicle,dryMassTonnes:1,landingContactKind:"engine"};
+  const legs:VehiclePhysics={...bare,landingContactKind:"landing-leg",landingGearCount:3};
+  const heavy:VehiclePhysics={...legs,dryMassTonnes:8};
+  expect(landingImpactLimitMps(legs)).toBeGreaterThan(landingImpactLimitMps(bare));
+  expect(landingImpactLimitMps(heavy)).toBeLessThan(landingImpactLimitMps(legs));
+ });
+ it("does not crash a supported landing for sideways speed or attitude alone",()=>{
+  const sim=new FlightSimulator({...vehicle,dryMassTonnes:1,landingContactKind:"landing-leg",landingGearCount:3,spawnClearanceM:.5,launchRailLengthM:20});sim.launch();
   const position={x:6_371_000+25.5,y:0,z:0},surfaceVelocity={x:0,y:EARTH_SPIN_AXIS.z*position.x*EARTH_ROTATION_RATE,z:-EARTH_SPIN_AXIS.y*position.x*EARTH_ROTATION_RATE};
-  sim.restoreState({...sim.state,position,velocity:{x:-50,y:surfaceVelocity.y,z:surfaceVelocity.z},landed:false,crashed:false});
+  sim.restoreState({...sim.state,position,velocity:{x:-2,y:surfaceVelocity.y+35,z:surfaceVelocity.z},orientation:{x:0,y:0,z:Math.sin(.8/2),w:Math.cos(.8/2)},landed:false,crashed:false});
   for(let i=0;i<240&&!sim.state.crashed&&!sim.state.landed;i++)sim.step(1/120,{throttle:0,pitch:0});
-  expect(sim.state.crashed).toBe(true);
-  expect(sim.state.impactSpeedMps).toBeGreaterThan(18);
+  expect(sim.state.crashed).toBe(false);
+  expect(sim.state.landed).toBe(true);
  });
  it("resets state and accumulator for a fresh launch",()=>{
   const sim=new FlightSimulator(vehicle);sim.launch();sim.step(.05,{throttle:1,pitch:0});sim.reset();
@@ -170,11 +177,12 @@ describe("fixed-step flight solver",()=>{
   expect(sim.activateNextStage()).toBe(false);
  });
 
- it("commands the engine gimbal toward the radial attitude error instead of reinforcing it",()=>{
-  expect(stabilityAssistCommand(-.1,0)).toBeLessThan(0);
-  expect(stabilityAssistCommand(.1,0)).toBeGreaterThan(0);
+ it("damps rotation without automatically pulling the craft back toward radial attitude",()=>{
+  expect(stabilityAssistCommand(-.5,0)).toBe(0);
+  expect(stabilityAssistCommand(.5,0)).toBe(0);
   expect(stabilityAssistCommand(0,1)).toBeLessThan(0);
   expect(stabilityAssistCommand(0,-1)).toBeGreaterThan(0);
+  expect(stabilityAssistCommand(.5,0,.4)).toBeCloseTo(.4);
  });
 
 });
