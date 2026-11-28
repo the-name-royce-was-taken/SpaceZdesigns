@@ -62,7 +62,8 @@ describe("fixed-step flight solver",()=>{
 
  it("applies thrust along the saved rotated engine axis",()=>{
   const axis={x:1,y:0,z:0};
-  const powered=new FlightSimulator({...vehicle,engineThrustDirection:axis}),coasting=new FlightSimulator(vehicle);
+  const alignedVehicle={...vehicle,engineThrustDirection:axis,engineMountM:{x:0,y:0,z:0},centerOfMassM:{x:0,y:0,z:0},dragCoefficient:0,liftSlope:0};
+  const powered=new FlightSimulator(alignedVehicle),coasting=new FlightSimulator(alignedVehicle);
   powered.launch();coasting.launch();powered.state.position.x+=1000;coasting.state.position.x+=1000;
   powered.step(1/120,{throttle:1,pitch:0});coasting.step(1/120,{throttle:0,pitch:0});
   const delta={x:powered.state.velocity.x-coasting.state.velocity.x,y:powered.state.velocity.y-coasting.state.velocity.y,z:powered.state.velocity.z-coasting.state.velocity.z};
