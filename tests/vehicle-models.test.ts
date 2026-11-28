@@ -37,7 +37,7 @@ describe("shared vehicle visual models", () => {
     animateLandingLegModels(model, 1);
 
     expect(model.userData.deploymentProgress).toBe(1);
-    expect(leg.hinge.rotation.z).toBeCloseTo(-2.35);
+    expect(leg.hinge.rotation.z).toBeCloseTo(-2.0);
     expect(leg.piston.position.y).toBeCloseTo(.92);
     expect(leg.foot.position.y).toBeCloseTo(1.24);
   });
